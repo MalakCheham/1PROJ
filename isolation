@@ -1,0 +1,62 @@
+import random
+
+def createboard():
+    colors = ['🟦', '🟩', '🟨', '🟥']
+    return [[random.choice(colors) for i in range(8)] for  in range(8)]
+
+def print_board(board):
+    for row in board:
+        print(" ".join(row))
+    print()
+
+def is_threatened(board, x, y):
+    directions = [
+        (-1, -1), (-1, 0), (-1, 1),
+        (0, -1), (0, 1),
+        (1, -1), (1, 0), (1, 1)
+    ]
+    for dx, dy in directions:
+        nx, ny = x + dx, y + dy
+        if 0 <= nx < 8 and 0 <= ny < 8 and board[nx][ny] in ['B', 'N']:
+            return True
+    return False
+
+def has_valid_moves(board):
+    for x in range(8):
+        for y in range(8):
+            if board[x][y] not in ['B', 'N'] and not is_threatened(board, x, y):
+                return True
+    return False
+
+def play_game():
+    board = create_board()
+    players = ['B', 'N']
+    turn = 0
+
+    print_board(board)
+
+    while True:
+        current_player = players[turn % 2]
+        print(f"Joueur {current_player}, entrez votre coup (ligne colonne) 😊
+
+        while True:
+            try:
+                x, y = input().split()
+                x, y = int(x), int(y)
+
+                if 0 <= x < 8 and 0 <= y < 8 and board[x][y] not in ['B', 'N'] and not is_threatened(board, x, y):
+                    board[x][y] = current_player
+                    break
+                else:
+                    print("Coup invalide, essayez encore 😊
+            except ValueError:
+                print("Format incorrect, entrez deux nombres (ex: 3 4) 😊
+
+        print_board(board)
+
+        if not has_valid_moves(board):
+            print(f"Joueur {current_player} ne peut plus jouer. Le joueur opposé gagne !")
+            break
+
+        turn += 1
+play_game()
