@@ -1,0 +1,16 @@
+TRADUCTIONS = {
+    "titre": {"fr": "KATARENGA&CO.", "en": "KATARENGA&CO."},
+    "parametres": {"fr": "PARAMÈTRES", "en": "SETTINGS"},
+     "volume_effets": {"fr": "Volume effets", "en": "Sound effects"},
+    "volume_musique": {"fr": "Volume musique", "en": "Music volume"},
+    "retour": {"fr": "Retour", "en": "Back"},
+    "langue_fr": {"fr": "FR", "en": "FR"},
+    "langue_en": {"fr": "EN", "en": "EN"},
+    "jouer_katarenga": {"fr": "KATARANGA", "en": "KATARANGA"},
+    "jouer_congress": {"fr": "CONGRESS", "en": "CONGRESS"},
+    "jouer_isolation": {"fr": "ISOLATION", "en": "ISOLATION"},
+    "mode_1v1": {"fr": "1 VS 1", "en": "1 VS 1"},
+    "mode_ia": {"fr": "IA", "en": "AI"},
+    "go": {"fr": "JOUER", "en": "PLAY"},
+    "aide": {"fr": "Aide", "en": "Help"},
+}
