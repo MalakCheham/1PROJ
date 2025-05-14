@@ -8,7 +8,7 @@ from core.langues import TRADUCTIONS
 from core.langues import _
 
 
-# === Langue actuelle ===
+# === Langue actuelle ====
 langue = "fr"
 def _(clef): return TRADUCTIONS.get(clef, {}).get(langue, clef)
 
