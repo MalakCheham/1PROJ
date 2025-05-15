@@ -1,5 +1,4 @@
 import tkinter as tk
-
 from tkinter import messagebox
 from PIL import Image, ImageTk
 import subprocess
@@ -9,103 +8,166 @@ from core.joueur import Joueur
 from core.aide import get_regles
 
 class JeuKatarenga:
-    def __init__(self, plateau, joueurs, pions, mode="1v1"):
-        self.plateau = plateau
-        self.joueurs = joueurs
-        self.pions = pions
-        self.tour = 0
-        self.mode = mode
-        self.timer_seconds = 0
-        self.timer_running = True
-
-    def joueur_actuel(self):
-        return self.joueurs[self.tour % 2]
-
-    def jouer(self):
+    def __init__(self, plateau, joueurs, mode="1v1"):
+        self.plateau, self.joueurs, self.mode = plateau, joueurs, mode
+        self.pions = {'X': {(0, j) for j in range(8)}, 'O': {(7, j) for j in range(8)}}
+        self.tour, self.timer_seconds, self.timer_running, self.selection = 0, 0, True, None
+        self.coups_possibles = set()
         self.root = tk.Tk()
         self.root.title("Katarenga")
         self.root.configure(bg="#e6f2ff")
 
-        # ==== BARRE DU HAUT ====
-        top_frame = tk.Frame(self.root, bg="#e6f2ff")
-        top_frame.pack(fill="x", pady=5, padx=5)
+        self.top_frame = tk.Frame(self.root, bg="#e6f2ff")
+        self.top_frame.pack(fill="x", pady=5, padx=5)
 
-        # Icône retour
-        try:
-            retour_img = Image.open("assets/en-arriere.png").resize((24, 24))
-            self.retour_icon = ImageTk.PhotoImage(retour_img)
-            tk.Button(top_frame, image=self.retour_icon, command=self.retour_menu, bg="#e6f2ff", bd=0).pack(side="left")
-        except:
-            tk.Button(top_frame, text="<", command=self.retour_menu, bg="#e6f2ff", bd=0).pack(side="left")
+        self.tour_label = tk.Label(self.top_frame, text="", font=("Helvetica", 12, "bold"), bg="#e6f2ff", fg="#003366")
+        self.tour_label.pack(side="top")
 
-        # Timer au centre
-        self.timer_label = tk.Label(top_frame, text="00:00", font=("Helvetica", 12, "bold"), bg="#e6f2ff", fg="#003366")
+        self.pions_restants_label = tk.Label(self.top_frame, text="", font=("Helvetica", 10), bg="#e6f2ff", fg="#003366")
+        self.pions_restants_label.pack(side="top")
+
+        self.timer_label = tk.Label(self.top_frame, text="00:00", font=("Helvetica", 12, "bold"), bg="#e6f2ff", fg="#003366")
         self.timer_label.pack(side="top")
 
-        # Icône aide
-        try:
-            help_img = Image.open("assets/point-dinterrogation.png").resize((24, 24))
-            self.help_icon = ImageTk.PhotoImage(help_img)
-            tk.Button(top_frame, image=self.help_icon, command=self.aide_popup, bg="#e6f2ff", bd=0).pack(side="right")
-        except:
-            tk.Button(top_frame, text="?", command=self.aide_popup, bg="#e6f2ff", bd=0).pack(side="right")
-
-        # ==== CANVAS ====
         self.canvas = tk.Canvas(self.root, width=400, height=400)
         self.canvas.pack()
         self.afficher_plateau()
         self.canvas.bind("<Button-1>", self.on_click)
-        self.selection = None
-
-        # ==== BOUTON REJOUER ====
-        try:
-            rejouer_img = Image.open("assets/fleche-pivotante-vers-la-gauche.png").resize((32, 32))
-            self.rejouer_icon = ImageTk.PhotoImage(rejouer_img)
-            tk.Button(self.root, image=self.rejouer_icon, command=self.rejouer, bg="#e6f2ff", bd=0).pack(pady=10)
-        except:
-            tk.Button(self.root, text="Rejouer", command=self.rejouer, bg="#e6f2ff", bd=0).pack(pady=10)
-
-        # ==== LANCEMENT DU TIMER ====
+        self.load_and_pack_button("assets/en-arriere.png", "<", self.top_frame, self.retour_menu, "left")
+        self.load_and_pack_button("assets/point-dinterrogation.png", "?", self.top_frame, self.aide_popup, "right")
+        self.load_and_pack_button("assets/fleche-pivotante-vers-la-gauche.png", "Rejouer", self.root, self.rejouer, "bottom", pady=10)
+        self.update_info_joueur()
         self.update_timer()
-
         self.root.mainloop()
+
+    def load_and_pack_button(self, image_path, text, parent, command, side="top", padx=5, pady=5):
+        try:
+            img = Image.open(image_path).resize((24, 24) if "arriere" in image_path or "interrogation" in image_path else (32, 32))
+            icon = ImageTk.PhotoImage(img)
+            btn = tk.Button(parent, image=icon, command=command, bg="#e6f2ff", bd=0)
+            btn.image = icon
+        except:
+            btn = tk.Button(parent, text=text, command=command, bg="#e6f2ff", bd=0)
+        btn.pack(side=side, padx=padx, pady=pady)
+
+    def joueur_actuel(self):
+        return self.joueurs[self.tour % 2]
+
+    def update_info_joueur(self):
+        joueur_actuel = self.joueurs[self.tour % 2]
+        self.tour_label.config(text=f"Tour du Joueur {joueur_actuel.id + 1}")
+        pions_x_restants = len(self.pions['X'])
+        pions_o_restants = len(self.pions['O'])
+        self.pions_restants_label.config(text=f"Pions Restants - Joueur 1: {pions_x_restants}, Joueur 2: {pions_o_restants}")
 
     def afficher_plateau(self):
         taille = 50
         self.canvas.delete("all")
+        colors = {'R': '#ff9999', 'J': '#ffffb3', 'B': '#99ccff', 'V': '#b3ffb3'}
         for i in range(8):
             for j in range(8):
-                couleur = self.plateau.cases[i][j]
-                fill = {
-                    'R': '#ff9999',
-                    'J': '#ffffb3',
-                    'B': '#99ccff',
-                    'V': '#b3ffb3'
-                }.get(couleur, 'white')
-                self.canvas.create_rectangle(j*taille, i*taille, (j+1)*taille, (i+1)*taille, fill=fill)
-                if (i, j) in self.pions['X']:
-                    self.canvas.create_oval(j*taille+10, i*taille+10, (j+1)*taille-10, (i+1)*taille-10, fill='black')
-                elif (i, j) in self.pions['O']:
-                    self.canvas.create_oval(j*taille+10, i*taille+10, (j+1)*taille-10, (i+1)*taille-10, fill='white')
+                fill = colors.get(self.plateau.cases[i][j], 'white')
+                self.canvas.create_rectangle(j * taille, i * taille, (j + 1) * taille, (i + 1) * taille, fill=fill)
+                for symbol, color in [('X', 'black'), ('O', 'white')]:
+                    if (i, j) in self.pions[symbol]:
+                        self.canvas.create_oval(j * taille + 10, i * taille + 10, (j + 1) * taille - 10, (i + 1) * taille - 10, fill=color)
+                if self.selection == (i, j):
+                    self.canvas.create_rectangle(j * taille, i * taille, (j + 1) * taille, (i + 1) * taille, outline='blue', width=3)
+                if (i, j) in self.coups_possibles:
+                    self.canvas.create_oval(j * taille + 20, i * taille + 20, (j + 1) * taille - 20, (i + 1) * taille - 20, fill='lightgreen')
 
     def on_click(self, event):
         ligne, colonne = event.y // 50, event.x // 50
-        joueur = self.joueur_actuel()
-        symbole = joueur.symbole
+        joueur, symbole = self.joueur_actuel(), self.joueur_actuel().symbole
+        position_cliquee = (ligne, colonne)
+
         if self.selection is None:
-            if (ligne, colonne) in self.pions[symbole]:
-                self.selection = (ligne, colonne)
+            if position_cliquee in self.pions[symbole]:
+                self.selection = position_cliquee
+                couleur_depart = self.plateau.cases[self.selection[0]][self.selection[1]]
+                self.coups_possibles = self.generer_coups_possibles(self.selection, couleur_depart, symbole)
+                self.afficher_plateau()
         else:
-            depart = self.selection
-            arrivee = (ligne, colonne)
-            if arrivee in self.pions['X'] or arrivee in self.pions['O']:
-                messagebox.showinfo("Invalide", "La case est occupée.")
-            else:
-                self.pions[symbole].remove(depart)
+            depart, arrivee = self.selection, position_cliquee
+            couleur_depart, piece_arrivee = self.plateau.cases[depart[0]][depart[1]], next((s for s in ['X', 'O'] if arrivee in self.pions[s]), None)
+
+            if arrivee in self.coups_possibles:
+                if piece_arrivee and self.tour > 0:
+                    self.pions[piece_arrivee].discard(arrivee)
+                elif piece_arrivee:
+                    messagebox.showinfo("Invalide", "Les captures ne sont pas autorisées au premier tour.")
+                    return
+                self.pions[symbole].discard(depart)
                 self.pions[symbole].add(arrivee)
                 self.tour += 1
                 self.selection = None
+                self.coups_possibles = set()
                 self.afficher_plateau()
+                self.update_info_joueur()
+                self.verifier_victoire()
+            else:
+                self.selection = None
+                self.coups_possibles = set()
+                if position_cliquee in self.pions[symbole]:
+                    self.selection = position_cliquee
+                    couleur_depart = self.plateau.cases[self.selection[0]][self.selection[1]]
+                    self.coups_possibles = self.generer_coups_possibles(self.selection, couleur_depart, symbole)
+                self.afficher_plateau()
+
+    def generer_coups_possibles(self, depart, couleur, symbole):
+        coups = set()
+        for i in range(8):
+            for j in range(8):
+                arrivee = (i, j)
+                piece_arrivee = next((s for s in ['X', 'O'] if arrivee in self.pions[s]), None)
+                if piece_arrivee is None or piece_arrivee != symbole:
+                    mouvement_valide = (couleur == 'B' and self.est_mouvement_roi(depart, arrivee)) or \
+                                      (couleur == 'V' and self.est_mouvement_cavalier(depart, arrivee)) or \
+                                      (couleur == 'J' and self.est_mouvement_fou(depart, arrivee)) or \
+                                      (couleur == 'R' and self.est_mouvement_tour(depart, arrivee))
+                    if mouvement_valide:
+                        coups.add(arrivee)
+        return coups
+
+    def est_mouvement_roi(self, depart, arrivee):
+        dl, dc = abs(arrivee[0] - depart[0]), abs(arrivee[1] - depart[1])
+        return dl <= 1 and dc <= 1 and (dl != 0 or dc != 0)
+
+    def est_mouvement_cavalier(self, depart, arrivee):
+        dl, dc = abs(arrivee[0] - depart[0]), abs(arrivee[1] - depart[1])
+        return (dl == 2 and dc == 1) or (dl == 1 and dc == 2)
+
+    def est_mouvement_fou(self, depart, arrivee):
+        if abs(arrivee[0] - depart[0]) != abs(arrivee[1] - depart[1]): return False
+        sl, sc = (1 if arrivee[i] > depart[i] else -1 for i in range(2))
+        l, c = depart[0] + sl, depart[1] + sc
+        while (l, c) != arrivee:
+            if not (0 <= l < 8 and 0 <= c < 8) or (l, c) in self.pions['X'] or (l, c) in self.pions['O']: return False
+            if self.plateau.cases[l][c] == 'J': return (l, c) == arrivee
+            l += sl
+            c += sc
+        return self.plateau.cases[arrivee[0]][arrivee[1]] == 'J'
+
+    def est_mouvement_tour(self, depart, arrivee):
+        if depart[0] != arrivee[0] and depart[1] != arrivee[1]: return False
+        sl, sc = (1 if arrivee[i] > depart[i] else -1 if arrivee[i] < depart[i] else 0 for i in range(2))
+        l, c = depart[0] + sl, depart[1] + sc
+        while (l, c) != arrivee:
+            if not (0 <= l < 8 and 0 <= c < 8) or (l, c) in self.pions['X'] or (l, c) in self.pions['O']: return False
+            if self.plateau.cases[l][c] == 'R': return (l, c) == arrivee
+            l += sl
+            c += sc
+        return self.plateau.cases[arrivee[0]][arrivee[1]] == 'R'
+
+    def verifier_victoire(self):
+        joueur = self.joueur_actuel()
+        ligne_victoire = 7 if joueur.symbole == 'X' else 0
+        if any(p[0] == ligne_victoire for p in self.pions[joueur.symbole]):
+            messagebox.showinfo("Victoire!", f"Joueur {joueur.id + 1} a atteint la ligne adverse et a gagné!")
+            self.rejouer()
+        elif not self.pions['O' if joueur.symbole == 'X' else 'X']:
+            messagebox.showinfo("Victoire!", f"Joueur {joueur.id + 1} a gagné par capture!")
+            self.rejouer()
 
     def update_timer(self):
         if self.timer_running:
@@ -123,16 +185,19 @@ class JeuKatarenga:
         aide.title("Règles du jeu")
         aide.geometry("400x400")
         aide.configure(bg="#f0f4f8")
-
-        titre = tk.Label(aide, text="Règles de Katarenga", font=("Helvetica", 14, "bold"), bg="#f0f4f8", fg="#003366")
-        titre.pack(pady=10)
-
-        texte = tk.Text(aide, wrap="word", bg="#f0f4f8", fg="#000000", font=("Helvetica", 10), bd=0)
-        texte.pack(expand=True, fill="both", padx=10, pady=10)
-        texte.insert("1.0", get_regles("katarenga"))
-        texte.configure(state="disabled")
+        tk.Label(aide, text="Règles de Katarenga", font=("Helvetica", 14, "bold"), bg="#f0f4f8", fg="#003366").pack(pady=10)
+        text_widget = tk.Text(aide, wrap="word", bg="#f0f4f8", fg="#000000", font=("Helvetica", 10), bd=0)
+        text_widget.pack(expand=True, fill="both", padx=10, pady=10)
+        text_widget.insert("1.0", get_regles("katarenga"))
+        text_widget.configure(state="disabled")
 
     def rejouer(self):
         self.root.destroy()
         from plateau_builder import lancer_plateau_builder
         lancer_plateau_builder("katarenga", self.mode)
+
+if __name__ == '__main__':
+    plateau = Plateau()
+    joueurs = [Joueur("Joueur 1"), Joueur("Joueur 2")]
+    jeu = JeuKatarenga(plateau, joueurs)
+    jeu.jouer()
