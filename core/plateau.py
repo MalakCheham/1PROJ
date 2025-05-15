@@ -26,3 +26,5 @@ class Plateau:
                 pion = self.pions[i][j]
                 ligne_affichee.append(pion if pion else case)
             print(f"{i} {' '.join(ligne_affichee)}")
+    def lire(self, x, y):
+        return self.cases[x][y]

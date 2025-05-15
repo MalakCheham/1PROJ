@@ -1,3 +1,6 @@
+import json
+import os
+
 class Plateau:
     def __init__(self, lignes=8, colonnes=8):
         self.lignes = lignes
@@ -31,3 +34,20 @@ class Plateau:
         print("  " + " ".join(str(i) for i in range(self.colonnes)))
         for i, ligne in enumerate(self.grille):
             print(f"{i} " + " ".join(str(cell) if cell else "." for cell in ligne))
+
+
+def charger_quadrants_personnalises(dossier):
+    if not os.path.exists(dossier):
+        print(f"[AVERTISSEMENT] Dossier introuvable : {dossier}")
+        return []
+
+    quadrants = []
+    for fichier in os.listdir(dossier):
+        if fichier.endswith(".json"):
+            chemin = os.path.join(dossier, fichier)
+            with open(chemin, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, dict) and "recto" in data:
+                    quadrants.append(data)
+    return quadrants
+
