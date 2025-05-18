@@ -176,20 +176,37 @@ class JeuKatarenga:
             self.timer_seconds += 1
             self.root.after(1000, self.update_timer)
 
+    def pause_timer(self):
+        self.timer_running = False
+
+    def reprendre_timer(self):
+        self.timer_running = True
+
     def retour_menu(self):
         self.root.destroy()
         subprocess.Popen([sys.executable, "menu_gui.py"])
 
     def aide_popup(self):
+        self.pause_timer()
         aide = tk.Toplevel(self.root)
         aide.title("Règles du jeu")
         aide.geometry("400x400")
         aide.configure(bg="#f0f4f8")
-        tk.Label(aide, text="Règles de Katarenga", font=("Helvetica", 14, "bold"), bg="#f0f4f8", fg="#003366").pack(pady=10)
+
+        tk.Label(aide, text="Règles de Katarenga", font=("Helvetica", 14, "bold"),
+             bg="#f0f4f8", fg="#003366").pack(pady=10)
+
         text_widget = tk.Text(aide, wrap="word", bg="#f0f4f8", fg="#000000", font=("Helvetica", 10), bd=0)
         text_widget.pack(expand=True, fill="both", padx=10, pady=10)
         text_widget.insert("1.0", get_regles("katarenga"))
         text_widget.configure(state="disabled")
+
+        def on_close():
+            self.reprendre_timer()
+            aide.destroy()
+
+        aide.protocol("WM_DELETE_WINDOW", on_close)
+
 
     def rejouer(self):
         self.root.destroy()

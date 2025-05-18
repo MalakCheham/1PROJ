@@ -157,11 +157,18 @@ class JeuCongress:
             self.timer_seconds += 1
             self.root.after(1000, self.update_timer)
 
+    def pause_timer(self):
+        self.timer_running = False
+
+    def reprendre_timer(self):
+        self.timer_running = True
+
     def retour_menu(self):
         self.root.destroy()
         subprocess.Popen([sys.executable, "menu_gui.py"])
 
     def aide_popup(self):
+        self.pause_timer()
         fen = tk.Toplevel(self.root)
         fen.title("Règles du jeu Congress")
         fen.geometry("400x300")
@@ -175,6 +182,12 @@ class JeuCongress:
         texte.insert("1.0", get_regles("congress"))
         texte.configure(state="disabled")
 
+        def on_close():
+            self.reprendre_timer()
+            fen.destroy()
+
+        fen.protocol("WM_DELETE_WINDOW", on_close)
+    
     def rejouer(self):
         self.root.destroy()
         from plateau_builder import lancer_plateau_builder

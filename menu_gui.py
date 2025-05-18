@@ -149,3 +149,4 @@ tk.Button(frame, text=_("jouer_congress"), command=lambda: lancer_jeu("congress"
 tk.Button(frame, text=_("jouer_isolation"), command=lambda: lancer_jeu("isolation"), **style_btn).pack(pady=10)
 
 root.mainloop()
+ 
