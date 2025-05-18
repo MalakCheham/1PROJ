@@ -15,11 +15,11 @@ def handle_client(client_socket, addr):
     client_socket.close()
     print(traduire("client_disconnected").format(addr=addr))
 
-def start_server(host="0.0.0.0", port=5000):
+def wait_for_first_client(server_ready=None, host="0.0.0.0", port=5000):
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.bind((host, port))
     server.listen(2)
-    print(traduire("server_listening_on").format(host=host, port=port))
-    while True:
-        client_socket, addr = server.accept()
-        threading.Thread(target=handle_client, args=(client_socket, addr), daemon=True).start()
+    client_socket, addr = server.accept()
+    if server_ready is not None:
+        server_ready.set()
+    handle_client(client_socket, addr)

@@ -3,15 +3,16 @@ import threading
 import sys
 import subprocess
 import pygame
+import socket
 
 
 from plateau_builder import lancer_plateau_builder
 from quadrant_editor_live import QuadrantEditorLive
 from core.network.network_selector import network_selector
-from core.network.server import start_server
+from core.network.server import wait_for_first_client
 from core.network.client import start_client, send_move, receive_move
 from core.langues import traduire
-from tkinter import messagebox
+from tkinter import messagebox, simpledialog
 from PIL import Image, ImageTk
 
 network_mode = None
@@ -32,14 +33,32 @@ def retour_vers_configuration():
         widget.destroy()
     afficher_interface_choix()
 
+def get_local_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+    finally:
+        s.close()
+    return ip
+
+def wait_and_notify(server_ready):
+    wait_for_first_client(server_ready)
+    root.after(0, lambda: messagebox.showinfo(traduire("host"), "Un joueur a rejoint la partie !"))
+
 def on_network_choice(result):
     global network_mode, client_socket
     network_mode = result
     if result == "host":
-        threading.Thread(target=start_server, daemon=True).start()
-        messagebox.showinfo(traduire("host"), traduire("server_started_waiting"))
+        ip = get_local_ip()
+        messagebox.showinfo(traduire("host"), f"{traduire('server_started_waiting')}\nIP: {ip}")
+
+        server_ready = threading.Event()
+        server_thread = threading.Thread(target=wait_and_notify, args=(server_ready,), daemon=True)
+        server_thread.start()
+        messagebox.showinfo(traduire("host"), traduire("waiting_for_client"))
     elif result == "join":
-        ip = tk.simpledialog.askstring(traduire("join"), traduire("enter_server_ip"), initialvalue="127.0.0.1")
+        ip = simpledialog.askstring(traduire("join"), traduire("enter_server_ip"), initialvalue="127.0.0.1")
         client_socket = start_client(ip)
         if client_socket:
             messagebox.showinfo(traduire("join"), traduire("connected_to_server"))
