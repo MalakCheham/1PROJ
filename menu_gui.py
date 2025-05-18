@@ -145,10 +145,4 @@ pygame.mixer.music.load("assets/musique.mp3")
 pygame.mixer.music.set_volume(0.5)
 pygame.mixer.music.play(-1)
 
-# === MUSIQUE DE FOND ===
-pygame.mixer.init()
-pygame.mixer.music.load("assets/musique.mp3")
-pygame.mixer.music.set_volume(0.5)
-pygame.mixer.music.play(-1)
-
 root.mainloop()
