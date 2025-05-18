@@ -31,4 +31,7 @@ TRADUCTIONS = {
     "received_from": {"fr": "Reçu de {addr} : {msg}", "en": "Received from {addr}: {msg}"},
     "client_disconnected": {"fr": "Client {addr} déconnecté", "en": "Client {addr} disconnected"},
     "server_listening_on": {"fr": "Serveur en écoute sur {host}:{port}", "en": "Server listening on {host}:{port}"},
+    "plateau": {"fr": "Plateau :", "en": "Board:"},
+    "plateau_auto": {"fr": "Généré automatiquement", "en": "Automatically generated"},
+    "plateau_perso": {"fr": "Quadrants personnalisés", "en": "Custom quadrants"},
 }
