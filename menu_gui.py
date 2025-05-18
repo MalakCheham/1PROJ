@@ -106,7 +106,6 @@ except Exception as e:
 # === En-tête ===
 frame_top = tk.Frame(root, bg="#e6f2ff")
 frame_top.pack(side="top", fill="x", pady=10, padx=10)
-
 tk.Label(frame_top, text=traduire("titre"), font=("Helvetica", 16, "bold"), fg="#004d99", bg="#e6f2ff").pack(side="left")
 
 try:
@@ -139,6 +138,12 @@ style_btn = {
 tk.Button(frame, text=traduire("jouer_katarenga"), command=lambda: lancer_jeu("katarenga"), **style_btn).pack(pady=10)
 tk.Button(frame, text=traduire("jouer_congress"), command=lambda: lancer_jeu("congress"), **style_btn).pack(pady=10)
 tk.Button(frame, text=traduire("jouer_isolation"), command=lambda: lancer_jeu("isolation"), **style_btn).pack(pady=10)
+
+# === MUSIQUE DE FOND ===
+pygame.mixer.init()
+pygame.mixer.music.load("assets/musique.mp3")
+pygame.mixer.music.set_volume(0.5)
+pygame.mixer.music.play(-1)
 
 # === MUSIQUE DE FOND ===
 pygame.mixer.init()
