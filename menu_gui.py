@@ -6,6 +6,7 @@ import sys
 import os
 import pygame
 
+
 from core.langues import traduire
 from core import parametres
 
