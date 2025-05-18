@@ -23,7 +23,6 @@ def ouvrir_parametres():
 
     frame_effets = tk.Frame(fen, bg="#f0f4f8")
     frame_effets.pack(pady=10, padx=15, fill="x")
-
     try:
         icone_effet = Image.open("assets/volume-reduit.png").resize((24, 24))
         icone_effet_img = ImageTk.PhotoImage(icone_effet)
@@ -37,7 +36,6 @@ def ouvrir_parametres():
 
     frame_musique = tk.Frame(fen, bg="#f0f4f8")
     frame_musique.pack(pady=10, padx=15, fill="x")
-
     try:
         icone_musique = Image.open("assets/note-de-musique.png").resize((24, 24))
         icone_musique_img = ImageTk.PhotoImage(icone_musique)
@@ -51,7 +49,6 @@ def ouvrir_parametres():
 
     frame_langue = tk.Frame(fen, bg="#f0f4f8")
     frame_langue.pack(pady=15, padx=15, fill="x")
-
     try:
         lang_img = Image.open("assets/utilisateur.png").resize((24, 24))
         lang_icon = ImageTk.PhotoImage(lang_img)
@@ -140,5 +137,11 @@ style_btn = {
 tk.Button(frame, text=traduire("jouer_katarenga"), command=lambda: lancer_jeu("katarenga"), **style_btn).pack(pady=10)
 tk.Button(frame, text=traduire("jouer_congress"), command=lambda: lancer_jeu("congress"), **style_btn).pack(pady=10)
 tk.Button(frame, text=traduire("jouer_isolation"), command=lambda: lancer_jeu("isolation"), **style_btn).pack(pady=10)
+
+# === MUSIQUE DE FOND ===
+pygame.mixer.init()
+pygame.mixer.music.load("assets/musique.mp3")
+pygame.mixer.music.set_volume(0.5)
+pygame.mixer.music.play(-1)
 
 root.mainloop()

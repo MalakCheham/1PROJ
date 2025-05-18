@@ -2,6 +2,8 @@ import tkinter as tk
 import threading
 import sys
 import subprocess
+import pygame
+
 
 from plateau_builder import lancer_plateau_builder
 from quadrant_editor_live import QuadrantEditorLive
@@ -123,4 +125,11 @@ except Exception as e:
     print("Erreur chargement icône :", e)
 
 afficher_interface_choix()
+# === MUSIQUE DE FOND ===
+pygame.mixer.init()
+pygame.mixer.music.load("assets/musique.mp3")
+pygame.mixer.music.set_volume(0.5)
+pygame.mixer.music.play(-1)
+
 root.mainloop()
+
