@@ -6,16 +6,20 @@ COULEURS_HEX = {
     "R": "#ff9999", "J": "#ffffb3", "B": "#99ccff", "V": "#b3ffb3"
 }
 
-class QuadrantEditor:
-    def __init__(self, root):
+class QuadrantEditorLive:
+    def __init__(self, root, retour_callback):
         self.root = root
-        self.root.title("Créer un Quadrant 4x4")
+        self.retour_callback = retour_callback
         self.current_color = "R"
         self.quadrants = []
         self.grille = [[None for _ in range(4)] for _ in range(4)]
 
-        tk.Label(root, text="Créer un Quadrant 4x4", font=("Helvetica", 16, "bold"), fg="#006644", bg="#fff8e1").pack(pady=10)
+        # Nettoyer la fenêtre
+        for widget in root.winfo_children():
+            widget.destroy()
+
         root.configure(bg="#fff8e1")
+        tk.Label(root, text="Créer un Quadrant 4x4", font=("Helvetica", 16, "bold"), fg="#006644", bg="#fff8e1").pack(pady=10)
 
         self.cadre = tk.Frame(root, bg="#fff8e1")
         self.cadre.pack(pady=5)
@@ -52,6 +56,10 @@ class QuadrantEditor:
         self.play_button.pack(pady=10)
         self.play_button.config(state="disabled")
 
+        # Bouton retour vers le menu de choix du jeu
+        tk.Button(root, text="⬅ Retour", command=self.retour_callback,
+                  font=("Helvetica", 10), bg="#eeeeee").pack(pady=5)
+
     def choisir_couleur(self, couleur):
         self.current_color = couleur
 
@@ -82,7 +90,6 @@ class QuadrantEditor:
             messagebox.showerror("Erreur", "Il faut 4 quadrants pour construire le plateau.")
             return
 
-        import tkinter as tk
         from core.plateau import Plateau
         from core.joueur import Joueur
         from jeux.katarenga import JeuKatarenga
@@ -102,8 +109,3 @@ class QuadrantEditor:
         joueurs = [Joueur(0, 'X'), Joueur(1, 'O')]
         self.root.destroy()
         JeuKatarenga(plateau, joueurs, pions).jouer()
-
-if __name__ == "__main__":
-    root = tk.Tk()
-    app = QuadrantEditor(root)
-    root.mainloop()
