@@ -3,19 +3,15 @@ from tkinter import messagebox
 from PIL import Image, ImageTk
 import subprocess
 import sys
+import os
 
-from core.langues import TRADUCTIONS
-from core.langues import _
-
-
-# === Langue actuelle ====
-langue = "fr"
-def _(clef): return TRADUCTIONS.get(clef, {}).get(langue, clef)
+from core.langues import traduire
+from core import parametres
 
 # === Fenêtre Paramètres ===
 def ouvrir_parametres():
     fen = tk.Toplevel()
-    fen.title("Paramètres")
+    fen.title(traduire("parametres"))
     fen.geometry("360x420")
 
     try:    
@@ -25,8 +21,6 @@ def ouvrir_parametres():
     except Exception as e:
         print("Erreur chargement icône : ", e)
 
-
-    # Volume effets
     frame_effets = tk.Frame(fen, bg="#f0f4f8")
     frame_effets.pack(pady=10, padx=15, fill="x")
 
@@ -38,10 +32,9 @@ def ouvrir_parametres():
     except:
         tk.Label(frame_effets, text="🔊", bg="#f0f4f8").pack(side="left")
 
-    tk.Label(frame_effets, text="Volume effets", bg="#f0f4f8", font=("Helvetica", 11)).pack(side="left", padx=10)
+    tk.Label(frame_effets, text=traduire("volume_effets"), bg="#f0f4f8", font=("Helvetica", 11)).pack(side="left", padx=10)
     tk.Scale(frame_effets, from_=0, to=100, orient="horizontal", bg="#f0f4f8", length=120).pack(side="right")
 
-    # Volume musique
     frame_musique = tk.Frame(fen, bg="#f0f4f8")
     frame_musique.pack(pady=10, padx=15, fill="x")
 
@@ -53,10 +46,9 @@ def ouvrir_parametres():
     except:
         tk.Label(frame_musique, text="🎵", bg="#f0f4f8").pack(side="left")
 
-    tk.Label(frame_musique, text="Volume musique", bg="#f0f4f8", font=("Helvetica", 11)).pack(side="left", padx=10)
+    tk.Label(frame_musique, text=traduire("volume_musique"), bg="#f0f4f8", font=("Helvetica", 11)).pack(side="left", padx=10)
     tk.Scale(frame_musique, from_=0, to=100, orient="horizontal", bg="#f0f4f8", length=120).pack(side="right")
 
-    # Choix de langue
     frame_langue = tk.Frame(fen, bg="#f0f4f8")
     frame_langue.pack(pady=15, padx=15, fill="x")
 
@@ -68,11 +60,10 @@ def ouvrir_parametres():
     except:
         tk.Label(frame_langue, text="🌐", bg="#f0f4f8").pack(side="left")
 
-    tk.Label(frame_langue, text="Langue", bg="#f0f4f8", font=("Helvetica", 11)).pack(side="left", padx=10)
-    tk.Button(frame_langue, text="FR", width=5, command=lambda: changer_langue("fr")).pack(side="right", padx=5)
-    tk.Button(frame_langue, text="EN", width=5, command=lambda: changer_langue("en")).pack(side="right", padx=5)
+    tk.Label(frame_langue, text=traduire("langue"), bg="#f0f4f8", font=("Helvetica", 11)).pack(side="left", padx=10)
+    tk.Button(frame_langue, text=traduire("langue_fr"), width=5, command=lambda: changer_langue("fr")).pack(side="right", padx=5)
+    tk.Button(frame_langue, text=traduire("langue_en"), width=5, command=lambda: changer_langue("en")).pack(side="right", padx=5)
 
-    # Retour
     frame_retour = tk.Frame(fen, bg="#f0f4f8")
     frame_retour.pack(pady=15)
     try:
@@ -81,13 +72,16 @@ def ouvrir_parametres():
         tk.Button(frame_retour, image=retour_icon, command=fen.destroy, bg="#f0f4f8", bd=0).pack()
         frame_retour.image = retour_icon
     except:
-        tk.Button(frame_retour, text="Retour", command=fen.destroy).pack()
+        tk.Button(frame_retour, text=traduire("retour"), command=fen.destroy).pack()
 
 # === Changer langue ===
 def changer_langue(code):
-    global langue
-    langue = code
-    messagebox.showinfo("Langue", f"Langue changée : {code.upper()}")
+    chemin_langue = os.path.join("assets", "langue.txt")
+    with open(chemin_langue, "w", encoding="utf-8") as f:
+        f.write(code)
+    messagebox.showinfo(traduire("langue"), traduire("langue_changee").format(lang=code.upper()))
+    root.destroy()
+    subprocess.Popen([sys.executable, sys.argv[0]])
 
 # === Lancer jeu ===
 def lancer_jeu(jeu_type):
@@ -110,12 +104,11 @@ try:
 except Exception as e:
     print(f"Erreur chargement icône : {e}")
 
-
 # === En-tête ===
 frame_top = tk.Frame(root, bg="#e6f2ff")
 frame_top.pack(side="top", fill="x", pady=10, padx=10)
 
-tk.Label(frame_top, text=_("titre"), font=("Helvetica", 16, "bold"), fg="#004d99", bg="#e6f2ff").pack(side="left")
+tk.Label(frame_top, text=traduire("titre"), font=("Helvetica", 16, "bold"), fg="#004d99", bg="#e6f2ff").pack(side="left")
 
 try:
     icone_image = Image.open("assets/lyrique.png").resize((24, 24))
@@ -144,9 +137,8 @@ style_btn = {
     "cursor": "hand2"
 }
 
-tk.Button(frame, text=_("jouer_katarenga"), command=lambda: lancer_jeu("katarenga"), **style_btn).pack(pady=10)
-tk.Button(frame, text=_("jouer_congress"), command=lambda: lancer_jeu("congress"), **style_btn).pack(pady=10)
-tk.Button(frame, text=_("jouer_isolation"), command=lambda: lancer_jeu("isolation"), **style_btn).pack(pady=10)
+tk.Button(frame, text=traduire("jouer_katarenga"), command=lambda: lancer_jeu("katarenga"), **style_btn).pack(pady=10)
+tk.Button(frame, text=traduire("jouer_congress"), command=lambda: lancer_jeu("congress"), **style_btn).pack(pady=10)
+tk.Button(frame, text=traduire("jouer_isolation"), command=lambda: lancer_jeu("isolation"), **style_btn).pack(pady=10)
 
 root.mainloop()
- 
