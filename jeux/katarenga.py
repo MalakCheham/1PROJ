@@ -1,8 +1,9 @@
 import tkinter as tk
-from tkinter import messagebox
-from PIL import Image, ImageTk
 import subprocess
 import sys
+
+from tkinter import messagebox
+from PIL import Image, ImageTk
 from core.plateau import Plateau
 from core.joueur import Joueur
 from core.aide import get_regles

@@ -1,16 +1,28 @@
 import tkinter as tk
-from tkinter import messagebox
-from PIL import Image, ImageTk
+import threading
 import sys
 import subprocess
+import pygame
+import socket
+
 
 from plateau_builder import lancer_plateau_builder
 from quadrant_editor_live import QuadrantEditorLive
+from core.network.network_selector import network_selector
+from core.network.server import wait_for_first_client
+from core.network.client import start_client, send_move, receive_move
+from core.langues import traduire
+from tkinter import messagebox, simpledialog
+from PIL import Image, ImageTk
+
+network_mode = None
+client_socket = None
 
 jeu_demande = sys.argv[1] if len(sys.argv) > 1 else "katarenga"
 
 def afficher_aide():
-    messagebox.showinfo("Aide", "Choisissez un mode :\n- 1 VS 1 : deux joueurs humains\n- IA : vous contre un adversaire aléatoire")
+    messagebox.showinfo(traduire("aide"), 
+        traduire("aide_texte")) 
 
 def fermer():
     root.destroy()
@@ -20,6 +32,41 @@ def retour_vers_configuration():
     for widget in root.winfo_children():
         widget.destroy()
     afficher_interface_choix()
+
+def get_local_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+    finally:
+        s.close()
+    return ip
+
+def wait_and_notify(server_ready):
+    wait_for_first_client(server_ready)
+    root.after(0, lambda: messagebox.showinfo(traduire("host"), "Un joueur a rejoint la partie !"))
+
+def on_network_choice(result):
+    global network_mode, client_socket
+    network_mode = result
+    if result == "host":
+        ip = get_local_ip()
+        messagebox.showinfo(traduire("host"), f"{traduire('server_started_waiting')}\nIP: {ip}")
+
+        server_ready = threading.Event()
+        server_thread = threading.Thread(target=wait_and_notify, args=(server_ready,), daemon=True)
+        server_thread.start()
+        messagebox.showinfo(traduire("host"), traduire("waiting_for_client"))
+    elif result == "join":
+        ip = simpledialog.askstring(traduire("join"), traduire("enter_server_ip"), initialvalue="127.0.0.1")
+        client_socket = start_client(ip)
+        if client_socket:
+            messagebox.showinfo(traduire("join"), traduire("connected_to_server"))
+        else:
+            messagebox.showerror(traduire("join"), traduire("connection_failed"))
+
+def choose_mode():
+    network_selector(root, on_network_choice)
 
 def go():
     if plateau_mode.get() == "auto":
@@ -54,7 +101,7 @@ def afficher_interface_choix():
         tk.Button(frame_top, text="?", command=afficher_aide, bg="#e0f7fa", bd=0).pack(side="right")
 
     # === Titre ===
-    tk.Label(root, text=jeu_demande.upper(), font=("Helvetica", 16, "bold"), fg="#004d40", bg="#fefbe9").pack(pady=10)
+    tk.Label(root, text=traduire(jeu_demande).upper(), font=("Helvetica", 16, "bold"), fg="#004d40", bg="#fefbe9").pack(pady=10)
 
     # === Mode de jeu ===
     global mode
@@ -64,11 +111,11 @@ def afficher_interface_choix():
 
     frame1 = tk.Frame(frame_mode, bg="#fefbe9")
     frame1.pack(pady=10)
-    tk.Radiobutton(frame1, text="1 VS 1", variable=mode, value="1v1", font=("Helvetica", 12), bg="#fefbe9").pack(side="left", padx=10)
+    tk.Radiobutton(frame1, text=traduire("mode_1v1"), variable=mode, value="1v1", font=("Helvetica", 12), bg="#fefbe9", command=choose_mode).pack(side="left", padx=10)
 
     frame2 = tk.Frame(frame_mode, bg="#fefbe9")
     frame2.pack(pady=10)
-    tk.Radiobutton(frame2, text="IA", variable=mode, value="ia", font=("Helvetica", 12), bg="#fefbe9").pack(side="left", padx=10)
+    tk.Radiobutton(frame2, text=traduire("mode_ia"), variable=mode, value="ia", font=("Helvetica", 12), bg="#fefbe9").pack(side="left", padx=10)
 
     # === Choix du plateau ===
     global plateau_mode
@@ -76,16 +123,16 @@ def afficher_interface_choix():
     frame_plateau = tk.Frame(root, bg="#fefbe9")
     frame_plateau.pack(pady=10)
 
-    tk.Label(frame_plateau, text="Plateau :", bg="#fefbe9", font=("Helvetica", 13)).pack()
-    tk.Radiobutton(frame_plateau, text="Généré automatiquement", variable=plateau_mode, value="auto", bg="#fefbe9", font=("Helvetica", 12)).pack(anchor="w", padx=20)
-    tk.Radiobutton(frame_plateau, text="Quadrants personnalisés", variable=plateau_mode, value="perso", bg="#fefbe9", font=("Helvetica", 12)).pack(anchor="w", padx=20)
+    tk.Label(frame_plateau, text=traduire("plateau"), bg="#fefbe9", font=("Helvetica", 13)).pack()
+    tk.Radiobutton(frame_plateau, text=traduire("plateau_auto"), variable=plateau_mode, value="auto", bg="#fefbe9", font=("Helvetica", 12)).pack(anchor="w", padx=20)
+    tk.Radiobutton(frame_plateau, text=traduire("plateau_perso"), variable=plateau_mode, value="perso", bg="#fefbe9", font=("Helvetica", 12)).pack(anchor="w", padx=20)
 
     # === Bouton GO ===
-    tk.Button(root, text="GO !", command=go, font=("Helvetica", 12, "bold"), bg="#4CAF50", fg="white", width=15, relief="flat").pack(pady=20)
+    tk.Button(root, text=traduire("go"), command=go, font=("Helvetica", 12, "bold"), bg="#4CAF50", fg="white", width=15, relief="flat").pack(pady=20)
 
 # === Fenêtre principale ===
 root = tk.Tk()
-root.title("KATARENGA&CO.")
+root.title(traduire("titre"))
 root.geometry("360x580")
 root.configure(bg="#e6f2ff")
 
@@ -97,4 +144,11 @@ except Exception as e:
     print("Erreur chargement icône :", e)
 
 afficher_interface_choix()
+# === MUSIQUE DE FOND ===
+pygame.mixer.init()
+pygame.mixer.music.load("assets/musique.mp3")
+pygame.mixer.music.set_volume(0.5)
+pygame.mixer.music.play(-1)
+
 root.mainloop()
+
