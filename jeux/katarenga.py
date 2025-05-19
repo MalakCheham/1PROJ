@@ -33,11 +33,15 @@ class JeuKatarenga:
         self.canvas.pack()
         self.afficher_plateau()
         self.canvas.bind("<Button-1>", self.on_click)
+
         self.load_and_pack_button("assets/en-arriere.png", "<", self.top_frame, self.retour_menu, "left")
         self.load_and_pack_button("assets/point-dinterrogation.png", "?", self.top_frame, self.aide_popup, "right")
         self.load_and_pack_button("assets/fleche-pivotante-vers-la-gauche.png", "Rejouer", self.root, self.rejouer, "bottom", pady=10)
+
         self.update_info_joueur()
-        self.update_timer()
+        self.start_timer()
+
+    def jouer(self):
         self.root.mainloop()
 
     def load_and_pack_button(self, image_path, text, parent, command, side="top", padx=5, pady=5):
@@ -89,7 +93,8 @@ class JeuKatarenga:
                 self.afficher_plateau()
         else:
             depart, arrivee = self.selection, position_cliquee
-            couleur_depart, piece_arrivee = self.plateau.cases[depart[0]][depart[1]], next((s for s in ['X', 'O'] if arrivee in self.pions[s]), None)
+            couleur_depart = self.plateau.cases[depart[0]][depart[1]]
+            piece_arrivee = next((s for s in ['X', 'O'] if arrivee in self.pions[s]), None)
 
             if arrivee in self.coups_possibles:
                 if piece_arrivee and self.tour > 0:
@@ -122,9 +127,9 @@ class JeuKatarenga:
                 piece_arrivee = next((s for s in ['X', 'O'] if arrivee in self.pions[s]), None)
                 if piece_arrivee is None or piece_arrivee != symbole:
                     mouvement_valide = (couleur == 'B' and self.est_mouvement_roi(depart, arrivee)) or \
-                                      (couleur == 'V' and self.est_mouvement_cavalier(depart, arrivee)) or \
-                                      (couleur == 'J' and self.est_mouvement_fou(depart, arrivee)) or \
-                                      (couleur == 'R' and self.est_mouvement_tour(depart, arrivee))
+                                       (couleur == 'V' and self.est_mouvement_cavalier(depart, arrivee)) or \
+                                       (couleur == 'J' and self.est_mouvement_fou(depart, arrivee)) or \
+                                       (couleur == 'R' and self.est_mouvement_tour(depart, arrivee))
                     if mouvement_valide:
                         coups.add(arrivee)
         return coups
@@ -138,23 +143,29 @@ class JeuKatarenga:
         return (dl == 2 and dc == 1) or (dl == 1 and dc == 2)
 
     def est_mouvement_fou(self, depart, arrivee):
-        if abs(arrivee[0] - depart[0]) != abs(arrivee[1] - depart[1]): return False
+        if abs(arrivee[0] - depart[0]) != abs(arrivee[1] - depart[1]):
+            return False
         sl, sc = (1 if arrivee[i] > depart[i] else -1 for i in range(2))
         l, c = depart[0] + sl, depart[1] + sc
         while (l, c) != arrivee:
-            if not (0 <= l < 8 and 0 <= c < 8) or (l, c) in self.pions['X'] or (l, c) in self.pions['O']: return False
-            if self.plateau.cases[l][c] == 'J': return (l, c) == arrivee
+            if not (0 <= l < 8 and 0 <= c < 8) or (l, c) in self.pions['X'] or (l, c) in self.pions['O']:
+                return False
+            if self.plateau.cases[l][c] == 'J':
+                return (l, c) == arrivee
             l += sl
             c += sc
         return self.plateau.cases[arrivee[0]][arrivee[1]] == 'J'
 
     def est_mouvement_tour(self, depart, arrivee):
-        if depart[0] != arrivee[0] and depart[1] != arrivee[1]: return False
+        if depart[0] != arrivee[0] and depart[1] != arrivee[1]:
+            return False
         sl, sc = (1 if arrivee[i] > depart[i] else -1 if arrivee[i] < depart[i] else 0 for i in range(2))
         l, c = depart[0] + sl, depart[1] + sc
         while (l, c) != arrivee:
-            if not (0 <= l < 8 and 0 <= c < 8) or (l, c) in self.pions['X'] or (l, c) in self.pions['O']: return False
-            if self.plateau.cases[l][c] == 'R': return (l, c) == arrivee
+            if not (0 <= l < 8 and 0 <= c < 8) or (l, c) in self.pions['X'] or (l, c) in self.pions['O']:
+                return False
+            if self.plateau.cases[l][c] == 'R':
+                return (l, c) == arrivee
             l += sl
             c += sc
         return self.plateau.cases[arrivee[0]][arrivee[1]] == 'R'
@@ -169,6 +180,10 @@ class JeuKatarenga:
             messagebox.showinfo("Victoire!", f"Joueur {joueur.id + 1} a gagné par capture!")
             self.rejouer()
 
+    def start_timer(self):
+        self.timer_running = True
+        self.update_timer()
+
     def update_timer(self):
         if self.timer_running:
             minutes, seconds = divmod(self.timer_seconds, 60)
@@ -180,7 +195,9 @@ class JeuKatarenga:
         self.timer_running = False
 
     def reprendre_timer(self):
-        self.timer_running = True
+        if not self.timer_running:
+            self.timer_running = True
+            self.update_timer()
 
     def retour_menu(self):
         self.root.destroy()
@@ -193,9 +210,7 @@ class JeuKatarenga:
         aide.geometry("400x400")
         aide.configure(bg="#f0f4f8")
 
-        tk.Label(aide, text="Règles de Katarenga", font=("Helvetica", 14, "bold"),
-             bg="#f0f4f8", fg="#003366").pack(pady=10)
-
+        tk.Label(aide, text="Règles de Katarenga", font=("Helvetica", 14, "bold"), bg="#f0f4f8", fg="#003366").pack(pady=10)
         text_widget = tk.Text(aide, wrap="word", bg="#f0f4f8", fg="#000000", font=("Helvetica", 10), bd=0)
         text_widget.pack(expand=True, fill="both", padx=10, pady=10)
         text_widget.insert("1.0", get_regles("katarenga"))
@@ -207,12 +222,12 @@ class JeuKatarenga:
 
         aide.protocol("WM_DELETE_WINDOW", on_close)
 
-
     def rejouer(self):
         self.root.destroy()
         from plateau_builder import lancer_plateau_builder
         lancer_plateau_builder("katarenga", self.mode)
 
+# Pour test indépendant
 if __name__ == '__main__':
     plateau = Plateau()
     joueurs = [Joueur("Joueur 1"), Joueur("Joueur 2")]
