@@ -2,7 +2,7 @@ import socket
 import threading
 import time
 
-BROADCAST_PORT = 50010
+BROADCAST_PORT = 5555
 BROADCAST_INTERVAL = 1.0 
 BROADCAST_MESSAGE_PREFIX = "GAME_SERVER:"
 

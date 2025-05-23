@@ -15,7 +15,7 @@ def handle_client(client_socket, addr):
     client_socket.close()
     print(traduire("client_disconnected").format(addr=addr))
 
-def wait_for_first_client(server_ready=None, host="0.0.0.0", port=5000):
+def wait_for_first_client(server_ready=None, host="0.0.0.0", port=5555):
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server.bind((host, port))

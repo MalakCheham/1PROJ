@@ -1,7 +1,7 @@
 import socket
 from core.langues import traduire
 
-def start_client(host="127.0.0.1", port=5000):
+def start_client(host="127.0.0.1", port=5555):
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         client.connect((host, port))

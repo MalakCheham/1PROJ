@@ -7,7 +7,7 @@ _broadcaster = None
 _discovery = None
 
 # === Server Side ===
-def host_server(server_name, port=5000, on_client_connect=None, on_stop=None, root=None, tk=None, traduire=None, center_window=None):
+def host_server(server_name, port=5555, on_client_connect=None, on_stop=None, root=None, tk=None, traduire=None, center_window=None):
     """
     Start hosting a server and broadcasting it on the network.
     Calls on_client_connect() when a client connects.
@@ -28,7 +28,7 @@ def host_server(server_name, port=5000, on_client_connect=None, on_stop=None, ro
     label = tk.Label(attente_win, text=traduire("attente_joueur"), font=("Helvetica", 13, "bold"), bg="#e0f7fa")
     label.pack(pady=30)
     def server_thread():
-        wait_for_first_client()
+        wait_for_first_client(port=port)
         if _broadcaster:
             _broadcaster.stop()
         if on_client_connect:
@@ -49,7 +49,7 @@ def stop_server():
         print("Serveur arrêté par l'utilisateur.")
 
 # === Client Side ===
-def join_server(ip, port=5000):
+def join_server(ip, port=5555):
     return start_client(ip, port)
 
 # === Discovery ===
