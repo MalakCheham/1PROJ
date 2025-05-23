@@ -4,6 +4,7 @@ import sys
 import subprocess
 import pygame
 import socket
+import os
 
 from plateau_builder import lancer_plateau_builder
 from quadrant_editor_live import QuadrantEditorLive
@@ -170,7 +171,7 @@ def afficher_interface_choix():
     frame_top.pack(side="top", fill="x", pady=5, padx=5)
 
     try:
-        retour_img = Image.open("assets/en-arriere.png").resize((24, 24))
+        retour_img = Image.open(os.path.join("assets", "en-arriere.png")).resize((24, 24))
         retour_icon = ImageTk.PhotoImage(retour_img)
         btn_retour = tk.Button(frame_top, image=retour_icon, command=fermer, bg="#e0f7fa", bd=0)
         btn_retour.image = retour_icon
@@ -179,7 +180,7 @@ def afficher_interface_choix():
         tk.Button(frame_top, text="<", command=fermer, bg="#e0f7fa", bd=0).pack(side="left")
 
     try:
-        help_img = Image.open("assets/point-dinterrogation.png").resize((24, 24))
+        help_img = Image.open(os.path.join("assets", "point-dinterrogation.png")).resize((24, 24))
         help_icon = ImageTk.PhotoImage(help_img)
         btn_help = tk.Button(frame_top, image=help_icon, command=show_help, bg="#e0f7fa", bd=0)
         btn_help.image = help_icon
@@ -273,7 +274,7 @@ root.configure(bg="#e6f2ff")
 
 # === Icône ===
 try:
-    icon_img = ImageTk.PhotoImage(file="assets/logo.png")
+    icon_img = ImageTk.PhotoImage(file=os.path.join("assets", "logo.png"))
     root.iconphoto(False, icon_img)
 except Exception as e:
     print("Erreur chargement icône :", e)
@@ -282,7 +283,7 @@ afficher_interface_choix()
 
 # === MUSIQUE DE FOND ===
 pygame.mixer.init()
-pygame.mixer.music.load("assets/musique.mp3")
+pygame.mixer.music.load(os.path.join("assets", "musique.mp3"))
 pygame.mixer.music.set_volume(0.5)
 pygame.mixer.music.play(-1)
 

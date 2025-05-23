@@ -7,6 +7,7 @@ from core.plateau import Plateau
 from core.joueur import Joueur
 from core.aide import get_regles
 import threading
+import os
 
 class JeuIsolation:
     def __init__(self, plateau, joueurs, mode="1v1"):
@@ -35,9 +36,9 @@ class JeuIsolation:
         self.canvas.pack()
         self.canvas.bind("<Button-1>", self.on_click)
 
-        self.load_and_pack_button("assets/en-arriere.png", "<", self.top_frame, self.retour_menu, "left")
-        self.load_and_pack_button("assets/point-dinterrogation.png", "?", self.top_frame, self.aide_popup, "right")
-        self.load_and_pack_button("assets/fleche-pivotante-vers-la-gauche.png", "Rejouer", self.root, self.rejouer, "bottom", pady=10)
+        self.load_and_pack_button("en-arriere.png", "<", self.top_frame, self.retour_menu, "left")
+        self.load_and_pack_button("point-dinterrogation.png", "?", self.top_frame, self.aide_popup, "right")
+        self.load_and_pack_button("fleche-pivotante-vers-la-gauche.png", "Rejouer", self.root, self.rejouer, "bottom", pady=10)
 
         self.afficher_plateau()
         self.update_info_joueur()
@@ -48,7 +49,7 @@ class JeuIsolation:
 
     def load_and_pack_button(self, image_path, text, parent, command, side="top", padx=5, pady=5):
         try:
-            img = Image.open(image_path).resize((24, 24) if "arriere" in image_path or "interrogation" in image_path else (32, 32))
+            img = Image.open(os.path.join("assets", image_path)).resize((24, 24) if "arriere" in image_path or "interrogation" in image_path else (32, 32))
             icon = ImageTk.PhotoImage(img)
             btn = tk.Button(parent, image=icon, command=command, bg="#e6f2ff", bd=0)
             btn.image = icon

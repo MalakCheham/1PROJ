@@ -16,7 +16,7 @@ def open_settings():
     fen.geometry("360x420")
 
     try:    
-        icon_img = ImageTk.PhotoImage(file="assets/logo.png")
+        icon_img = ImageTk.PhotoImage(file=os.path.join("assets", "logo.png"))
         fen.iconphoto(False, icon_img)
         fen.icon_img = icon_img
     except Exception as e:
@@ -25,7 +25,7 @@ def open_settings():
     frame_effets = tk.Frame(fen, bg="#f0f4f8")
     frame_effets.pack(pady=10, padx=15, fill="x")
     try:
-        icone_effet = Image.open("assets/volume-reduit.png").resize((24, 24))
+        icone_effet = Image.open(os.path.join("assets", "volume-reduit.png")).resize((24, 24))
         icone_effet_img = ImageTk.PhotoImage(icone_effet)
         tk.Label(frame_effets, image=icone_effet_img, bg="#f0f4f8").pack(side="left", padx=5)
         frame_effets.image = icone_effet_img
@@ -38,7 +38,7 @@ def open_settings():
     frame_musique = tk.Frame(fen, bg="#f0f4f8")
     frame_musique.pack(pady=10, padx=15, fill="x")
     try:
-        icone_musique = Image.open("assets/note-de-musique.png").resize((24, 24))
+        icone_musique = Image.open(os.path.join("assets", "note-de-musique.png")).resize((24, 24))
         icone_musique_img = ImageTk.PhotoImage(icone_musique)
         tk.Label(frame_musique, image=icone_musique_img, bg="#f0f4f8").pack(side="left", padx=5)
         frame_musique.image = icone_musique_img
@@ -51,7 +51,7 @@ def open_settings():
     frame_langue = tk.Frame(fen, bg="#f0f4f8")
     frame_langue.pack(pady=15, padx=15, fill="x")
     try:
-        lang_img = Image.open("assets/utilisateur.png").resize((24, 24))
+        lang_img = Image.open(os.path.join("assets", "utilisateur.png")).resize((24, 24))
         lang_icon = ImageTk.PhotoImage(lang_img)
         tk.Label(frame_langue, image=lang_icon, bg="#f0f4f8").pack(side="left", padx=5)
         frame_langue.image = lang_icon
@@ -65,7 +65,7 @@ def open_settings():
     frame_retour = tk.Frame(fen, bg="#f0f4f8")
     frame_retour.pack(pady=15)
     try:
-        retour_img = Image.open("assets/en-arriere.png").resize((32, 32))
+        retour_img = Image.open(os.path.join("assets", "en-arriere.png")).resize((32, 32))
         retour_icon = ImageTk.PhotoImage(retour_img)
         tk.Button(frame_retour, image=retour_icon, command=fen.destroy, bg="#f0f4f8", bd=0).pack()
         frame_retour.image = retour_icon
@@ -102,7 +102,7 @@ def build_interface():
     tk.Label(frame_top, text=traduire("titre"), font=("Helvetica", 16, "bold"), fg="#004d99", bg="#e6f2ff").pack(side="left")
 
     try:
-        icone_image = Image.open("assets/lyrique.png").resize((24, 24))
+        icone_image = Image.open(os.path.join("assets", "lyrique.png")).resize((24, 24))
         icone = ImageTk.PhotoImage(icone_image)
         bouton_options = tk.Button(frame_top, image=icone, bg="#e6f2ff", bd=0, command=open_settings)
         bouton_options.image = icone
@@ -134,7 +134,7 @@ def build_interface():
 
     # === MUSIQUE DE FOND ===
     pygame.mixer.init()
-    pygame.mixer.music.load("assets/musique.mp3")
+    pygame.mixer.music.load(os.path.join("assets", "musique.mp3"))
     pygame.mixer.music.set_volume(0.5)
     pygame.mixer.music.play(-1)
 
@@ -146,7 +146,7 @@ root.configure(bg="#e6f2ff")
 
 # === Icône dans la barre de titre ===
 try:
-    icon_img = ImageTk.PhotoImage(file="assets/logo.png")
+    icon_img = ImageTk.PhotoImage(file=os.path.join("assets", "logo.png"))
     root.iconphoto(False, icon_img)
 except Exception as e:
     print(f"Erreur chargement icône : {e}")

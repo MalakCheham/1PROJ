@@ -1,6 +1,7 @@
 import tkinter as tk
 import random
 from PIL import Image, ImageTk
+import os
 
 from core.plateau import Plateau
 from core.joueur import Joueur
@@ -29,7 +30,7 @@ def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto"):
     root.configure(bg="#f0f4f8")
 
     try:
-        icon_img = ImageTk.PhotoImage(file="assets/logo.png")
+        icon_img = ImageTk.PhotoImage(file=os.path.join("assets", "logo.png"))
         root.iconphoto(False, icon_img)
     except:
         pass
@@ -38,7 +39,7 @@ def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto"):
         plateau, pions = creer_plateau()
     else:
         plateau = Plateau()
-        quadrants = charger_quadrants_personnalises("assets/quadrants_custom/")
+        quadrants = charger_quadrants_personnalises(os.path.join("assets", "quadrants_custom"))
         positions = [(0, 0), (0, 4), (4, 0), (4, 4)]
         for i, q in enumerate(quadrants[:4]):
             if 'recto' in q:
