@@ -3,7 +3,7 @@ import threading
 import time
 
 BROADCAST_PORT = 50010
-BROADCAST_INTERVAL = 1.0  # seconds
+BROADCAST_INTERVAL = 1.0 
 BROADCAST_MESSAGE_PREFIX = "GAME_SERVER:"
 
 class ServerBroadcaster(threading.Thread):

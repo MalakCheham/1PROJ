@@ -6,6 +6,7 @@ import sys
 from core.plateau import Plateau
 from core.joueur import Joueur
 from core.aide import get_regles
+import threading
 
 class JeuIsolation:
     def __init__(self, plateau, joueurs, mode="1v1"):
@@ -160,6 +161,37 @@ class JeuIsolation:
         self.root.destroy()
         from plateau_builder import lancer_plateau_builder
         lancer_plateau_builder("isolation", self.mode)
+
+def lancer_jeu_reseau(root, is_host, player_name, sock):
+    for widget in root.winfo_children():
+        widget.destroy()
+    tk.Label(root, text=f"Isolation - Réseau : {'Hôte' if is_host else 'Client'}", font=("Helvetica", 15, "bold"), fg="#004d40", bg="#e6f2ff").pack(pady=10)
+    tk.Label(root, text=f"Joueur : {player_name}", font=("Helvetica", 12), bg="#e6f2ff").pack(pady=5)
+    plateau = tk.Label(root, text="[Plateau de jeu Isolation ici]", font=("Helvetica", 13), bg="#e6f2ff")
+    plateau.pack(pady=30)
+    moves_frame = tk.Frame(root, bg="#e6f2ff")
+    moves_frame.pack(pady=10)
+    move_entry = tk.Entry(moves_frame, font=("Helvetica", 12))
+    move_entry.pack(side="left")
+    def send_move():
+        move = move_entry.get()
+        if move:
+            sock.sendall(move.encode())
+            move_entry.delete(0, tk.END)
+    send_btn = tk.Button(moves_frame, text="Envoyer coup", command=send_move)
+    send_btn.pack(side="left", padx=5)
+    moves_list = tk.Listbox(root, width=40, height=8)
+    moves_list.pack(pady=10)
+    def receive_moves():
+        while True:
+            try:
+                data = sock.recv(1024)
+                if not data:
+                    break
+                moves_list.insert(tk.END, f"Adversaire : {data.decode()}")
+            except Exception:
+                break
+    threading.Thread(target=receive_moves, daemon=True).start()
 
 # Test indépendant
 if __name__ == '__main__':

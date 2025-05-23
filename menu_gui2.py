@@ -5,20 +5,15 @@ import subprocess
 import pygame
 import socket
 
-
 from plateau_builder import lancer_plateau_builder
 from quadrant_editor_live import QuadrantEditorLive
-from core.network.server import wait_for_first_client
-from core.network.client import start_client, send_move, receive_move
 from core.langues import traduire
 from tkinter import messagebox, simpledialog
 from PIL import Image, ImageTk
-from core.network.discovery import ServerBroadcaster, ServerDiscovery
+from core.network.game_network import host_server, join_server, start_discovery, stop_discovery
 
 network_mode = None
 client_socket = None
-broadcaster = None
-discovery = None
 
 jeu_demande = sys.argv[1] if len(sys.argv) > 1 else "katarenga"
 
@@ -28,133 +23,145 @@ def center_window(win, width, height):
     y = root.winfo_y() + (root.winfo_height() // 2) - (height // 2)
     win.geometry(f"{width}x{height}+{x}+{y}")
 
-def afficher_aide():
+def show_help():
     messagebox.showinfo(traduire("aide"), 
         traduire("aide_texte")) 
 
-def fermer():
+def quit_app():
     root.destroy()
     subprocess.Popen([sys.executable, "menu_gui.py"])
 
-def retour_vers_configuration():
+def back_to_config():
     for widget in root.winfo_children():
         widget.destroy()
     afficher_interface_choix()
 
-def get_local_ip():
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    try:
-        s.connect(("8.8.8.8", 80))
-        ip = s.getsockname()[0]
-    finally:
-        s.close()
-    return ip
+def open_host_window():
+    name = simpledialog.askstring(traduire("heberger"), traduire("entrer_nom_serveur"), parent=root)
+    if name:
+        def on_client_connect(attente_win):
+            attente_win.destroy()
+            messagebox.showinfo(traduire("heberger"), traduire("client_connecte"))
+            game_ready.set(True)
+            update_go_button_state()
+            # Lancer la partie réseau en tant qu'hôte
+            start_network_game(is_host=True)
+        def on_stop(attente_win):
+            attente_win.destroy()
+            messagebox.showinfo(traduire("heberger"), traduire("serveur_arrete"))
+            game_ready.set(False)
+            update_go_button_state()
+        host_server(
+            server_name=name,
+            on_client_connect=on_client_connect,
+            on_stop=on_stop,
+            root=root,
+            tk=tk,
+            traduire=traduire,
+            center_window=center_window
+        )
 
-def creer_serveur(nom_serveur):
-    ip = get_local_ip()
-    port = 5000
-    global broadcaster
-    broadcaster = ServerBroadcaster(nom_serveur, port)
-    broadcaster.start()
-    attente_win = tk.Toplevel(root)
-    attente_win.title(traduire("heberger"))
-    center_window(attente_win, 300, 120)
-    attente_win.transient(root)
-    attente_win.grab_set()
-    attente_win.configure(bg="#e0f7fa")
-    label = tk.Label(attente_win, text=traduire("attente_joueur"), font=("Helvetica", 13, "bold"), bg="#e0f7fa")
-    label.pack(pady=30)
-    def server_thread():
-        wait_for_first_client()
-        if broadcaster:
-            broadcaster.stop()
-        root.after(0, lambda: [attente_win.destroy(), messagebox.showinfo(traduire("heberger"), traduire("client_connecte"))])
-    threading.Thread(target=server_thread, daemon=True).start()
-    messagebox.showinfo(traduire("heberger"), f"{traduire('serveur_cree')}\n{traduire('ip')}: {ip}\n{traduire('nom_serveur')}: {nom_serveur}")
-
-def ouvrir_fenetre_host():
-    nom = simpledialog.askstring(traduire("heberger"), traduire("entrer_nom_serveur"), initialvalue="Para Serveur", parent=root)
-    if nom:
-        creer_serveur(nom)
-
-
-def ouvrir_fenetre_reseau():
+def open_network_window():
     fenetre = tk.Toplevel(root)
-    fenetre.title(traduire("reseau"))
+    fenetre.title(traduire("choisir_mode_jeu"))
     center_window(fenetre, 300, 180)
     fenetre.transient(root)
     fenetre.grab_set()
     fenetre.configure(bg="#e0f7fa")
-
     tk.Label(fenetre, text=traduire("choisir_reseau"), font=("Helvetica", 13, "bold"), bg="#e0f7fa").pack(pady=15)
-    btn_host = tk.Button(fenetre, text=traduire("heberger"), font=("Helvetica", 12), width=15, command=lambda: [fenetre.destroy(), ouvrir_fenetre_host()])
+    btn_host = tk.Button(fenetre, text=traduire("heberger"), font=("Helvetica", 12), width=15, command=lambda: [fenetre.destroy(), open_host_window()])
     btn_host.pack(pady=5)
-    btn_join = tk.Button(fenetre, text=traduire("rejoindre"), font=("Helvetica", 12), width=15, command=lambda: [fenetre.destroy(), ouvrir_fenetre_join()])
+    btn_join = tk.Button(fenetre, text=traduire("join_server"), font=("Helvetica", 12), width=15, command=lambda: [fenetre.destroy(), open_join_window()])
     btn_join.pack(pady=5)
 
-
-def ouvrir_fenetre_join():
+def open_join_window():
     fenetre = tk.Toplevel(root)
-    fenetre.title(traduire("rejoindre"))
+    fenetre.title(traduire("join_server"))
     center_window(fenetre, 350, 350)
     fenetre.transient(root)
     fenetre.grab_set()
     fenetre.configure(bg="#e0f7fa")
-
     tk.Label(fenetre, text=traduire("serveurs_disponibles"), font=("Helvetica", 13, "bold"), bg="#e0f7fa").pack(pady=10)
     frame_list = tk.Frame(fenetre, bg="#e0f7fa")
     frame_list.pack(pady=5, fill="both", expand=True)
-
     serveurs = []
     btns = []
-
     def add_server(srv):
         serveurs.append(srv)
-        btn = tk.Button(frame_list, text=f"{srv['nom']} ({srv['ip']}:{srv['port']})", font=("Helvetica", 12), width=30, anchor="w", command=lambda s=srv: rejoindre_serveur(s, fenetre))
+        btn = tk.Button(frame_list, text=f"{srv['nom']} ({srv['ip']}:{srv['port']})", font=("Helvetica", 12), width=30, anchor="w", command=lambda s=srv: join_server_ui(s, fenetre))
         btn.pack(pady=3)
         btns.append(btn)
-
-    discovery = ServerDiscovery(add_server)
-    discovery.start()
-
+    discovery = start_discovery(add_server)
     def on_close():
-        discovery.stop()
+        stop_discovery()
         fenetre.destroy()
     fenetre.protocol("WM_DELETE_WINDOW", on_close)
-
-    # Ajout d'un bouton pour rafraîchir la liste (optionnel)
     def refresh():
         for b in btns:
             b.destroy()
         btns.clear()
         serveurs.clear()
-        discovery.found.clear()
+        if hasattr(discovery, 'found'):
+            discovery.found.clear()
     tk.Button(fenetre, text=traduire("rafraichir"), command=refresh, bg="#b2ebf2").pack(pady=5)
 
-
-def rejoindre_serveur(serveur, fenetre):
-    # Connexion réseau réelle ici
+def join_server_ui(server, fenetre):
     fenetre.destroy()
-    ip = serveur['ip']
-    port = serveur.get('port', 5000)
-    sock = start_client(ip, port)
+    # Demander le nom du joueur avant de rejoindre
+    player_name = simpledialog.askstring(traduire("join_server"), traduire("entrer_nom_joueur"), parent=root)
+    if not player_name:
+        return  # Annulé
+    ip = server['ip']
+    port = server.get('port', 5000)
+    sock = join_server(ip, port)
     if sock:
-        messagebox.showinfo(traduire("rejoindre"), f"{traduire('tentative_connexion')} {serveur['nom']} ({ip})\n{traduire('connexion_reussie')}")
-        # TODO: Passer à l'écran de jeu réseau si connexion OK
+        game_ready.set(True)
+        update_go_button_state()
+        # Lancer la partie réseau en tant que client
+        start_network_game(is_host=False, player_name=player_name, sock=sock)
     else:
-        messagebox.showerror(traduire("rejoindre"), f"{traduire('tentative_connexion')} {serveur['nom']} ({ip})\n{traduire('connection_failed')}")
+        messagebox.showerror(traduire("join_server"), f"{traduire('tentative_connexion')} {server['nom']} ({ip})\n{traduire('connection_failed')}")
+        game_ready.set(False)
+        update_go_button_state()
 
-def ouvrir_fenetre_choix_mode():
+# Fonction pour lancer le jeu réseau (plateau, joueurs, etc.)
+def start_network_game(is_host, player_name=None, sock=None):
+    for widget in root.winfo_children():
+        widget.destroy()
+    if jeu_demande == "katarenga":
+        from jeux.katarenga import lancer_jeu_reseau
+        lancer_jeu_reseau(root, is_host=is_host, player_name=player_name, sock=sock)
+    elif jeu_demande == "isolation":
+        from jeux.isolation import lancer_jeu_reseau
+        lancer_jeu_reseau(root, is_host=is_host, player_name=player_name, sock=sock)
+    elif jeu_demande == "congress":
+        from jeux.congress import lancer_jeu_reseau
+        lancer_jeu_reseau(root, is_host=is_host, player_name=player_name, sock=sock)
+    else:
+        tk.Label(root, text="Mode réseau non implémenté pour ce jeu.", font=("Helvetica", 15, "bold"), fg="#d32f2f", bg="#e6f2ff").pack(pady=60)
+
+def open_mode_choice_window():
     fenetre = tk.Toplevel(root)
-    fenetre.title(traduire("choix_mode"))
+    fenetre.title(traduire("choisir_mode_jeu"))
     center_window(fenetre, 300, 180)
     fenetre.transient(root)
     fenetre.grab_set()
     fenetre.configure(bg="#e0f7fa")
+    def set_local():
+        network_mode.set("local")
+        game_ready.set(True)
+        update_go_button_state()
+        fenetre.destroy()
+    def set_reseau():
+        network_mode.set("reseau")
+        game_ready.set(False)
+        update_go_button_state()
+        fenetre.destroy()
+        open_network_window()
     tk.Label(fenetre, text=traduire("choisir_mode_jeu"), font=("Helvetica", 13, "bold"), bg="#e0f7fa").pack(pady=15)
-    btn_solo = tk.Button(fenetre, text=traduire("mode_solo"), font=("Helvetica", 12), width=15, command=fenetre.destroy)
+    btn_solo = tk.Button(fenetre, text=traduire("mode_solo"), font=("Helvetica", 12), width=15, command=set_local)
     btn_solo.pack(pady=5)
-    btn_reseau = tk.Button(fenetre, text=traduire("mode_reseau"), font=("Helvetica", 12), width=15, command=lambda: [fenetre.destroy(), ouvrir_fenetre_reseau()])
+    btn_reseau = tk.Button(fenetre, text=traduire("mode_reseau"), font=("Helvetica", 12), width=15, command=set_reseau)
     btn_reseau.pack(pady=5)
 
 def afficher_interface_choix():
@@ -174,31 +181,32 @@ def afficher_interface_choix():
     try:
         help_img = Image.open("assets/point-dinterrogation.png").resize((24, 24))
         help_icon = ImageTk.PhotoImage(help_img)
-        btn_help = tk.Button(frame_top, image=help_icon, command=afficher_aide, bg="#e0f7fa", bd=0)
+        btn_help = tk.Button(frame_top, image=help_icon, command=show_help, bg="#e0f7fa", bd=0)
         btn_help.image = help_icon
         btn_help.pack(side="right")
     except:
-        tk.Button(frame_top, text="?", command=afficher_aide, bg="#e0f7fa", bd=0).pack(side="right")
+        tk.Button(frame_top, text="?", command=show_help, bg="#e0f7fa", bd=0).pack(side="right")
 
     # === Titre ===
     tk.Label(root, text=traduire(jeu_demande).upper(), font=("Helvetica", 16, "bold"), fg="#004d40", bg="#fefbe9").pack(pady=10)
 
     # === Mode de jeu ===
-    global mode
+    global mode, network_mode, game_ready
     mode = tk.StringVar(value="1v1")
+    network_mode = tk.StringVar(value="local")  # 'local' or 'reseau'
+    game_ready = tk.BooleanVar(value=False)
     frame_mode = tk.Frame(root, bg="#fefbe9")
     frame_mode.pack(pady=10)
 
     frame1 = tk.Frame(frame_mode, bg="#fefbe9")
     frame1.pack(pady=10)
-    tk.Radiobutton(frame1, text=traduire("mode_1v1"), variable=mode, value="1v1", font=("Helvetica", 12), bg="#fefbe9", command=None).pack(side="left", padx=10)
-    # === Nouveau bouton pour ouvrir la sélection de mode (solo/réseau) ===
-    btn_mode_select = tk.Button(frame1, text="⋮", font=("Helvetica", 12, "bold"), bg="#e0f7fa", bd=0, command=ouvrir_fenetre_choix_mode)
+    tk.Radiobutton(frame1, text=traduire("mode_1v1"), variable=mode, value="1v1", font=("Helvetica", 12), bg="#fefbe9", command=update_go_button_state).pack(side="left", padx=10)
+    btn_mode_select = tk.Button(frame1, text=traduire("mode_jeu"), font=("Helvetica", 12, "bold"), bg="#e0f7fa", bd=0, command=open_mode_choice_window)
     btn_mode_select.pack(side="left", padx=5)
 
     frame2 = tk.Frame(frame_mode, bg="#fefbe9")
     frame2.pack(pady=10)
-    tk.Radiobutton(frame2, text=traduire("mode_ia"), variable=mode, value="ia", font=("Helvetica", 12), bg="#fefbe9").pack(side="left", padx=10)
+    tk.Radiobutton(frame2, text=traduire("mode_ia"), variable=mode, value="ia", font=("Helvetica", 12), bg="#fefbe9", command=update_go_button_state).pack(side="left", padx=10)
 
     # === Choix du plateau ===
     global plateau_mode
@@ -211,7 +219,24 @@ def afficher_interface_choix():
     tk.Radiobutton(frame_plateau, text=traduire("plateau_perso"), variable=plateau_mode, value="perso", bg="#fefbe9", font=("Helvetica", 12)).pack(anchor="w", padx=20)
 
     # === Bouton GO ===
-    tk.Button(root, text=traduire("go"), command=go, font=("Helvetica", 12, "bold"), bg="#4CAF50", fg="white", width=15, relief="flat").pack(pady=20)
+    global go_btn
+    go_btn = tk.Button(root, text=traduire("go"), command=go, font=("Helvetica", 12, "bold"), bg="#4CAF50", fg="white", width=15, relief="flat", state="disabled")
+    go_btn.pack(pady=20)
+    update_go_button_state()
+
+# Nouvelle fonction pour gérer l'état du bouton GO
+def update_go_button_state():
+    if mode.get() == "ia":
+        go_btn.config(state="normal", bg="#4CAF50")
+    elif mode.get() == "1v1":
+        if network_mode.get() == "local":
+            go_btn.config(state="normal", bg="#4CAF50")
+        elif network_mode.get() == "reseau" and game_ready.get():
+            go_btn.config(state="normal", bg="#4CAF50")
+        else:
+            go_btn.config(state="disabled", bg="#888888")
+    else:
+        go_btn.config(state="disabled", bg="#888888")
 
 def go():
     if plateau_mode.get() == "auto":
@@ -221,6 +246,24 @@ def go():
         for widget in root.winfo_children():
             widget.destroy()
         QuadrantEditorLive(root, retour_callback=retour_vers_configuration)
+
+def retour_vers_configuration():
+    for widget in root.winfo_children():
+        widget.destroy()
+    afficher_interface_choix()
+
+def get_local_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+    finally:
+        s.close()
+    return ip
+
+def fermer():
+    root.destroy()
+    subprocess.Popen([sys.executable, "menu_gui.py"])
 
 # === Fenêtre principale ===
 root = tk.Tk()
@@ -236,6 +279,7 @@ except Exception as e:
     print("Erreur chargement icône :", e)
 
 afficher_interface_choix()
+
 # === MUSIQUE DE FOND ===
 pygame.mixer.init()
 pygame.mixer.music.load("assets/musique.mp3")
