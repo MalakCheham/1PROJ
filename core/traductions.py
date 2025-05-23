@@ -35,4 +35,6 @@ TRADUCTIONS = {
     "plateau_perso": {"fr": "Quadrants personnalisés", "en": "Custom quadrants"},
     "waiting_for_client": {"fr": "En attente qu'un joueur rejoigne la partie...", "en": "Waiting for a player to join the game..."},
     "enter_server_ip": {"fr": "Adresse IP du serveur à rejoindre", "en": "Server IP address to join"},
+    "rafraichir": {"fr": "Rafraîchir", "en": "Refresh"},
+    "attente_joueur": {"fr": "En attente d'un joueur...", "en": "Waiting for a player..."},
 }

@@ -17,9 +17,11 @@ def handle_client(client_socket, addr):
 
 def wait_for_first_client(server_ready=None, host="0.0.0.0", port=5000):
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server.bind((host, port))
     server.listen(2)
     client_socket, addr = server.accept()
     if server_ready is not None:
         server_ready.set()
     handle_client(client_socket, addr)
+    server.close()
