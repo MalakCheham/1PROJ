@@ -51,8 +51,12 @@ class JeuIsolation:
         if self.reseau:
             self.lock_ui_if_needed()
             threading.Thread(target=self.network_listener, daemon=True).start()
+        else:
+            self.canvas.bind("<Button-1>", self.on_click)
 
     def lock_ui_if_needed(self):
+        if not self.reseau:
+            return
         mon_symbole = 'X' if self.is_host else 'O'
         if (self.tour % 2 == 0 and mon_symbole != 'X') or (self.tour % 2 == 1 and mon_symbole != 'O'):
             self.canvas.unbind("<Button-1>")
@@ -94,13 +98,14 @@ class JeuIsolation:
         return self.joueurs[self.tour % 2]
 
     def update_info_joueur(self):
+        # Affiche toujours 'Noir' au premier tour, puis alterne
+        if self.tour % 2 == 0:
+            couleur = 'Noir'
+        else:
+            couleur = 'Blanc'
         if self.reseau and self.noms_joueurs:
-            joueur = self.joueur_actuel()
-            couleur = 'Blanc' if joueur.symbole == 'X' else 'Noir'
             self.tour_label.config(text=f"Tour de {self.noms_joueurs[self.tour % 2]} ({couleur})")
         else:
-            joueur = self.joueur_actuel()
-            couleur = 'Blanc' if joueur.symbole == 'X' else 'Noir'
             self.tour_label.config(text=f"Tour du Joueur {couleur}")
 
     def afficher_plateau(self):
@@ -233,7 +238,7 @@ def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock):
         data = sock.recv(4096)
         msg = data.decode()
         noms = msg[5:].split(',')
-    joueurs = [Joueur(noms[0], symbole='X', id=0), Joueur(noms[1], symbole='O', id=1)]
+    joueurs = [Joueur(noms[0], 'X'), Joueur(noms[1], 'O')]
     plateau = Plateau()
     jeu = JeuIsolation(plateau, joueurs, mode="reseau", sock=sock, is_host=is_host, noms_joueurs=noms)
     jeu.root = root
@@ -242,6 +247,6 @@ def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock):
 # Test indépendant
 if __name__ == '__main__':
     plateau = Plateau()
-    joueurs = [Joueur("Joueur 1"), Joueur("Joueur 2")]
+    joueurs = [Joueur("Joueur 1", 'O'), Joueur("Joueur 2", 'X')]
     jeu = JeuIsolation(plateau, joueurs)
     jeu.jouer()

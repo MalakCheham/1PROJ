@@ -48,7 +48,9 @@ class JeuKatarenga:
         self.start_timer()
         if self.sock:
             threading.Thread(target=self.network_listener, daemon=True).start()
-        self.lock_ui_if_needed()
+            self.lock_ui_if_needed()
+        else:
+            self.canvas.bind("<Button-1>", self.on_click)
 
     def jouer(self):
         self.root.mainloop()
@@ -67,7 +69,8 @@ class JeuKatarenga:
         return self.joueurs[self.tour % 2]
 
     def lock_ui_if_needed(self):
-        # Seul le joueur courant peut jouer
+        if not self.sock:
+            return
         mon_symbole = 'X' if self.is_host else 'O'
         if (self.tour % 2 == 0 and mon_symbole != 'X') or (self.tour % 2 == 1 and mon_symbole != 'O'):
             self.canvas.unbind("<Button-1>")
@@ -95,12 +98,14 @@ class JeuKatarenga:
             self.sock.sendall(msg)
 
     def update_info_joueur(self):
-        if self.sock or self.mode == "reseau":
-            joueur = self.joueur_actuel()
-            self.tour_label.config(text=f"Tour de {joueur.nom} ({'Blanc' if joueur.symbole == 'X' else 'Noir'})")
+        # Affiche toujours 'Noir' au premier tour, puis alterne
+        if self.tour % 2 == 0:
+            couleur = 'Noir'
         else:
-            joueur = self.joueur_actuel()
-            couleur = 'Blanc' if joueur.symbole == 'X' else 'Noir'
+            couleur = 'Blanc'
+        if self.sock and self.noms_joueurs:
+            self.tour_label.config(text=f"Tour de {self.noms_joueurs[self.tour % 2]} ({couleur})")
+        else:
             self.tour_label.config(text=f"Tour du Joueur {couleur}")
         pions_x_restants = len(self.pions['X'])
         pions_o_restants = len(self.pions['O'])
@@ -304,7 +309,7 @@ def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock):
         data = sock.recv(4096)
         player_name_blanc = data.decode()[4:]
         sock.sendall(f"nom:{player_name_noir}".encode())
-    joueurs = [Joueur(player_name_blanc, symbole='X', id=0), Joueur(player_name_noir, symbole='O', id=1)]
+    joueurs = [Joueur(player_name_blanc, 'X'), Joueur(player_name_noir, 'O')]
     plateau = Plateau()
     jeu = JeuKatarenga(plateau, joueurs, mode="reseau", sock=sock, is_host=is_host, noms_joueurs=[player_name_blanc, player_name_noir], root=root)
     jeu.jouer()
@@ -312,6 +317,6 @@ def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock):
 # Pour test indépendant
 if __name__ == '__main__':
     plateau = Plateau()
-    joueurs = [Joueur("Joueur 1"), Joueur("Joueur 2")]
+    joueurs = [Joueur("Joueur 1", 'O'), Joueur("Joueur 2", 'X')]
     jeu = JeuKatarenga(plateau, joueurs)
     jeu.jouer()
