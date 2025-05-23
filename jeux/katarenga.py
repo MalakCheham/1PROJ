@@ -9,7 +9,6 @@ from core.plateau import Plateau
 from core.joueur import Joueur
 from core.aide import get_regles
 from tkinter import messagebox
-from plateau_builder import lancer_plateau_builder
 
 class JeuKatarenga:
     def __init__(self, plateau, joueurs, mode="1v1", root=None, sock=None, is_host=False):
@@ -279,6 +278,7 @@ class JeuKatarenga:
 
     def rejouer(self):
         self.root.destroy()
+        from plateau_builder import lancer_plateau_builder
         lancer_plateau_builder("katarenga", self.mode)
 
 def lancer_jeu_reseau(sock, player_name_blanc, player_name_noir, is_host):

@@ -9,7 +9,6 @@ from core.joueur import Joueur
 from core.aide import get_regles
 from tkinter import messagebox
 from PIL import Image, ImageTk
-from plateau_builder import lancer_plateau_builder
 
 class JeuCongress:
     def __init__(self, plateau, joueurs, mode="1v1", sock=None, is_host=False, noms_joueurs=None):
@@ -212,6 +211,7 @@ class JeuCongress:
 
     def rejouer(self):
         self.root.destroy()
+        from plateau_builder import lancer_plateau_builder
         lancer_plateau_builder("congress", self.mode)
 
 def lancer_jeu_reseau(sock, nom_local, nom_distant, is_host):
