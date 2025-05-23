@@ -39,28 +39,32 @@ def back_to_config():
 
 def open_host_window():
     name = simpledialog.askstring(traduire("heberger"), traduire("entrer_nom_serveur"), parent=root)
-    if name:
-        def on_client_connect(attente_win, client_socket, addr):
-            attente_win.destroy()
-            messagebox.showinfo(traduire("heberger"), traduire("client_connecte"))
-            game_ready.set(True)
-            update_go_button_state()
-            # Lancer la partie réseau en tant qu'hôte, passer la socket réseau
-            start_network_game(is_host=True, sock=client_socket)
-        def on_stop(attente_win):
-            attente_win.destroy()
-            messagebox.showinfo(traduire("heberger"), traduire("serveur_arrete"))
-            game_ready.set(False)
-            update_go_button_state()
-        host_server(
-            server_name=name,
-            on_client_connect=on_client_connect,
-            on_stop=on_stop,
-            root=root,
-            tk=tk,
-            traduire=traduire,
-            center_window=center_window
-        )
+    if not name:
+        return
+    player_name = simpledialog.askstring(traduire("heberger"), traduire("entrer_nom_joueur"), parent=root)
+    if not player_name:
+        return
+    def on_client_connect(attente_win, client_socket, addr):
+        attente_win.destroy()
+        messagebox.showinfo(traduire("heberger"), traduire("client_connecte"))
+        game_ready.set(True)
+        update_go_button_state()
+        # Lancer la partie réseau en tant qu'hôte, passer la socket réseau et le nom du joueur hôte
+        start_network_game(is_host=True, player_name=player_name, sock=client_socket)
+    def on_stop(attente_win):
+        attente_win.destroy()
+        messagebox.showinfo(traduire("heberger"), traduire("serveur_arrete"))
+        game_ready.set(False)
+        update_go_button_state()
+    host_server(
+        server_name=name,
+        on_client_connect=on_client_connect,
+        on_stop=on_stop,
+        root=root,
+        tk=tk,
+        traduire=traduire,
+        center_window=center_window
+    )
 
 def open_network_window():
     fenetre = tk.Toplevel(root)
@@ -113,31 +117,38 @@ def join_server_ui(server, fenetre):
     if not player_name:
         return  # Annulé
     ip = server['ip']
-    port = server.get('port', 5000)
+    port = server.get('port', 5555)
     sock = join_server(ip, port)
     if sock:
         game_ready.set(True)
         update_go_button_state()
         # Lancer la partie réseau en tant que client
-        start_network_game(is_host=False, player_name=player_name, sock=sock)
+        # On ne connaît pas le nom du joueur blanc (hôte) ici, il faudra l'échanger au début de la partie
+        start_network_game(is_host=False, player_name_noir=player_name, sock=sock)
     else:
         messagebox.showerror(traduire("join_server"), f"{traduire('tentative_connexion')} {server['nom']} ({ip})\n{traduire('connection_failed')}")
         game_ready.set(False)
         update_go_button_state()
 
 # Fonction pour lancer le jeu réseau (plateau, joueurs, etc.)
-def start_network_game(is_host, player_name=None, sock=None):
+def start_network_game(is_host, player_name=None, player_name_noir=None, sock=None):
     for widget in root.winfo_children():
         widget.destroy()
+    if is_host:
+        player_name_blanc = player_name
+        player_name_noir = None  # À recevoir du client
+    else:
+        player_name_blanc = None  # À recevoir de l'hôte
+        player_name_noir = player_name_noir or player_name
     if jeu_demande == "katarenga":
         from jeux.katarenga import lancer_jeu_reseau
-        lancer_jeu_reseau(root, is_host=is_host, player_name=player_name, sock=sock)
+        lancer_jeu_reseau(root, is_host=is_host, player_name_blanc=player_name_blanc, player_name_noir=player_name_noir, sock=sock)
     elif jeu_demande == "isolation":
         from jeux.isolation import lancer_jeu_reseau
-        lancer_jeu_reseau(root, is_host=is_host, player_name=player_name, sock=sock)
+        lancer_jeu_reseau(root, is_host=is_host, player_name_blanc=player_name_blanc, player_name_noir=player_name_noir, sock=sock)
     elif jeu_demande == "congress":
         from jeux.congress import lancer_jeu_reseau
-        lancer_jeu_reseau(root, is_host=is_host, player_name=player_name, sock=sock)
+        lancer_jeu_reseau(root, is_host=is_host, player_name_blanc=player_name_blanc, player_name_noir=player_name_noir, sock=sock)
     else:
         tk.Label(root, text="Mode réseau non implémenté pour ce jeu.", font=("Helvetica", 15, "bold"), fg="#d32f2f", bg="#e6f2ff").pack(pady=60)
 

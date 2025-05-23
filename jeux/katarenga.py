@@ -9,14 +9,17 @@ from core.plateau import Plateau
 from core.joueur import Joueur
 from core.aide import get_regles
 from tkinter import messagebox
+from plateau_builder import lancer_plateau_builder
 
 class JeuKatarenga:
-    def __init__(self, plateau, joueurs, mode="1v1"):
+    def __init__(self, plateau, joueurs, mode="1v1", root=None, sock=None, is_host=False):
         self.plateau, self.joueurs, self.mode = plateau, joueurs, mode
         self.pions = {'X': {(0, j) for j in range(8)}, 'O': {(7, j) for j in range(8)}}
         self.tour, self.timer_seconds, self.timer_running, self.selection = 0, 0, True, None
         self.coups_possibles = set()
-        self.root = tk.Tk()
+        self.sock = sock
+        self.is_host = is_host
+        self.root = root if root else tk.Tk()
         self.root.title("Katarenga")
         self.root.configure(bg="#e6f2ff")
 
@@ -43,6 +46,9 @@ class JeuKatarenga:
 
         self.update_info_joueur()
         self.start_timer()
+        if self.sock:
+            threading.Thread(target=self.network_listener, daemon=True).start()
+        self.lock_ui_if_needed()
 
     def jouer(self):
         self.root.mainloop()
@@ -60,9 +66,37 @@ class JeuKatarenga:
     def joueur_actuel(self):
         return self.joueurs[self.tour % 2]
 
+    def lock_ui_if_needed(self):
+        # Seul le joueur courant peut jouer
+        mon_symbole = 'X' if self.is_host else 'O'
+        if (self.tour % 2 == 0 and mon_symbole != 'X') or (self.tour % 2 == 1 and mon_symbole != 'O'):
+            self.canvas.unbind("<Button-1>")
+        else:
+            self.canvas.bind("<Button-1>", self.on_click)
+
+    def network_listener(self):
+        while True:
+            try:
+                data = self.sock.recv(4096)
+                if not data:
+                    break
+                msg = data.decode()
+                if msg.startswith('move:'):
+                    coords = msg[5:].split('->')
+                    depart = tuple(map(int, coords[0].split(',')))
+                    arrivee = tuple(map(int, coords[1].split(',')))
+                    self.apply_network_move(depart, arrivee)
+            except Exception:
+                break
+
+    def send_move(self, depart, arrivee):
+        if self.sock:
+            msg = f"move:{depart[0]},{depart[1]}->{arrivee[0]},{arrivee[1]}".encode()
+            self.sock.sendall(msg)
+
     def update_info_joueur(self):
-        joueur_actuel = self.joueurs[self.tour % 2]
-        self.tour_label.config(text=f"Tour du Joueur {joueur_actuel.id + 1}")
+        joueur = self.joueur_actuel()
+        self.tour_label.config(text=f"Tour de {joueur.nom} ({'Blanc' if joueur.symbole == 'X' else 'Noir'})")
         pions_x_restants = len(self.pions['X'])
         pions_o_restants = len(self.pions['O'])
         self.pions_restants_label.config(text=f"Pions Restants - Joueur 1: {pions_x_restants}, Joueur 2: {pions_o_restants}")
@@ -113,6 +147,9 @@ class JeuKatarenga:
                 self.afficher_plateau()
                 self.update_info_joueur()
                 self.verifier_victoire()
+                if self.sock:
+                    self.send_move(depart, arrivee)
+                self.lock_ui_if_needed()
             else:
                 self.selection = None
                 self.coups_possibles = set()
@@ -120,7 +157,22 @@ class JeuKatarenga:
                     self.selection = position_cliquee
                     couleur_depart = self.plateau.cases[self.selection[0]][self.selection[1]]
                     self.coups_possibles = self.generer_coups_possibles(self.selection, couleur_depart, symbole)
-                self.afficher_plateau()
+                    self.afficher_plateau()
+
+    def apply_network_move(self, depart, arrivee):
+        joueur, symbole = self.joueur_actuel(), self.joueur_actuel().symbole
+        piece_arrivee = next((s for s in ['X', 'O'] if arrivee in self.pions[s]), None)
+        if piece_arrivee and self.tour > 0:
+            self.pions[piece_arrivee].discard(arrivee)
+        self.pions[symbole].discard(depart)
+        self.pions[symbole].add(arrivee)
+        self.tour += 1
+        self.selection = None
+        self.coups_possibles = set()
+        self.afficher_plateau()
+        self.update_info_joueur()
+        self.verifier_victoire()
+        self.lock_ui_if_needed()
 
     def generer_coups_possibles(self, depart, couleur, symbole):
         coups = set()
@@ -227,40 +279,22 @@ class JeuKatarenga:
 
     def rejouer(self):
         self.root.destroy()
-        from plateau_builder import lancer_plateau_builder
         lancer_plateau_builder("katarenga", self.mode)
 
-def lancer_jeu_reseau(root, is_host, player_name, sock):
-    # Nettoyer la fenêtre
-    for widget in root.winfo_children():
-        widget.destroy()
-    tk.Label(root, text=f"Katarenga - Réseau : {'Hôte' if is_host else 'Client'}", font=("Helvetica", 15, "bold"), fg="#004d40", bg="#e6f2ff").pack(pady=10)
-    tk.Label(root, text=f"Joueur : {player_name}", font=("Helvetica", 12), bg="#e6f2ff").pack(pady=5)
-    plateau = tk.Label(root, text="[Plateau de jeu Katarenga ici]", font=("Helvetica", 13), bg="#e6f2ff")
-    plateau.pack(pady=30)
-    moves_frame = tk.Frame(root, bg="#e6f2ff")
-    moves_frame.pack(pady=10)
-    move_entry = tk.Entry(moves_frame, font=("Helvetica", 12))
-    move_entry.pack(side="left")
-    def send_move():
-        move = move_entry.get()
-        if move:
-            sock.sendall(move.encode())
-            move_entry.delete(0, tk.END)
-    send_btn = tk.Button(moves_frame, text="Envoyer coup", command=send_move)
-    send_btn.pack(side="left", padx=5)
-    moves_list = tk.Listbox(root, width=40, height=8)
-    moves_list.pack(pady=10)
-    def receive_moves():
-        while True:
-            try:
-                data = sock.recv(1024)
-                if not data:
-                    break
-                moves_list.insert(tk.END, f"Adversaire : {data.decode()}")
-            except Exception:
-                break
-    threading.Thread(target=receive_moves, daemon=True).start()
+def lancer_jeu_reseau(sock, player_name_blanc, player_name_noir, is_host):
+    # Synchronisation des noms
+    if is_host:
+        sock.sendall(f"nom:{player_name_blanc}".encode())
+        data = sock.recv(4096)
+        player_name_noir = data.decode()[4:]
+    else:
+        data = sock.recv(4096)
+        player_name_blanc = data.decode()[4:]
+        sock.sendall(f"nom:{player_name_noir}".encode())
+    joueurs = [Joueur(player_name_blanc, symbole='X', id=0), Joueur(player_name_noir, symbole='O', id=1)]
+    plateau = Plateau()
+    jeu = JeuKatarenga(plateau, joueurs, mode="reseau", sock=sock, is_host=is_host, noms_joueurs=[player_name_blanc, player_name_noir])
+    jeu.jouer()
 
 # Pour test indépendant
 if __name__ == '__main__':

@@ -1,16 +1,18 @@
 import tkinter as tk
-from tkinter import messagebox
-from PIL import Image, ImageTk
+import threading
+import os
 import subprocess
 import sys
+
 from core.plateau import Plateau
 from core.joueur import Joueur
 from core.aide import get_regles
-import threading
-import os
+from tkinter import messagebox
+from PIL import Image, ImageTk
+from plateau_builder import lancer_plateau_builder
 
 class JeuIsolation:
-    def __init__(self, plateau, joueurs, mode="1v1"):
+    def __init__(self, plateau, joueurs, mode="1v1", sock=None, is_host=False, noms_joueurs=None):
         self.plateau = plateau
         self.joueurs = joueurs
         self.mode = mode
@@ -18,6 +20,10 @@ class JeuIsolation:
         self.timer_seconds = 0
         self.timer_running = True
         self.positions = {'X': (0, 0), 'O': (7, 7)}
+        self.sock = sock
+        self.is_host = is_host
+        self.noms_joueurs = noms_joueurs or [joueur.nom for joueur in joueurs]
+        self.reseau = sock is not None
 
         self.root = tk.Tk()
         self.root.title("Isolation")
@@ -43,6 +49,34 @@ class JeuIsolation:
         self.afficher_plateau()
         self.update_info_joueur()
         self.start_timer()
+        if self.reseau:
+            self.lock_ui_if_needed()
+            threading.Thread(target=self.network_listener, daemon=True).start()
+
+    def lock_ui_if_needed(self):
+        mon_symbole = 'X' if self.is_host else 'O'
+        if (self.tour % 2 == 0 and mon_symbole != 'X') or (self.tour % 2 == 1 and mon_symbole != 'O'):
+            self.canvas.unbind("<Button-1>")
+        else:
+            self.canvas.bind("<Button-1>", self.on_click)
+
+    def network_listener(self):
+        while True:
+            try:
+                data = self.sock.recv(4096)
+                if not data:
+                    break
+                msg = data.decode()
+                if msg.startswith('move:'):
+                    pos = tuple(map(int, msg[5:].split(',')))
+                    self.apply_network_move(pos)
+            except Exception:
+                break
+
+    def send_move(self, position):
+        if self.sock:
+            msg = f"move:{position[0]},{position[1]}".encode()
+            self.sock.sendall(msg)
 
     def jouer(self):
         self.root.mainloop()
@@ -61,8 +95,12 @@ class JeuIsolation:
         return self.joueurs[self.tour % 2]
 
     def update_info_joueur(self):
-        joueur = self.joueur_actuel()
-        self.tour_label.config(text=f"Tour du Joueur {joueur.id + 1}")
+        if self.reseau and self.noms_joueurs:
+            joueur = self.joueur_actuel()
+            self.tour_label.config(text=f"Tour de {self.noms_joueurs[self.tour % 2]}")
+        else:
+            joueur = self.joueur_actuel()
+            self.tour_label.config(text=f"Tour du Joueur {joueur.id + 1}")
 
     def afficher_plateau(self):
         self.canvas.delete("all")
@@ -93,6 +131,21 @@ class JeuIsolation:
             self.afficher_plateau()
             self.update_info_joueur()
             self.verifier_victoire()
+            if self.reseau:
+                self.send_move(position)
+                self.lock_ui_if_needed()
+
+    def apply_network_move(self, position):
+        joueur = self.joueur_actuel()
+        symbole = joueur.symbole
+        self.positions[symbole] = position
+        self.plateau.cases[position[0]][position[1]] = 'X'
+        self.tour += 1
+        self.afficher_plateau()
+        self.update_info_joueur()
+        self.verifier_victoire()
+        if self.reseau:
+            self.lock_ui_if_needed()
 
     def position_valide(self, symbole, pos):
         x, y = self.positions[symbole]
@@ -160,39 +213,21 @@ class JeuIsolation:
 
     def rejouer(self):
         self.root.destroy()
-        from plateau_builder import lancer_plateau_builder
         lancer_plateau_builder("isolation", self.mode)
 
-def lancer_jeu_reseau(root, is_host, player_name, sock):
-    for widget in root.winfo_children():
-        widget.destroy()
-    tk.Label(root, text=f"Isolation - Réseau : {'Hôte' if is_host else 'Client'}", font=("Helvetica", 15, "bold"), fg="#004d40", bg="#e6f2ff").pack(pady=10)
-    tk.Label(root, text=f"Joueur : {player_name}", font=("Helvetica", 12), bg="#e6f2ff").pack(pady=5)
-    plateau = tk.Label(root, text="[Plateau de jeu Isolation ici]", font=("Helvetica", 13), bg="#e6f2ff")
-    plateau.pack(pady=30)
-    moves_frame = tk.Frame(root, bg="#e6f2ff")
-    moves_frame.pack(pady=10)
-    move_entry = tk.Entry(moves_frame, font=("Helvetica", 12))
-    move_entry.pack(side="left")
-    def send_move():
-        move = move_entry.get()
-        if move:
-            sock.sendall(move.encode())
-            move_entry.delete(0, tk.END)
-    send_btn = tk.Button(moves_frame, text="Envoyer coup", command=send_move)
-    send_btn.pack(side="left", padx=5)
-    moves_list = tk.Listbox(root, width=40, height=8)
-    moves_list.pack(pady=10)
-    def receive_moves():
-        while True:
-            try:
-                data = sock.recv(1024)
-                if not data:
-                    break
-                moves_list.insert(tk.END, f"Adversaire : {data.decode()}")
-            except Exception:
-                break
-    threading.Thread(target=receive_moves, daemon=True).start()
+def lancer_jeu_reseau(sock, nom_local, nom_distant, is_host):
+    # Synchronisation des noms
+    if is_host:
+        noms = [nom_local, nom_distant]
+        sock.sendall(f"noms:{noms[0]},{noms[1]}".encode())
+    else:
+        data = sock.recv(4096)
+        msg = data.decode()
+        noms = msg[5:].split(',')
+    joueurs = [Joueur(noms[0], symbole='X', id=0), Joueur(noms[1], symbole='O', id=1)]
+    plateau = Plateau()
+    jeu = JeuIsolation(plateau, joueurs, mode="reseau", sock=sock, is_host=is_host, noms_joueurs=noms)
+    jeu.jouer()
 
 # Test indépendant
 if __name__ == '__main__':

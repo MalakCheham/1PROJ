@@ -1,5 +1,4 @@
 import socket
-import threading
 from core.langues import traduire
 
 def handle_client(client_socket, addr):

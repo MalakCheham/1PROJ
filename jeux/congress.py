@@ -1,19 +1,25 @@
 import tkinter as tk
-from tkinter import messagebox
-from PIL import Image, ImageTk
 import subprocess
 import sys
 import os
+import threading
+
 from core.plateau import Plateau
 from core.joueur import Joueur
 from core.aide import get_regles
-import threading
+from tkinter import messagebox
+from PIL import Image, ImageTk
+from plateau_builder import lancer_plateau_builder
 
 class JeuCongress:
-    def __init__(self, plateau, joueurs, mode="1v1"):
+    def __init__(self, plateau, joueurs, mode="1v1", sock=None, is_host=False, noms_joueurs=None):
         self.plateau = plateau
         self.joueurs = joueurs
         self.mode = mode
+        self.sock = sock
+        self.is_host = is_host
+        self.noms_joueurs = noms_joueurs or [joueur.nom for joueur in joueurs]
+        self.reseau = sock is not None
         self.pions = {
             'X': {(0, 3), (0, 4), (1, 3), (1, 4)},
             'O': {(6, 3), (6, 4), (7, 3), (7, 4)}
@@ -47,6 +53,36 @@ class JeuCongress:
         self.afficher_plateau()
         self.update_info_joueur()
         self.start_timer()
+        if self.reseau:
+            self.lock_ui_if_needed()
+            threading.Thread(target=self.network_listener, daemon=True).start()
+
+    def lock_ui_if_needed(self):
+        mon_symbole = 'X' if self.is_host else 'O'
+        if (self.tour % 2 == 0 and mon_symbole != 'X') or (self.tour % 2 == 1 and mon_symbole != 'O'):
+            self.canvas.unbind("<Button-1>")
+        else:
+            self.canvas.bind("<Button-1>", self.on_click)
+
+    def network_listener(self):
+        while True:
+            try:
+                data = self.sock.recv(4096)
+                if not data:
+                    break
+                msg = data.decode()
+                if msg.startswith('move:'):
+                    coords = msg[5:].split('->')
+                    from_pos = tuple(map(int, coords[0].split(',')))
+                    to_pos = tuple(map(int, coords[1].split(',')))
+                    self.apply_network_move(from_pos, to_pos)
+            except Exception:
+                break
+
+    def send_move(self, from_pos, to_pos):
+        if self.sock:
+            msg = f"move:{from_pos[0]},{from_pos[1]}->{to_pos[0]},{to_pos[1]}".encode()
+            self.sock.sendall(msg)
 
     def jouer(self):
         self.root.mainloop()
@@ -65,8 +101,12 @@ class JeuCongress:
         return self.joueurs[self.tour % 2]
 
     def update_info_joueur(self):
-        joueur = self.joueur_actuel()
-        self.tour_label.config(text=f"Tour du Joueur {joueur.id + 1}")
+        if self.reseau and self.noms_joueurs:
+            joueur = self.joueur_actuel()
+            self.tour_label.config(text=f"Tour de {self.noms_joueurs[self.tour % 2]}")
+        else:
+            joueur = self.joueur_actuel()
+            self.tour_label.config(text=f"Tour du Joueur {joueur.id + 1}")
 
     def afficher_plateau(self):
         self.canvas.delete("all")
@@ -87,12 +127,12 @@ class JeuCongress:
         ligne, colonne = event.y // 50, event.x // 50
         joueur, symbole = self.joueur_actuel(), self.joueur_actuel().symbole
         position = (ligne, colonne)
-
         if self.selection is None:
             if position in self.pions[symbole]:
                 self.selection = position
         else:
             if position not in self.pions['X'] and position not in self.pions['O']:
+                from_pos = self.selection
                 self.pions[symbole].remove(self.selection)
                 self.pions[symbole].add(position)
                 self.selection = None
@@ -100,8 +140,23 @@ class JeuCongress:
                 self.update_info_joueur()
                 self.afficher_plateau()
                 self.verifier_victoire()
+                if self.reseau:
+                    self.send_move(from_pos, position)
+                    self.lock_ui_if_needed()
             else:
                 self.selection = None
+
+    def apply_network_move(self, from_pos, to_pos):
+        joueur, symbole = self.joueur_actuel(), self.joueur_actuel().symbole
+        self.pions[symbole].remove(from_pos)
+        self.pions[symbole].add(to_pos)
+        self.selection = None
+        self.tour += 1
+        self.update_info_joueur()
+        self.afficher_plateau()
+        self.verifier_victoire()
+        if self.reseau:
+            self.lock_ui_if_needed()
 
     def verifier_victoire(self):
         joueur = self.joueur_actuel()
@@ -157,40 +212,21 @@ class JeuCongress:
 
     def rejouer(self):
         self.root.destroy()
-        from plateau_builder import lancer_plateau_builder
         lancer_plateau_builder("congress", self.mode)
 
-def lancer_jeu_reseau(root, is_host, player_name, sock):
-    for widget in root.winfo_children():
-        widget.destroy()
-    tk.Label(root, text=f"Congress - Réseau : {'Hôte' if is_host else 'Client'}", font=("Helvetica", 15, "bold"), fg="#004d40", bg="#e6f2ff").pack(pady=10)
-    tk.Label(root, text=f"Joueur : {player_name}", font=("Helvetica", 12), bg="#e6f2ff").pack(pady=5)
-    plateau = tk.Label(root, text="[Plateau de jeu Congress ici]", font=("Helvetica", 13), bg="#e6f2ff")
-    plateau.pack(pady=30)
-    moves_frame = tk.Frame(root, bg="#e6f2ff")
-    moves_frame.pack(pady=10)
-    move_entry = tk.Entry(moves_frame, font=("Helvetica", 12))
-    move_entry.pack(side="left")
-    def send_move():
-        move = move_entry.get()
-        if move:
-            sock.sendall(move.encode())
-            move_entry.delete(0, tk.END)
-    send_btn = tk.Button(moves_frame, text="Envoyer coup", command=send_move)
-    send_btn.pack(side="left", padx=5)
-    moves_list = tk.Listbox(root, width=40, height=8)
-    moves_list.pack(pady=10)
-    def receive_moves():
-        while True:
-            try:
-                data = sock.recv(1024)
-                if not data:
-                    break
-                moves_list.insert(tk.END, f"Adversaire : {data.decode()}")
-            except Exception:
-                break
-    threading.Thread(target=receive_moves, daemon=True).start()
-
+def lancer_jeu_reseau(sock, nom_local, nom_distant, is_host):
+    # Synchronisation des noms
+    if is_host:
+        noms = [nom_local, nom_distant]
+        sock.sendall(f"noms:{noms[0]},{noms[1]}".encode())
+    else:
+        data = sock.recv(4096)
+        msg = data.decode()
+        noms = msg[5:].split(',')
+    joueurs = [Joueur(noms[0], symbole='X', id=0), Joueur(noms[1], symbole='O', id=1)]
+    plateau = Plateau()
+    jeu = JeuCongress(plateau, joueurs, mode="reseau", sock=sock, is_host=is_host, noms_joueurs=noms)
+    jeu.jouer()
 # Pour test indépendant
 if __name__ == '__main__':
     plateau = Plateau()
