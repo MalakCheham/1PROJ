@@ -23,5 +23,4 @@ def wait_for_first_client(server_ready=None, host="0.0.0.0", port=5555):
     client_socket, addr = server.accept()
     if server_ready is not None:
         server_ready.set()
-    handle_client(client_socket, addr)
-    server.close()
+    return client_socket, addr

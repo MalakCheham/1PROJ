@@ -40,13 +40,13 @@ def back_to_config():
 def open_host_window():
     name = simpledialog.askstring(traduire("heberger"), traduire("entrer_nom_serveur"), parent=root)
     if name:
-        def on_client_connect(attente_win):
+        def on_client_connect(attente_win, client_socket, addr):
             attente_win.destroy()
             messagebox.showinfo(traduire("heberger"), traduire("client_connecte"))
             game_ready.set(True)
             update_go_button_state()
-            # Lancer la partie réseau en tant qu'hôte
-            start_network_game(is_host=True)
+            # Lancer la partie réseau en tant qu'hôte, passer la socket réseau
+            start_network_game(is_host=True, sock=client_socket)
         def on_stop(attente_win):
             attente_win.destroy()
             messagebox.showinfo(traduire("heberger"), traduire("serveur_arrete"))

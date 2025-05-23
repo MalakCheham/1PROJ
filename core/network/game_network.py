@@ -28,11 +28,11 @@ def host_server(server_name, port=5555, on_client_connect=None, on_stop=None, ro
     label = tk.Label(attente_win, text=traduire("attente_joueur"), font=("Helvetica", 13, "bold"), bg="#e0f7fa")
     label.pack(pady=30)
     def server_thread():
-        wait_for_first_client(port=port)
+        client_socket, addr = wait_for_first_client(port=port)
         if _broadcaster:
             _broadcaster.stop()
         if on_client_connect:
-            on_client_connect(attente_win)
+            on_client_connect(attente_win, client_socket, addr)
     threading.Thread(target=server_thread, daemon=True).start()
     def stop_callback():
         stop_server()
