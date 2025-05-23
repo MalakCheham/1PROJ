@@ -17,7 +17,7 @@ class JeuCongress:
         self.mode = mode
         self.sock = sock
         self.is_host = is_host
-        self.noms_joueurs = noms_joueurs or [joueur.nom for joueur in joueurs]
+        self.noms_joueurs = noms_joueurs or ["Joueur Blanc", "Joueur Noir"]
         self.reseau = sock is not None
         self.pions = {
             'X': {(0, 3), (0, 4), (1, 3), (1, 4)},
@@ -102,10 +102,12 @@ class JeuCongress:
     def update_info_joueur(self):
         if self.reseau and self.noms_joueurs:
             joueur = self.joueur_actuel()
-            self.tour_label.config(text=f"Tour de {self.noms_joueurs[self.tour % 2]}")
+            couleur = 'Blanc' if joueur.symbole == 'X' else 'Noir'
+            self.tour_label.config(text=f"Tour de {self.noms_joueurs[self.tour % 2]} ({couleur})")
         else:
             joueur = self.joueur_actuel()
-            self.tour_label.config(text=f"Tour du Joueur {joueur.id + 1}")
+            couleur = 'Blanc' if joueur.symbole == 'X' else 'Noir'
+            self.tour_label.config(text=f"Tour du Joueur {couleur}")
 
     def afficher_plateau(self):
         self.canvas.delete("all")
@@ -164,7 +166,10 @@ class JeuCongress:
         lignes = [pos[0] for pos in positions]
         colonnes = [pos[1] for pos in positions]
         if max(lignes) - min(lignes) <= 1 and max(colonnes) - min(colonnes) <= 1:
-            messagebox.showinfo("Victoire", f"Joueur {joueur.id + 1} a gagné !")
+            self.pause_timer()
+            couleur = 'Blanc' if joueur.symbole == 'X' else 'Noir'
+            messagebox.showinfo("Victoire", f"Joueur {joueur.nom} ({couleur}) a gagné !")
+            self.reprendre_timer()
             self.rejouer()
 
     def start_timer(self):
@@ -172,11 +177,12 @@ class JeuCongress:
         self.update_timer()
 
     def update_timer(self):
-        if self.timer_running:
-            minutes, seconds = divmod(self.timer_seconds, 60)
-            self.timer_label.config(text=f"{minutes:02d}:{seconds:02d}")
-            self.timer_seconds += 1
-            self.root.after(1000, self.update_timer)
+        if not self.timer_running or not self.root.winfo_exists():
+            return
+        minutes, seconds = divmod(self.timer_seconds, 60)
+        self.timer_label.config(text=f"{minutes:02d}:{seconds:02d}")
+        self.timer_seconds += 1
+        self.root.after(1000, self.update_timer)
 
     def pause_timer(self):
         self.timer_running = False
@@ -206,18 +212,20 @@ class JeuCongress:
         aide.protocol("WM_DELETE_WINDOW", on_close)
 
     def retour_menu(self):
+        self.timer_running = False
         self.root.destroy()
         subprocess.Popen([sys.executable, "menu_gui.py"])
 
     def rejouer(self):
+        self.timer_running = False
         self.root.destroy()
         from plateau_builder import lancer_plateau_builder
         lancer_plateau_builder("congress", self.mode)
 
-def lancer_jeu_reseau(sock, nom_local, nom_distant, is_host):
+def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock):
     # Synchronisation des noms
     if is_host:
-        noms = [nom_local, nom_distant]
+        noms = [player_name_blanc, player_name_noir]
         sock.sendall(f"noms:{noms[0]},{noms[1]}".encode())
     else:
         data = sock.recv(4096)
@@ -226,6 +234,7 @@ def lancer_jeu_reseau(sock, nom_local, nom_distant, is_host):
     joueurs = [Joueur(noms[0], symbole='X', id=0), Joueur(noms[1], symbole='O', id=1)]
     plateau = Plateau()
     jeu = JeuCongress(plateau, joueurs, mode="reseau", sock=sock, is_host=is_host, noms_joueurs=noms)
+    jeu.root = root
     jeu.jouer()
 # Pour test indépendant
 if __name__ == '__main__':

@@ -11,7 +11,7 @@ from core.aide import get_regles
 from tkinter import messagebox
 
 class JeuKatarenga:
-    def __init__(self, plateau, joueurs, mode="1v1", root=None, sock=None, is_host=False):
+    def __init__(self, plateau, joueurs, mode="1v1", root=None, sock=None, is_host=False, noms_joueurs=None):
         self.plateau, self.joueurs, self.mode = plateau, joueurs, mode
         self.pions = {'X': {(0, j) for j in range(8)}, 'O': {(7, j) for j in range(8)}}
         self.tour, self.timer_seconds, self.timer_running, self.selection = 0, 0, True, None
@@ -21,6 +21,7 @@ class JeuKatarenga:
         self.root = root if root else tk.Tk()
         self.root.title("Katarenga")
         self.root.configure(bg="#e6f2ff")
+        self.noms_joueurs = noms_joueurs or ["Joueur Blanc", "Joueur Noir"]
 
         self.top_frame = tk.Frame(self.root, bg="#e6f2ff")
         self.top_frame.pack(fill="x", pady=5, padx=5)
@@ -94,11 +95,16 @@ class JeuKatarenga:
             self.sock.sendall(msg)
 
     def update_info_joueur(self):
-        joueur = self.joueur_actuel()
-        self.tour_label.config(text=f"Tour de {joueur.nom} ({'Blanc' if joueur.symbole == 'X' else 'Noir'})")
+        if self.sock or self.mode == "reseau":
+            joueur = self.joueur_actuel()
+            self.tour_label.config(text=f"Tour de {joueur.nom} ({'Blanc' if joueur.symbole == 'X' else 'Noir'})")
+        else:
+            joueur = self.joueur_actuel()
+            couleur = 'Blanc' if joueur.symbole == 'X' else 'Noir'
+            self.tour_label.config(text=f"Tour du Joueur {couleur}")
         pions_x_restants = len(self.pions['X'])
         pions_o_restants = len(self.pions['O'])
-        self.pions_restants_label.config(text=f"Pions Restants - Joueur 1: {pions_x_restants}, Joueur 2: {pions_o_restants}")
+        self.pions_restants_label.config(text=f"Pions Restants - Blanc: {pions_x_restants}, Noir: {pions_o_restants}")
 
     def afficher_plateau(self):
         taille = 50
@@ -228,10 +234,14 @@ class JeuKatarenga:
         joueur = self.joueur_actuel()
         ligne_victoire = 7 if joueur.symbole == 'X' else 0
         if any(p[0] == ligne_victoire for p in self.pions[joueur.symbole]):
-            messagebox.showinfo("Victoire!", f"Joueur {joueur.id + 1} a atteint la ligne adverse et a gagné!")
+            self.pause_timer()
+            messagebox.showinfo("Victoire!", f"Joueur {joueur.nom} ({'Blanc' if joueur.symbole == 'X' else 'Noir'}) a atteint la ligne adverse et a gagné!")
+            self.reprendre_timer()
             self.rejouer()
         elif not self.pions['O' if joueur.symbole == 'X' else 'X']:
-            messagebox.showinfo("Victoire!", f"Joueur {joueur.id + 1} a gagné par capture!")
+            self.pause_timer()
+            messagebox.showinfo("Victoire!", f"Joueur {joueur.nom} ({'Blanc' if joueur.symbole == 'X' else 'Noir'}) a gagné par capture!")
+            self.reprendre_timer()
             self.rejouer()
 
     def start_timer(self):
@@ -239,11 +249,12 @@ class JeuKatarenga:
         self.update_timer()
 
     def update_timer(self):
-        if self.timer_running:
-            minutes, seconds = divmod(self.timer_seconds, 60)
-            self.timer_label.config(text=f"{minutes:02d}:{seconds:02d}")
-            self.timer_seconds += 1
-            self.root.after(1000, self.update_timer)
+        if not self.timer_running or not self.root.winfo_exists():
+            return
+        minutes, seconds = divmod(self.timer_seconds, 60)
+        self.timer_label.config(text=f"{minutes:02d}:{seconds:02d}")
+        self.timer_seconds += 1
+        self.root.after(1000, self.update_timer)
 
     def pause_timer(self):
         self.timer_running = False
@@ -254,6 +265,7 @@ class JeuKatarenga:
             self.update_timer()
 
     def retour_menu(self):
+        self.timer_running = False
         self.root.destroy()
         subprocess.Popen([sys.executable, "menu_gui.py"])
 
@@ -277,11 +289,12 @@ class JeuKatarenga:
         aide.protocol("WM_DELETE_WINDOW", on_close)
 
     def rejouer(self):
+        self.timer_running = False
         self.root.destroy()
         from plateau_builder import lancer_plateau_builder
         lancer_plateau_builder("katarenga", self.mode)
 
-def lancer_jeu_reseau(sock, player_name_blanc, player_name_noir, is_host):
+def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock):
     # Synchronisation des noms
     if is_host:
         sock.sendall(f"nom:{player_name_blanc}".encode())
@@ -293,7 +306,7 @@ def lancer_jeu_reseau(sock, player_name_blanc, player_name_noir, is_host):
         sock.sendall(f"nom:{player_name_noir}".encode())
     joueurs = [Joueur(player_name_blanc, symbole='X', id=0), Joueur(player_name_noir, symbole='O', id=1)]
     plateau = Plateau()
-    jeu = JeuKatarenga(plateau, joueurs, mode="reseau", sock=sock, is_host=is_host, noms_joueurs=[player_name_blanc, player_name_noir])
+    jeu = JeuKatarenga(plateau, joueurs, mode="reseau", sock=sock, is_host=is_host, noms_joueurs=[player_name_blanc, player_name_noir], root=root)
     jeu.jouer()
 
 # Pour test indépendant
