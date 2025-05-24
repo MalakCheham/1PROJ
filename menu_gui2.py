@@ -59,8 +59,6 @@ def open_host_window():
     dic_variables["network_mode"] = "reseau"
     dic_variables["game_ready"] = True
     update_go_button_state()
-    # On ne lance pas le serveur ici, ni de fenêtre d'attente !
-    # L'utilisateur revient à la config principale et clique sur 'Jouer' pour lancer la partie ET le serveur
 
 def open_network_window():
     """Ouvre la fenêtre pour choisir entre héberger ou rejoindre une partie réseau"""
@@ -118,7 +116,6 @@ def start_network_game(is_host, player_name=None, player_name_noir=None, sock=No
     else:
         player_name_blanc = None
         player_name_noir = player_name_noir or player_name
-    # Correction : toujours transmettre plateau et pions (ou positions) reçus du serveur au client
     if dic_variables["jeu_demande"] == "katarenga":
         from jeux.katarenga import lancer_jeu_reseau
         lancer_jeu_reseau(root, is_host=is_host, player_name_blanc=player_name_blanc, player_name_noir=player_name_noir, sock=sock, plateau=plateau, pions=pions)
@@ -143,7 +140,6 @@ def join_server_ui(server, fenetre):
     if sock:
         dic_variables["game_ready"] = True
         update_go_button_state()
-        # Lance la partie réseau immédiatement côté client
         start_network_game(is_host=False, player_name=player_name, sock=sock)
     else:
         messagebox.showerror(traduire("join_server"), f"{traduire('tentative_connexion')} {server['nom']} ({ip})\n{traduire('connection_failed')}")
@@ -187,12 +183,10 @@ def update_go_button_state():
 def play():
     """Lance la partie selon les choix de l'utilisateur"""
     if dic_variables["network_mode"] == "reseau" and dic_variables.get("is_host"):
-        # Si l'utilisateur est l'hôte, on affiche d'abord l'aperçu ou l'éditeur, puis la fenêtre d'attente APRÈS le clic sur "Lancer la partie"
         def lancer_partie_reseau(plateau=None, pions=None):
             from core.network.game_network import host_server
             def on_client_connect(attente_win, client_socket, addr):
                 attente_win.destroy()
-                # Correction : exécuter le lancement du jeu dans le thread principal Tkinter
                 root.after(0, lambda: start_network_game(
                     is_host=True,
                     player_name=dic_variables.get("host_name"),
@@ -205,7 +199,6 @@ def play():
                 messagebox.showinfo(traduire("heberger"), traduire("serveur_arrete"))
                 dic_variables["game_ready"] = False
                 update_go_button_state()
-            # Correction : ne crée plus de fenêtre attente_win ici, laisse host_server la créer
             host_server(
                 server_name=dic_variables.get("host_name","Serveur"),
                 on_client_connect=on_client_connect,
@@ -216,19 +209,14 @@ def play():
                 center_window=center_window
             )
         if dic_variables["plateau_mode"] == "auto":
-            # Afficher l'aperçu du plateau, puis lancer la partie réseau APRÈS clic sur "Lancer la Partie"
             def on_lancer_partie(plateau, pions):
-                # Après validation de l'aperçu, afficher la fenêtre d'attente
                 lancer_partie_reseau(plateau, pions)
             lancer_plateau_builder(dic_variables["jeu_demande"], False, "auto", on_lancer_partie)
         else:
-            # Quadrants personnalisés : l'éditeur appelle le callback réseau après clic sur "Jouer avec ces quadrants"
             QuadrantEditorLive(root, retour_callback=back_to_config, network_callback=lancer_partie_reseau)
     elif dic_variables["network_mode"] == "reseau" and dic_variables.get("is_client"):
-        # Côté client, on lance la partie réseau immédiatement
         start_network_game(is_host=False, player_name=dic_variables.get("player_name"), sock=dic_variables.get("client_socket"))
     else:
-        # Solo ou IA : comportement inchangé
         if dic_variables["plateau_mode"] == "auto":
             root.destroy()
             lancer_plateau_builder(dic_variables["jeu_demande"], dic_variables["mode"] == "ia", dic_variables["plateau_mode"])
