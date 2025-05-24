@@ -1,5 +1,4 @@
 import tkinter as tk
-import threading
 import sys
 import subprocess
 import pygame
@@ -136,9 +135,9 @@ def start_network_game(is_host, player_name=None, player_name_noir=None, sock=No
         widget.destroy()
     if is_host:
         player_name_blanc = player_name
-        player_name_noir = None  # À recevoir du client
+        player_name_noir = None 
     else:
-        player_name_blanc = None  # À recevoir de l'hôte
+        player_name_blanc = None 
         player_name_noir = player_name_noir or player_name
     if jeu_demande == "katarenga":
         from jeux.katarenga import lancer_jeu_reseau
@@ -177,7 +176,6 @@ def open_mode_choice_window():
     btn_reseau.pack(pady=5)
 
 def afficher_interface_choix():
-    # === En-tête ===
     frame_top = tk.Frame(root, bg="#e0f7fa")
     frame_top.pack(side="top", fill="x", pady=5, padx=5)
 
@@ -230,27 +228,27 @@ def afficher_interface_choix():
     tk.Radiobutton(frame_plateau, text=traduire("plateau_auto"), variable=plateau_mode, value="auto", bg="#fefbe9", font=("Helvetica", 12)).pack(anchor="w", padx=20)
     tk.Radiobutton(frame_plateau, text=traduire("plateau_perso"), variable=plateau_mode, value="perso", bg="#fefbe9", font=("Helvetica", 12)).pack(anchor="w", padx=20)
 
-    # === Bouton GO ===
-    global go_btn
-    go_btn = tk.Button(root, text=traduire("go"), command=go, font=("Helvetica", 12, "bold"), bg="#4CAF50", fg="white", width=15, relief="flat", state="disabled")
-    go_btn.pack(pady=20)
+    """Bouton Jouer"""
+    global play_btn
+    play_btn = tk.Button(root, text=traduire("play"), command=play, font=("Helvetica", 12, "bold"), bg="#4CAF50", fg="white", width=15, relief="flat", state="disabled")
+    play_btn.pack(pady=20)
     update_go_button_state()
 
-# Nouvelle fonction pour gérer l'état du bouton GO
+"""Si les conditions du mode de jeu sont remplies, le bouton GO est activé."""
 def update_go_button_state():
     if mode.get() == "ia":
-        go_btn.config(state="normal", bg="#4CAF50")
+        play_btn.config(state="normal", bg="#4CAF50")
     elif mode.get() == "1v1":
         if network_mode.get() == "local":
-            go_btn.config(state="normal", bg="#4CAF50")
+            play_btn.config(state="normal", bg="#4CAF50")
         elif network_mode.get() == "reseau" and game_ready.get():
-            go_btn.config(state="normal", bg="#4CAF50")
+            play_btn.config(state="normal", bg="#4CAF50")
         else:
-            go_btn.config(state="disabled", bg="#888888")
+            play_btn.config(state="disabled", bg="#888888")
     else:
-        go_btn.config(state="disabled", bg="#888888")
+        play_btn.config(state="disabled", bg="#888888")
 
-def go():
+def play():
     if plateau_mode.get() == "auto":
         root.destroy()
         lancer_plateau_builder(jeu_demande, mode.get() == "ia", plateau_mode.get())
@@ -277,13 +275,13 @@ def fermer():
     root.destroy()
     subprocess.Popen([sys.executable, "menu_gui.py"])
 
-# === Fenêtre principale ===
+"""Initialisation de la fenêtre principale"""
 root = tk.Tk()
 root.title(traduire("titre"))
 root.geometry("360x580")
 root.configure(bg="#e6f2ff")
 
-# === Icône ===
+"""Charger l'icône de la fenêtre"""
 try:
     icon_img = ImageTk.PhotoImage(file=os.path.join("assets", "logo.png"))
     root.iconphoto(False, icon_img)
@@ -292,7 +290,7 @@ except Exception as e:
 
 afficher_interface_choix()
 
-# === MUSIQUE DE FOND ===
+"""Initialisation de la musique de fond"""
 pygame.mixer.init()
 pygame.mixer.music.load(os.path.join("assets", "musique.mp3"))
 pygame.mixer.music.set_volume(0.5)

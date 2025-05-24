@@ -13,7 +13,7 @@ TRADUCTIONS = {
     "jouer_isolation": {"fr": "ISOLATION", "en": "ISOLATION"},
     "mode_1v1": {"fr": "1 VS 1", "en": "1 VS 1"},
     "mode_ia": {"fr": "IA", "en": "AI"},
-    "go": {"fr": "JOUER", "en": "PLAY"},
+    "play": {"fr": "JOUER", "en": "PLAY"},
     "aide": {"fr": "Aide", "en": "Help"},
     "aide_texte": {"fr": "Choisissez un mode :\n- 1 VS 1 : deux joueurs humains\n- IA : vous contre un adversaire aléatoire", "en": "Choose a mode:\n- 1 VS 1: two human players\n- AI: you against a random opponent"},
     "choisir_mode": {"fr": "Choisir le mode", "en": "Choose Mode"},
