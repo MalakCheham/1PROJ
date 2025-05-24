@@ -59,29 +59,31 @@ def open_host_window():
         update_go_button_state()
         for widget in root.winfo_children():
             widget.destroy()
+        # Afficher la fenêtre de choix du plateau APRÈS la connexion du client
         def lancer_partie_reseau(plateau=None, pions=None):
-            # Pour tous les jeux, on passe le plateau/pions personnalisés si fournis
             start_network_game(is_host=True, player_name=player_name, sock=client_socket, plateau=plateau, pions=pions)
-        if dic_variables["plateau_mode"] == "auto":
-            from plateau_builder import creer_plateau
-            plateau, pions = creer_plateau()
-            apercu_win = tk.Toplevel(root)
-            apercu_win.title("Plateau généré")
-            apercu_win.geometry("420x480")
-            apercu_win.configure(bg="#f0f4f8")
-            canvas = tk.Canvas(apercu_win, width=400, height=400, bg="#f0f4f8", highlightthickness=0)
-            canvas.pack(pady=10)
-            taille = 50
-            colors = {'R': '#ff9999', 'J': '#ffffb3', 'B': '#99ccff', 'V': '#b3ffb3'}
-            for i in range(8):
-                for j in range(8):
-                    couleur = plateau.cases[i][j]
-                    fill = colors.get(couleur, 'white')
-                    canvas.create_rectangle(j*taille, i*taille, (j+1)*taille, (i+1)*taille, fill=fill, outline="black")
-            btn = tk.Button(apercu_win, text="Jouer", command=lambda: [apercu_win.destroy(), lancer_partie_reseau(plateau, pions)], bg="#4CAF50", fg="white", font=("Helvetica", 12, "bold"))
-            btn.pack(pady=15)
-        else:
-            QuadrantEditorLive(root, retour_callback=back_to_config, network_callback=lancer_partie_reseau)
+        def choix_plateau():
+            if dic_variables["plateau_mode"] == "auto":
+                from plateau_builder import creer_plateau
+                plateau, pions = creer_plateau()
+                apercu_win = tk.Toplevel(root)
+                apercu_win.title("Plateau généré")
+                apercu_win.geometry("420x480")
+                apercu_win.configure(bg="#f0f4f8")
+                canvas = tk.Canvas(apercu_win, width=400, height=400, bg="#f0f4f8", highlightthickness=0)
+                canvas.pack(pady=10)
+                taille = 50
+                colors = {'R': '#ff9999', 'J': '#ffffb3', 'B': '#99ccff', 'V': '#b3ffb3'}
+                for i in range(8):
+                    for j in range(8):
+                        couleur = plateau.cases[i][j]
+                        fill = colors.get(couleur, 'white')
+                        canvas.create_rectangle(j*taille, i*taille, (j+1)*taille, (i+1)*taille, fill=fill, outline="black")
+                btn = tk.Button(apercu_win, text="Jouer", command=lambda: [apercu_win.destroy(), lancer_partie_reseau(plateau, pions)], bg="#4CAF50", fg="white", font=("Helvetica", 12, "bold"))
+                btn.pack(pady=15)
+            else:
+                QuadrantEditorLive(root, retour_callback=back_to_config, network_callback=lancer_partie_reseau)
+        choix_plateau()
     def on_stop(attente_win):
         attente_win.destroy()
         messagebox.showinfo(traduire("heberger"), traduire("serveur_arrete"))
