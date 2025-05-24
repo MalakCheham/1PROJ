@@ -57,7 +57,31 @@ def open_host_window():
         messagebox.showinfo(traduire("heberger"), traduire("client_connecte"))
         dic_variables["game_ready"] = True
         update_go_button_state()
-        start_network_game(is_host=True, player_name=player_name, sock=client_socket)
+        for widget in root.winfo_children():
+            widget.destroy()
+        def lancer_partie_reseau(plateau=None, pions=None):
+            # Pour tous les jeux, on passe le plateau/pions personnalisés si fournis
+            start_network_game(is_host=True, player_name=player_name, sock=client_socket, plateau=plateau, pions=pions)
+        if dic_variables["plateau_mode"] == "auto":
+            from plateau_builder import creer_plateau
+            plateau, pions = creer_plateau()
+            apercu_win = tk.Toplevel(root)
+            apercu_win.title("Plateau généré")
+            apercu_win.geometry("420x480")
+            apercu_win.configure(bg="#f0f4f8")
+            canvas = tk.Canvas(apercu_win, width=400, height=400, bg="#f0f4f8", highlightthickness=0)
+            canvas.pack(pady=10)
+            taille = 50
+            colors = {'R': '#ff9999', 'J': '#ffffb3', 'B': '#99ccff', 'V': '#b3ffb3'}
+            for i in range(8):
+                for j in range(8):
+                    couleur = plateau.cases[i][j]
+                    fill = colors.get(couleur, 'white')
+                    canvas.create_rectangle(j*taille, i*taille, (j+1)*taille, (i+1)*taille, fill=fill, outline="black")
+            btn = tk.Button(apercu_win, text="Jouer", command=lambda: [apercu_win.destroy(), lancer_partie_reseau(plateau, pions)], bg="#4CAF50", fg="white", font=("Helvetica", 12, "bold"))
+            btn.pack(pady=15)
+        else:
+            QuadrantEditorLive(root, retour_callback=back_to_config, network_callback=lancer_partie_reseau)
     def on_stop(attente_win):
         attente_win.destroy()
         messagebox.showinfo(traduire("heberger"), traduire("serveur_arrete"))
@@ -119,6 +143,54 @@ def open_join_window():
             discovery.found.clear()
     tk.Button(fenetre, text=traduire("rafraichir"), command=refresh, bg="#b2ebf2").pack(pady=5)
 
+def start_network_game(is_host, player_name=None, player_name_noir=None, sock=None, plateau=None, pions=None):
+    """Lance la partie réseau avec les bons paramètres"""
+    for widget in root.winfo_children():
+        widget.destroy()
+    if is_host:
+        player_name_blanc = player_name
+        player_name_noir = None
+    else:
+        player_name_blanc = None
+        player_name_noir = player_name_noir or player_name
+    if dic_variables["jeu_demande"] == "katarenga":
+        from jeux.katarenga import lancer_jeu_reseau
+        lancer_jeu_reseau(root, is_host=is_host, player_name_blanc=player_name_blanc, player_name_noir=player_name_noir, sock=sock, plateau=plateau, pions=pions)
+    elif dic_variables["jeu_demande"] == "isolation":
+        from jeux.isolation import lancer_jeu_reseau
+        lancer_jeu_reseau(root, is_host=is_host, player_name_blanc=player_name_blanc, player_name_noir=player_name_noir, sock=sock, plateau=plateau, pions=pions)
+    elif dic_variables["jeu_demande"] == "congress":
+        from jeux.congress import lancer_jeu_reseau
+        lancer_jeu_reseau(root, is_host=is_host, player_name_blanc=player_name_blanc, player_name_noir=player_name_noir, sock=sock, plateau=plateau, pions=pions)
+    else:
+        tk.Label(root, text="Mode réseau non implémenté pour ce jeu.", font=("Helvetica", 15, "bold"), fg="#d32f2f", bg="#e6f2ff").pack(pady=60)
+
+def start_client_waiting(sock):
+    # Affiche une fenêtre d'attente côté client
+    for widget in root.winfo_children():
+        widget.destroy()
+    wait_win = tk.Toplevel(root)
+    wait_win.title("En attente de l'hôte")
+    wait_win.geometry("350x120")
+    wait_win.configure(bg="#e0f7fa")
+    tk.Label(wait_win, text="En attente que l'hôte prépare le plateau...", font=("Helvetica", 13, "bold"), bg="#e0f7fa").pack(pady=30)
+    root.update()
+    # Attendre la config du plateau (bloquant)
+    import threading
+    def attendre_lancement():
+        # On attend que le host envoie la config du plateau (voir jeux/*/lancer_jeu_reseau)
+        if dic_variables["jeu_demande"] == "katarenga":
+            from jeux.katarenga import lancer_jeu_reseau
+            lancer_jeu_reseau(root, is_host=False, player_name_blanc=None, player_name_noir=None, sock=sock)
+        elif dic_variables["jeu_demande"] == "isolation":
+            from jeux.isolation import lancer_jeu_reseau
+            lancer_jeu_reseau(root, is_host=False, player_name_blanc=None, player_name_noir=None, sock=sock)
+        elif dic_variables["jeu_demande"] == "congress":
+            from jeux.congress import lancer_jeu_reseau
+            lancer_jeu_reseau(root, is_host=False, player_name_blanc=None, player_name_noir=None, sock=sock)
+        wait_win.destroy()
+    threading.Thread(target=attendre_lancement, daemon=True).start()
+
 def join_server_ui(server, fenetre):
     """Demande le nom du joueur puis tente de rejoindre le serveur sélectionné"""
     fenetre.destroy()
@@ -131,33 +203,12 @@ def join_server_ui(server, fenetre):
     if sock:
         dic_variables["game_ready"] = True
         update_go_button_state()
-        start_network_game(is_host=False, player_name_noir=player_name, sock=sock)
+        # NE PAS démarrer le jeu tout de suite, afficher l'attente
+        start_client_waiting(sock)
     else:
         messagebox.showerror(traduire("join_server"), f"{traduire('tentative_connexion')} {server['nom']} ({ip})\n{traduire('connection_failed')}")
         dic_variables["game_ready"] = False
         update_go_button_state()
-
-def start_network_game(is_host, player_name=None, player_name_noir=None, sock=None):
-    """Lance la partie réseau avec les bons paramètres"""
-    for widget in root.winfo_children():
-        widget.destroy()
-    if is_host:
-        player_name_blanc = player_name
-        player_name_noir = None
-    else:
-        player_name_blanc = None
-        player_name_noir = player_name_noir or player_name
-    if dic_variables["jeu_demande"] == "katarenga":
-        from jeux.katarenga import lancer_jeu_reseau
-        lancer_jeu_reseau(root, is_host=is_host, player_name_blanc=player_name_blanc, player_name_noir=player_name_noir, sock=sock)
-    elif dic_variables["jeu_demande"] == "isolation":
-        from jeux.isolation import lancer_jeu_reseau
-        lancer_jeu_reseau(root, is_host=is_host, player_name_blanc=player_name_blanc, player_name_noir=player_name_noir, sock=sock)
-    elif dic_variables["jeu_demande"] == "congress":
-        from jeux.congress import lancer_jeu_reseau
-        lancer_jeu_reseau(root, is_host=is_host, player_name_blanc=player_name_blanc, player_name_noir=player_name_noir, sock=sock)
-    else:
-        tk.Label(root, text="Mode réseau non implémenté pour ce jeu.", font=("Helvetica", 15, "bold"), fg="#d32f2f", bg="#e6f2ff").pack(pady=60)
 
 def open_mode_choice_window():
     """Ouvre la fenêtre pour choisir entre solo et réseau"""

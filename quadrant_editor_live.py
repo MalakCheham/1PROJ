@@ -7,9 +7,10 @@ COULEURS_HEX = {
 }
 
 class QuadrantEditorLive:
-    def __init__(self, root, retour_callback):
+    def __init__(self, root, retour_callback, network_callback=None):
         self.root = root
         self.retour_callback = retour_callback
+        self.network_callback = network_callback
         self.current_color = "R"
         self.quadrants = []
         self.grille = [[None for _ in range(4)] for _ in range(4)]
@@ -107,5 +108,8 @@ class QuadrantEditorLive:
             'O': {(7, 1), (7, 4), (6, 0), (6, 7)}
         }
         joueurs = [Joueur(0, 'X'), Joueur(1, 'O')]
-        self.root.destroy()
-        JeuKatarenga(plateau, joueurs, pions).jouer()
+        if self.network_callback:
+            self.network_callback(plateau, pions)
+        else:
+            self.root.destroy()
+            JeuKatarenga(plateau, joueurs, pions).jouer()

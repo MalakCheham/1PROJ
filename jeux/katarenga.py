@@ -9,6 +9,7 @@ from core.plateau import Plateau
 from core.joueur import Joueur
 from core.aide import get_regles
 from tkinter import messagebox
+from plateau_builder import creer_plateau
 
 class JeuKatarenga:
     def __init__(self, plateau, joueurs, mode="1v1", root=None, sock=None, is_host=False, noms_joueurs=None):
@@ -302,18 +303,60 @@ class JeuKatarenga:
         from plateau_builder import lancer_plateau_builder
         lancer_plateau_builder("katarenga", self.mode)
 
-def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock):
+def plateau_to_str(plateau):
+    return '\n'.join(''.join(row) for row in plateau.cases)
+def pions_to_str(pions):
+    return ';'.join(f"{i},{j}" for (i,j) in pions)
+def str_to_plateau(s):
+    lines = s.strip().split('\n')
+    cases = [list(line) for line in lines]
+    from core.plateau import Plateau
+    plateau = Plateau()
+    plateau.cases = cases
+    return plateau
+def str_to_pions(s):
+    if not s:
+        return set()
+    return set(tuple(map(int, pos.split(','))) for pos in s.split(';'))
+
+def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, plateau=None, pions=None):
     if is_host:
         sock.sendall(f"nom:{player_name_blanc}".encode())
         data = sock.recv(4096)
         player_name_noir = data.decode()[4:]
+        # Générer ou utiliser le plateau/pions
+        if plateau is None or pions is None:
+            from plateau_builder import creer_plateau
+            plateau, pions = creer_plateau()
+        # Envoyer le plateau et les pions sous forme texte
+        plateau_str = plateau_to_str(plateau)
+        pions_x_str = pions_to_str(pions['X'])
+        pions_o_str = pions_to_str(pions['O'])
+        sock.sendall((plateau_str + '\nENDPLATEAU\n').encode())
+        sock.sendall((pions_x_str + '\nENDPIONSX\n').encode())
+        sock.sendall((pions_o_str + '\nENDPIONSO\n').encode())
     else:
         data = sock.recv(4096)
         player_name_blanc = data.decode()[4:]
         sock.sendall(f"nom:{player_name_noir}".encode())
+        # Recevoir le plateau et les pions
+        def recv_until(sock, end_marker):
+            data = b''
+            while not data.decode(errors='ignore').endswith(end_marker):
+                data += sock.recv(1024)
+            return data.decode().replace(end_marker, '').strip()
+        plateau_str = recv_until(sock, '\nENDPLATEAU\n')
+        pions_x_str = recv_until(sock, '\nENDPIONSX\n')
+        pions_o_str = recv_until(sock, '\nENDPIONSO\n')
+        plateau = str_to_plateau(plateau_str)
+        pions = {
+            'X': str_to_pions(pions_x_str),
+            'O': str_to_pions(pions_o_str)
+        }
     joueurs = [Joueur(player_name_blanc, 'X'), Joueur(player_name_noir, 'O')]
-    plateau = Plateau()
     jeu = JeuKatarenga(plateau, joueurs, mode="reseau", sock=sock, is_host=is_host, noms_joueurs=[player_name_blanc, player_name_noir], root=root)
+    jeu.pions = pions
+    jeu.afficher_plateau()
     jeu.jouer()
 
 if __name__ == '__main__':

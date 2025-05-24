@@ -9,6 +9,7 @@ from core.joueur import Joueur
 from core.aide import get_regles
 from tkinter import messagebox
 from PIL import Image, ImageTk
+from plateau_builder import creer_plateau
 
 class JeuIsolation:
     def __init__(self, plateau, joueurs, mode="1v1", sock=None, is_host=False, noms_joueurs=None):
@@ -233,19 +234,60 @@ class JeuIsolation:
         from plateau_builder import lancer_plateau_builder
         lancer_plateau_builder("isolation", self.mode)
 
-def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock):
-    # Synchronisation des noms
+def plateau_to_str(plateau):
+    return '\n'.join(''.join(row) for row in plateau.cases)
+def positions_to_str(positions):
+    return f"{positions['X'][0]},{positions['X'][1]};{positions['O'][0]},{positions['O'][1]}"
+def str_to_plateau(s):
+    lines = s.strip().split('\n')
+    cases = [list(line) for line in lines]
+    from core.plateau import Plateau
+    plateau = Plateau()
+    plateau.cases = cases
+    return plateau
+def str_to_positions(s):
+    parts = s.strip().split(';')
+    pos = {}
+    pos['X'] = tuple(map(int, parts[0].split(',')))
+    pos['O'] = tuple(map(int, parts[1].split(',')))
+    return pos
+
+def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, plateau=None, pions=None):
     if is_host:
         noms = [player_name_blanc, player_name_noir]
         sock.sendall(f"noms:{noms[0]},{noms[1]}".encode())
+        # Générer ou utiliser le plateau/positions
+        if plateau is None or pions is None:
+            from plateau_builder import creer_plateau
+            plateau, _ = creer_plateau()
+            positions = {'X': (0, 0), 'O': (7, 7)}
+        else:
+            positions = {'X': (0, 0), 'O': (7, 7)}
+        plateau_str = plateau_to_str(plateau)
+        positions_str = positions_to_str(positions)
+        sock.sendall((plateau_str + '\nENDPLATEAU\n').encode())
+        sock.sendall((positions_str + '\nENDPOSITIONS\n').encode())
     else:
         data = sock.recv(4096)
         msg = data.decode()
         noms = msg[5:].split(',')
+        def recv_until(sock, end_marker):
+            data = b''
+            while not data.decode(errors='ignore').endswith(end_marker):
+                data += sock.recv(1024)
+            return data.decode().replace(end_marker, '').strip()
+        plateau_str = recv_until(sock, '\nENDPLATEAU\n')
+        positions_str = recv_until(sock, '\nENDPOSITIONS\n')
+        plateau = str_to_plateau(plateau_str)
+        positions = str_to_positions(positions_str)
     joueurs = [Joueur(noms[0], 'X'), Joueur(noms[1], 'O')]
-    plateau = Plateau()
     jeu = JeuIsolation(plateau, joueurs, mode="reseau", sock=sock, is_host=is_host, noms_joueurs=noms)
     jeu.root = root
+    if is_host:
+        jeu.positions = {'X': (0, 0), 'O': (7, 7)}
+    else:
+        jeu.positions = positions
+    jeu.afficher_plateau()
     jeu.jouer()
 
 # Test indépendant
