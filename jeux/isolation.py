@@ -189,7 +189,7 @@ class JeuIsolation:
         minutes, seconds = divmod(self.timer_seconds, 60)
         self.timer_label.config(text=f"{minutes:02d}:{seconds:02d}")
         self.timer_seconds += 1
-        self.root.after(1000, self.update_timer)
+        self.timer_id = self.root.after(1000, self.update_timer) 
 
     def pause_timer(self):
         self.timer_running = False
@@ -220,11 +220,15 @@ class JeuIsolation:
 
     def retour_menu(self):
         self.timer_running = False
+        if hasattr(self, "timer_id"):
+            self.root.after_cancel(self.timer_id)
         self.root.destroy()
         subprocess.Popen([sys.executable, "menu_gui.py"])
 
     def rejouer(self):
         self.timer_running = False
+        if hasattr(self, "timer_id"):
+            self.root.after_cancel(self.timer_id)
         self.root.destroy()
         from plateau_builder import lancer_plateau_builder
         lancer_plateau_builder("isolation", self.mode)
