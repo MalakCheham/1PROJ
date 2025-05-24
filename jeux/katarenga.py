@@ -263,30 +263,41 @@ class JeuKatarenga:
     def est_mouvement_fou(self, depart, arrivee):
         if abs(arrivee[0] - depart[0]) != abs(arrivee[1] - depart[1]):
             return False
-        sl, sc = (1 if arrivee[i] > depart[i] else -1 for i in range(2))
+        sl = 1 if arrivee[0] > depart[0] else -1
+        sc = 1 if arrivee[1] > depart[1] else -1
         l, c = depart[0] + sl, depart[1] + sc
         while (l, c) != arrivee:
-            if not (0 <= l < 8 and 0 <= c < 8) or (l, c) in self.pions['X'] or (l, c) in self.pions['O']:
+            if not (0 <= l < 8 and 0 <= c < 8):
+                return False
+            if (l, c) in self.pions['X'] or (l, c) in self.pions['O']:
                 return False
             if self.plateau.cases[l][c] == 'J':
+                # On ne peut pas aller au-delà de la première case jaune rencontrée
                 return (l, c) == arrivee
             l += sl
             c += sc
-        return self.plateau.cases[arrivee[0]][arrivee[1]] == 'J'
+        # On peut s'arrêter sur n'importe quelle couleur, mais si la case d'arrivée est jaune, c'est ok
+        return True
 
     def est_mouvement_tour(self, depart, arrivee):
+        # Mouvement en ligne ou colonne
         if depart[0] != arrivee[0] and depart[1] != arrivee[1]:
             return False
-        sl, sc = (1 if arrivee[i] > depart[i] else -1 if arrivee[i] < depart[i] else 0 for i in range(2))
+        sl = 0 if depart[0] == arrivee[0] else (1 if arrivee[0] > depart[0] else -1)
+        sc = 0 if depart[1] == arrivee[1] else (1 if arrivee[1] > depart[1] else -1)
         l, c = depart[0] + sl, depart[1] + sc
         while (l, c) != arrivee:
-            if not (0 <= l < 8 and 0 <= c < 8) or (l, c) in self.pions['X'] or (l, c) in self.pions['O']:
+            if not (0 <= l < 8 and 0 <= c < 8):
+                return False
+            if (l, c) in self.pions['X'] or (l, c) in self.pions['O']:
                 return False
             if self.plateau.cases[l][c] == 'R':
+                # On ne peut pas aller au-delà de la première case rouge rencontrée
                 return (l, c) == arrivee
             l += sl
             c += sc
-        return self.plateau.cases[arrivee[0]][arrivee[1]] == 'R'
+        # On peut s'arrêter sur n'importe quelle couleur, mais si la case d'arrivée est rouge, c'est ok
+        return True
 
     def verifier_victoire(self):
         joueur = self.joueur_actuel()

@@ -297,28 +297,32 @@ class JeuIsolation:
         sc = 1 if arrivee[1] > depart[1] else -1
         l, c = depart[0] + sl, depart[1] + sc
         while (l, c) != arrivee:
-            if not (0 <= l < 8 and 0 <= c < 8) or (l, c) in self.pions['X'] or (l, c) in self.pions['O']:
+            if not (0 <= l < 8 and 0 <= c < 8):
+                return False
+            if (l, c) in self.pions['X'] or (l, c) in self.pions['O']:
                 return False
             if self.plateau.cases[l][c] == 'J':
                 return (l, c) == arrivee
             l += sl
             c += sc
-        return self.plateau.cases[arrivee[0]][arrivee[1]] == 'J'
+        return True
 
     def est_mouvement_tour(self, depart, arrivee):
         if depart[0] != arrivee[0] and depart[1] != arrivee[1]:
             return False
-        sl = 1 if arrivee[0] > depart[0] else -1 if arrivee[0] < depart[0] else 0
-        sc = 1 if arrivee[1] > depart[1] else -1 if arrivee[1] < depart[1] else 0
+        sl = 0 if depart[0] == arrivee[0] else (1 if arrivee[0] > depart[0] else -1)
+        sc = 0 if depart[1] == arrivee[1] else (1 if arrivee[1] > depart[1] else -1)
         l, c = depart[0] + sl, depart[1] + sc
         while (l, c) != arrivee:
-            if not (0 <= l < 8 and 0 <= c < 8) or (l, c) in self.pions['X'] or (l, c) in self.pions['O']:
+            if not (0 <= l < 8 and 0 <= c < 8):
+                return False
+            if (l, c) in self.pions['X'] or (l, c) in self.pions['O']:
                 return False
             if self.plateau.cases[l][c] == 'R':
                 return (l, c) == arrivee
             l += sl
             c += sc
-        return self.plateau.cases[arrivee[0]][arrivee[1]] == 'R'
+        return True
 
 def plateau_to_str(plateau):
     return '\n'.join(''.join(row) for row in plateau.cases)
