@@ -324,14 +324,15 @@ class JeuCongress:
         for i in range(8):
             for j in range(8):
                 arrivee = (i, j)
-                piece_arrivee = next((s for s in ['X', 'O'] if arrivee in self.pions[s]), None)
-                if piece_arrivee is None or piece_arrivee != symbole:
-                    mouvement_valide = (couleur == 'B' and est_mouvement_roi(depart, arrivee)) or \
-                                       (couleur == 'V' and est_mouvement_cavalier(depart, arrivee)) or \
-                                       (couleur == 'J' and est_mouvement_fou(depart, arrivee, self.plateau, self.pions)) or \
-                                       (couleur == 'R' and est_mouvement_tour(depart, arrivee, self.plateau, self.pions))
-                    if mouvement_valide:
-                        coups.add(arrivee)
+                # Interdit les captures : on ne peut pas aller sur une case occupée par un pion (adverse ou allié)
+                if (arrivee in self.pions['X']) or (arrivee in self.pions['O']):
+                    continue
+                mouvement_valide = (couleur == 'B' and est_mouvement_roi(depart, arrivee)) or \
+                                   (couleur == 'V' and est_mouvement_cavalier(depart, arrivee)) or \
+                                   (couleur == 'J' and est_mouvement_fou(depart, arrivee, self.plateau, self.pions)) or \
+                                   (couleur == 'R' and est_mouvement_tour(depart, arrivee, self.plateau, self.pions))
+                if mouvement_valide:
+                    coups.add(arrivee)
         return coups
 # Pour test indépendant
 if __name__ == '__main__':
