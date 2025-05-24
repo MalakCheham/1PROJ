@@ -192,7 +192,14 @@ def play():
             from core.network.game_network import host_server
             def on_client_connect(attente_win, client_socket, addr):
                 attente_win.destroy()
-                start_network_game(is_host=True, player_name=dic_variables.get("host_name"), sock=client_socket, plateau=plateau, pions=pions)
+                # Correction : exécuter le lancement du jeu dans le thread principal Tkinter
+                root.after(0, lambda: start_network_game(
+                    is_host=True,
+                    player_name=dic_variables.get("host_name"),
+                    sock=client_socket,
+                    plateau=plateau,
+                    pions=pions
+                ))
             def on_stop(attente_win):
                 attente_win.destroy()
                 messagebox.showinfo(traduire("heberger"), traduire("serveur_arrete"))
