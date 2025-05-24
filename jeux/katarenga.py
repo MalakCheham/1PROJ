@@ -318,7 +318,7 @@ def str_to_pions(s):
         return set()
     return set(tuple(map(int, pos.split(','))) for pos in s.split(';'))
 
-def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, plateau=None, pions=None):
+def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, plateau=None, pions=None, wait_win=None):
     if is_host:
         sock.sendall(f"nom:{player_name_blanc}".encode())
         data = sock.recv(4096)
@@ -352,6 +352,8 @@ def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, 
             'X': str_to_pions(pions_x_str),
             'O': str_to_pions(pions_o_str)
         }
+        if wait_win is not None:
+            wait_win.destroy()
     joueurs = [Joueur(player_name_blanc, 'X'), Joueur(player_name_noir, 'O')]
     jeu = JeuKatarenga(plateau, joueurs, mode="reseau", sock=sock, is_host=is_host, noms_joueurs=[player_name_blanc, player_name_noir], root=root)
     jeu.pions = pions

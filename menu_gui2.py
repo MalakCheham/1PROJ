@@ -181,14 +181,13 @@ def start_client_waiting(sock):
         # On attend que le host envoie la config du plateau (voir jeux/*/lancer_jeu_reseau)
         if dic_variables["jeu_demande"] == "katarenga":
             from jeux.katarenga import lancer_jeu_reseau
-            lancer_jeu_reseau(root, is_host=False, player_name_blanc=None, player_name_noir=None, sock=sock)
+            lancer_jeu_reseau(root, is_host=False, player_name_blanc=None, player_name_noir=None, sock=sock, wait_win=wait_win)
         elif dic_variables["jeu_demande"] == "isolation":
             from jeux.isolation import lancer_jeu_reseau
-            lancer_jeu_reseau(root, is_host=False, player_name_blanc=None, player_name_noir=None, sock=sock)
+            lancer_jeu_reseau(root, is_host=False, player_name_blanc=None, player_name_noir=None, sock=sock, wait_win=wait_win)
         elif dic_variables["jeu_demande"] == "congress":
             from jeux.congress import lancer_jeu_reseau
-            lancer_jeu_reseau(root, is_host=False, player_name_blanc=None, player_name_noir=None, sock=sock)
-        wait_win.destroy()
+            lancer_jeu_reseau(root, is_host=False, player_name_blanc=None, player_name_noir=None, sock=sock, wait_win=wait_win)
     threading.Thread(target=attendre_lancement, daemon=True).start()
 
 def join_server_ui(server, fenetre):

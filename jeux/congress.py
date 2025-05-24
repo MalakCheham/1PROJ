@@ -248,7 +248,7 @@ def str_to_pions(s):
         return set()
     return set(tuple(map(int, pos.split(','))) for pos in s.split(';'))
 
-def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, plateau=None, pions=None):
+def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, plateau=None, pions=None, wait_win=None):
     if is_host:
         noms = [player_name_blanc, player_name_noir]
         sock.sendall(f"noms:{noms[0]},{noms[1]}".encode())
@@ -283,6 +283,8 @@ def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, 
             'X': str_to_pions(pions_x_str),
             'O': str_to_pions(pions_o_str)
         }
+        if wait_win is not None:
+            wait_win.destroy()
     joueurs = [Joueur(noms[0], 'X'), Joueur(noms[1], 'O')]
     jeu = JeuCongress(plateau, joueurs, mode="reseau", sock=sock, is_host=is_host, noms_joueurs=noms)
     jeu.root = root
