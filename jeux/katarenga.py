@@ -11,7 +11,7 @@ from core.aide import get_regles
 from tkinter import messagebox
 
 class JeuKatarenga:
-    def __init__(self, plateau, joueurs, mode="1v1", root=None, sock=None, is_host=False, noms_joueurs=None):
+    def __init__(self, plateau, joueurs, pions=None, mode="1v1", root=None, sock=None, is_host=False, noms_joueurs=None):
         # Clean up root if provided
         if root:
             for widget in root.winfo_children():
@@ -27,7 +27,10 @@ class JeuKatarenga:
         self.root = root if root else tk.Tk()
         
         # Game state
-        self.pions = {'X': {(0, j) for j in range(8)}, 'O': {(7, j) for j in range(8)}}
+        if pions is not None:
+            self.pions = pions
+        else:
+            self.pions = {'X': {(0, j) for j in range(8)}, 'O': {(7, j) for j in range(8)}}
         self.tour = 0
         self.timer_seconds = 0
         self.timer_running = True
