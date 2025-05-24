@@ -293,12 +293,15 @@ class JeuKatarenga:
         ligne_victoire = 7 if joueur.symbole == 'X' else 0
         if any(p[0] == ligne_victoire for p in self.pions[joueur.symbole]):
             self.pause_timer()
-            messagebox.showinfo("Victoire!", f"Joueur {joueur.nom} ({'Blanc' if joueur.symbole == 'X' else 'Noir'}) a atteint la ligne adverse et a gagné!")
+            couleur = 'Blanc' if joueur.symbole == 'X' else 'Noir'
+            nom = getattr(joueur, 'nom', str(joueur))
+            messagebox.showinfo("Victoire!", f"Joueur {nom} ({'Blanc' if joueur.symbole == 'X' else 'Noir'}) a atteint la ligne adverse et a gagné!")
             self.reprendre_timer()
             self.rejouer()
         elif not self.pions['O' if joueur.symbole == 'X' else 'X']:
             self.pause_timer()
-            messagebox.showinfo("Victoire!", f"Joueur {joueur.nom} ({'Blanc' if joueur.symbole == 'X' else 'Noir'}) a gagné par capture!")
+            nom = getattr(joueur, 'nom', str(joueur))
+            messagebox.showinfo("Victoire!", f"Joueur {nom} ({'Blanc' if joueur.symbole == 'X' else 'Noir'}) a gagné par capture!")
             self.reprendre_timer()
             self.rejouer()
 

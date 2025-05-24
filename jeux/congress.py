@@ -259,7 +259,8 @@ class JeuCongress:
         if len(visited) == len(positions):
             self.pause_timer()
             couleur = 'Blanc' if joueur.symbole == 'X' else 'Noir'
-            messagebox.showinfo("Victoire", f"Joueur {joueur.nom} ({couleur}) a gagné !")
+            nom = getattr(joueur, 'nom', str(joueur))
+            messagebox.showinfo("Victoire", f"Joueur {nom} ({couleur}) a gagné !")
             self.reprendre_timer()
             self.rejouer()
 

@@ -22,7 +22,7 @@ class JeuIsolation:
         self.tour = 0
         self.timer_seconds = 0
         self.timer_running = True
-        self.positions = {'X': (0, 0), 'O': (7, 7)}
+        self.pions = {'X': set(), 'O': set()}  # Ajout pour gestion des pions posés
         self.sock = sock
         self.is_host = is_host
         self.noms_joueurs = noms_joueurs or ["Joueur Blanc", "Joueur Noir"]
@@ -115,46 +115,84 @@ class JeuIsolation:
         self.canvas.delete("all")
         taille = 50
         couleurs = {'R': '#ff9999', 'J': '#ffffb3', 'B': '#99ccff', 'V': '#b3ffb3'}
-
         for i in range(8):
             for j in range(8):
                 couleur = self.plateau.cases[i][j]
                 fill = couleurs.get(couleur, 'white')
                 self.canvas.create_rectangle(j*taille, i*taille, (j+1)*taille, (i+1)*taille, fill=fill)
-
-        for symbole, pos in self.positions.items():
-            color = "black" if symbole == "X" else "white"
-            x, y = pos
-            self.canvas.create_oval(y*taille+10, x*taille+10, (y+1)*taille-10, (x+1)*taille-10, fill=color)
+                # Affichage des cases non disponibles (ni vides ni posables)
+                if self.plateau.cases[i][j] not in ['X', 'O'] and not self.case_non_en_prise((i, j)):
+                    # Tiret noir horizontal au centre de la case
+                    y = i*taille + taille//2
+                    self.canvas.create_line(j*taille+10, y, (j+1)*taille-10, y, fill='black', width=3)
+        for symbole in ['X', 'O']:
+            for (x, y) in self.pions[symbole]:
+                color = "black" if symbole == "X" else "white"
+                self.canvas.create_oval(y*taille+10, x*taille+10, (y+1)*taille-10, (x+1)*taille-10, fill=color)
 
     def on_click(self, event):
         ligne, colonne = event.y // 50, event.x // 50
+        # Vérifie que le clic est dans les limites du plateau
+        if not (0 <= ligne < 8 and 0 <= colonne < 8):
+            return
         joueur = self.joueur_actuel()
         symbole = joueur.symbole
         position = (ligne, colonne)
-
-        if self.position_valide(symbole, position):
-            self.positions[symbole] = position
-            self.plateau.cases[ligne][colonne] = 'X'  # case brûlée
-            self.tour += 1
-            self.afficher_plateau()
-            self.update_info_joueur()
-            self.verifier_victoire()
-            if self.reseau:
-                self.send_move(position)
-                self.lock_ui_if_needed()
+        # Vérifie que la case est vide et non "en prise"
+        if self.plateau.cases[ligne][colonne] in ['X', 'O']:
+            return
+        if not self.case_non_en_prise(position):
+            messagebox.showinfo("Invalide", "La case est en prise par un pion déjà posé.")
+            return
+        self.pions[symbole].add(position)
+        # Ne pas modifier la couleur de la case, elle reste d'origine
+        self.tour += 1
+        self.afficher_plateau()
+        self.update_info_joueur()
+        # Appeler verifier_victoire APRÈS l'incrémentation du tour
+        self.verifier_victoire()
+        if self.reseau:
+            self.send_move(position)
+            self.lock_ui_if_needed()
 
     def apply_network_move(self, position):
         joueur = self.joueur_actuel()
         symbole = joueur.symbole
-        self.positions[symbole] = position
-        self.plateau.cases[position[0]][position[1]] = 'X'
+        self.pions[symbole].add(position)
+        # Ne pas modifier la couleur de la case, elle reste d'origine
         self.tour += 1
         self.afficher_plateau()
         self.update_info_joueur()
         self.verifier_victoire()
         if self.reseau:
             self.lock_ui_if_needed()
+
+    def case_non_en_prise(self, pos):
+        # Une case est "en prise" si un pion adverse pourrait la capturer selon la couleur de la case
+        for symbole in ['X', 'O']:
+            for pion in self.pions[symbole]:
+                couleur = self.plateau.cases[pion[0]][pion[1]]
+                coups = self.generer_coups_possibles(pion, couleur, symbole)
+                if pos in coups:
+                    return False
+        return True
+
+    def generer_coups_possibles(self, depart, couleur, symbole):
+        coups = set()
+        for i in range(8):
+            for j in range(8):
+                arrivee = (i, j)
+                if arrivee == depart:
+                    continue
+                if self.plateau.cases[i][j] in ['X', 'O']:
+                    continue
+                mouvement_valide = (couleur == 'B' and self.est_mouvement_roi(depart, arrivee)) or \
+                                   (couleur == 'V' and self.est_mouvement_cavalier(depart, arrivee)) or \
+                                   (couleur == 'J' and self.est_mouvement_fou(depart, arrivee)) or \
+                                   (couleur == 'R' and self.est_mouvement_tour(depart, arrivee))
+                if mouvement_valide:
+                    coups.add(arrivee)
+        return coups
 
     def position_valide(self, symbole, pos):
         x, y = self.positions[symbole]
@@ -166,21 +204,29 @@ class JeuIsolation:
         return False
 
     def verifier_victoire(self):
-        suivant = self.joueurs[(self.tour) % 2]
-        pos = self.positions[suivant.symbole]
-        for dx in [-1, 0, 1]:
-            for dy in [-1, 0, 1]:
-                if dx == 0 and dy == 0:
+        # Le vainqueur est le dernier joueur à pouvoir poser un pion
+        joueur_actuel = self.joueur_actuel()
+        symbole = joueur_actuel.symbole
+        coups_possibles = False
+        for i in range(8):
+            for j in range(8):
+                if self.plateau.cases[i][j] in ['X', 'O']:
                     continue
-                nx, ny = pos[0] + dx, pos[1] + dy
-                if 0 <= nx < 8 and 0 <= ny < 8 and self.plateau.cases[nx][ny] not in ['X', 'O']:
-                    return
-        self.pause_timer()
-        joueur = self.joueur_actuel()
-        couleur = 'Blanc' if joueur.symbole == 'X' else 'Noir'
-        messagebox.showinfo("Victoire", f"Joueur {joueur.nom} ({couleur}) a gagné !")
-        self.reprendre_timer()
-        self.rejouer()
+                if self.case_non_en_prise((i, j)):
+                    coups_possibles = True
+                    break
+            if coups_possibles:
+                break
+        if not coups_possibles:
+            self.pause_timer()
+            # Le vainqueur est le joueur précédent (dernier à avoir joué)
+            vainqueur_index = (self.tour - 1) % 2
+            joueur = self.joueurs[vainqueur_index]
+            couleur = 'Blanc' if joueur.symbole == 'X' else 'Noir'
+            nom = getattr(joueur, 'nom', str(joueur))
+            messagebox.showinfo("Victoire", f"Joueur {nom} ({couleur}) a gagné !")
+            self.reprendre_timer()
+            self.rejouer()
 
     def start_timer(self):
         self.timer_running = True
@@ -235,6 +281,44 @@ class JeuIsolation:
         self.root.destroy()
         from plateau_builder import lancer_plateau_builder
         lancer_plateau_builder("isolation", self.mode)
+
+    def est_mouvement_roi(self, depart, arrivee):
+        dl, dc = abs(arrivee[0] - depart[0]), abs(arrivee[1] - depart[1])
+        return dl <= 1 and dc <= 1 and (dl != 0 or dc != 0)
+
+    def est_mouvement_cavalier(self, depart, arrivee):
+        dl, dc = abs(arrivee[0] - depart[0]), abs(arrivee[1] - depart[1])
+        return (dl == 2 and dc == 1) or (dl == 1 and dc == 2)
+
+    def est_mouvement_fou(self, depart, arrivee):
+        if abs(arrivee[0] - depart[0]) != abs(arrivee[1] - depart[1]):
+            return False
+        sl = 1 if arrivee[0] > depart[0] else -1
+        sc = 1 if arrivee[1] > depart[1] else -1
+        l, c = depart[0] + sl, depart[1] + sc
+        while (l, c) != arrivee:
+            if not (0 <= l < 8 and 0 <= c < 8) or (l, c) in self.pions['X'] or (l, c) in self.pions['O']:
+                return False
+            if self.plateau.cases[l][c] == 'J':
+                return (l, c) == arrivee
+            l += sl
+            c += sc
+        return self.plateau.cases[arrivee[0]][arrivee[1]] == 'J'
+
+    def est_mouvement_tour(self, depart, arrivee):
+        if depart[0] != arrivee[0] and depart[1] != arrivee[1]:
+            return False
+        sl = 1 if arrivee[0] > depart[0] else -1 if arrivee[0] < depart[0] else 0
+        sc = 1 if arrivee[1] > depart[1] else -1 if arrivee[1] < depart[1] else 0
+        l, c = depart[0] + sl, depart[1] + sc
+        while (l, c) != arrivee:
+            if not (0 <= l < 8 and 0 <= c < 8) or (l, c) in self.pions['X'] or (l, c) in self.pions['O']:
+                return False
+            if self.plateau.cases[l][c] == 'R':
+                return (l, c) == arrivee
+            l += sl
+            c += sc
+        return self.plateau.cases[arrivee[0]][arrivee[1]] == 'R'
 
 def plateau_to_str(plateau):
     return '\n'.join(''.join(row) for row in plateau.cases)
