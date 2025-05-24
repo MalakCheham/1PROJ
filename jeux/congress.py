@@ -3,6 +3,7 @@ import subprocess
 import sys
 import os
 import threading
+import random
 
 from core.plateau import Plateau
 from core.joueur import Joueur
@@ -23,10 +24,30 @@ class JeuCongress:
         self.is_host = is_host
         self.noms_joueurs = noms_joueurs or ["Joueur Blanc", "Joueur Noir"]
         self.reseau = sock is not None
+        # Placement initial demandé par l'utilisateur
         self.pions = {
-            'X': {(0, 3), (0, 4), (1, 3), (1, 4)},
-            'O': {(6, 3), (6, 4), (7, 3), (7, 4)}
+            'X': set(),
+            'O': set()
         }
+        
+        self.pions['X'].update([(0,1), (0,4)])
+        self.pions['O'].update([(0,3), (0,6)])
+
+        self.pions['O'].add((1,0))
+        self.pions['X'].add((1,7))
+
+        self.pions['X'].add((3,0))
+        self.pions['O'].add((3,7))
+
+        self.pions['O'].add((4,0))
+        self.pions['X'].add((4,7))
+
+        self.pions['X'].add((6,0))
+        self.pions['O'].add((6,7))
+
+        self.pions['O'].update([(7,1), (7,4)])
+        self.pions['X'].update([(7,3), (7,6)])
+        
         self.tour = 0
         self.timer_seconds = 0
         self.timer_running = True
@@ -91,7 +112,34 @@ class JeuCongress:
             self.sock.sendall(msg)
 
     def jouer(self):
+        if self.mode == "ia" and self.tour % 2 == 1:
+            self.root.after(500, self.jouer_coup_ia)
         self.root.mainloop()
+
+    def jouer_coup_ia(self):
+        symbole = self.joueurs[self.tour % 2].symbole
+        # Sélectionne tous les pions IA qui ont au moins un coup possible
+        pions_possibles = []
+        for pion in self.pions[symbole]:
+            couleur = self.plateau.cases[pion[0]][pion[1]]
+            coups = self.generer_coups_possibles(pion, couleur, symbole)
+            if coups:
+                pions_possibles.append((pion, list(coups)))
+        if not pions_possibles:
+            return  # Aucun coup possible
+        pion, coups = random.choice(pions_possibles)
+        arrivee = random.choice(coups)
+        self.pions[symbole].remove(pion)
+        self.pions[symbole].add(arrivee)
+        self.selection = None
+        self.coups_possibles = set()
+        self.tour += 1
+        self.update_info_joueur()
+        self.afficher_plateau()
+        self.verifier_victoire()
+        # Si c'est encore à l'IA de jouer (ex: l'humain a perdu), rejouer
+        if self.mode == "ia" and self.tour % 2 == 1:
+            self.root.after(500, self.jouer_coup_ia)
 
     def load_and_pack_button(self, image_path, text, parent, command, side="top", padx=5, pady=5):
         try:
@@ -107,16 +155,22 @@ class JeuCongress:
         return self.joueurs[self.tour % 2]
 
     def update_info_joueur(self):
-        joueur = self.joueur_actuel()
-        # Affiche toujours 'Noir' au premier tour, puis alterne
-        if self.tour % 2 == 0:
-            couleur = 'Noir'
+        if self.mode == "ia":
+            if self.tour % 2 == 0:
+                self.tour_label.config(text="Tour du Joueur Noir (Humain)")
+            else:
+                self.tour_label.config(text="Tour du Joueur Blanc (IA)")
         else:
-            couleur = 'Blanc'
-        if self.reseau and self.noms_joueurs:
-            self.tour_label.config(text=f"Tour de {self.noms_joueurs[self.tour % 2]} ({couleur})")
-        else:
-            self.tour_label.config(text=f"Tour du Joueur {couleur}")
+            joueur = self.joueur_actuel()
+            # Affiche toujours 'Noir' au premier tour, puis alterne
+            if self.tour % 2 == 0:
+                couleur = 'Noir'
+            else:
+                couleur = 'Blanc'
+            if self.reseau and self.noms_joueurs:
+                self.tour_label.config(text=f"Tour de {self.noms_joueurs[self.tour % 2]} ({couleur})")
+            else:
+                self.tour_label.config(text=f"Tour du Joueur {couleur}")
 
     def afficher_plateau(self):
         self.canvas.delete("all")
@@ -128,24 +182,35 @@ class JeuCongress:
                 couleur = self.plateau.cases[i][j]
                 fill = couleurs.get(couleur, 'white')
                 self.canvas.create_rectangle(j*taille, i*taille, (j+1)*taille, (i+1)*taille, fill=fill)
-
-                for symbole, color in [('X', 'black'), ('O', 'white')]:
-                    if (i, j) in self.pions[symbole]:
-                        self.canvas.create_oval(j*taille+10, i*taille+10, (j+1)*taille-10, (i+1)*taille-10, fill=color)
+                # Affichage du cadre de sélection
+                if self.selection == (i, j):
+                    self.canvas.create_rectangle(j*taille, i*taille, (j+1)*taille, (i+1)*taille, outline='blue', width=3)
+                # Affichage des mouvements possibles
+                if hasattr(self, 'coups_possibles') and (i, j) in getattr(self, 'coups_possibles', set()):
+                    self.canvas.create_oval(j*taille+20, i*taille+20, (j+1)*taille-20, (i+1)*taille-20, fill='lightgreen')
+        for symbole, color in [('X', 'black'), ('O', 'white')]:
+            for (i, j) in self.pions[symbole]:
+                self.canvas.create_oval(j*taille+10, i*taille+10, (j+1)*taille-10, (i+1)*taille-10, fill=color)
 
     def on_click(self, event):
+        if self.mode == "ia" and self.tour % 2 == 1:
+            return  # Bloque l'interaction humaine pendant le tour IA
         ligne, colonne = event.y // 50, event.x // 50
         joueur, symbole = self.joueur_actuel(), self.joueur_actuel().symbole
         position = (ligne, colonne)
         if self.selection is None:
             if position in self.pions[symbole]:
                 self.selection = position
+                couleur_depart = self.plateau.cases[self.selection[0]][self.selection[1]]
+                self.coups_possibles = self.generer_coups_possibles(self.selection, couleur_depart, symbole)
+                self.afficher_plateau()
         else:
-            if position not in self.pions['X'] and position not in self.pions['O']:
+            if position in getattr(self, 'coups_possibles', set()):
                 from_pos = self.selection
                 self.pions[symbole].remove(self.selection)
                 self.pions[symbole].add(position)
                 self.selection = None
+                self.coups_possibles = set()
                 self.tour += 1
                 self.update_info_joueur()
                 self.afficher_plateau()
@@ -155,12 +220,15 @@ class JeuCongress:
                     self.lock_ui_if_needed()
             else:
                 self.selection = None
+                self.coups_possibles = set()
+                self.afficher_plateau()
 
     def apply_network_move(self, from_pos, to_pos):
         joueur, symbole = self.joueur_actuel(), self.joueur_actuel().symbole
         self.pions[symbole].remove(from_pos)
         self.pions[symbole].add(to_pos)
         self.selection = None
+        self.coups_possibles = set()
         self.tour += 1
         self.update_info_joueur()
         self.afficher_plateau()
@@ -169,12 +237,26 @@ class JeuCongress:
             self.lock_ui_if_needed()
 
     def verifier_victoire(self):
+        # Le but : tous les pions d'un joueur forment un bloc connexe orthogonalement
         joueur = self.joueur_actuel()
         symbole = joueur.symbole
         positions = self.pions[symbole]
-        lignes = [pos[0] for pos in positions]
-        colonnes = [pos[1] for pos in positions]
-        if max(lignes) - min(lignes) <= 1 and max(colonnes) - min(colonnes) <= 1:
+        if not positions:
+            return
+        # Parcours en largeur pour vérifier la connexité
+        from collections import deque
+        visited = set()
+        queue = deque([next(iter(positions))])
+        while queue:
+            pos = queue.popleft()
+            if pos in visited:
+                continue
+            visited.add(pos)
+            for dx, dy in [(-1,0),(1,0),(0,-1),(0,1)]:
+                voisin = (pos[0]+dx, pos[1]+dy)
+                if voisin in positions and voisin not in visited:
+                    queue.append(voisin)
+        if len(visited) == len(positions):
             self.pause_timer()
             couleur = 'Blanc' if joueur.symbole == 'X' else 'Noir'
             messagebox.showinfo("Victoire", f"Joueur {joueur.nom} ({couleur}) a gagné !")
@@ -235,76 +317,58 @@ class JeuCongress:
         from plateau_builder import lancer_plateau_builder
         lancer_plateau_builder("congress", self.mode)
 
-def plateau_to_str(plateau):
-    return '\n'.join(''.join(row) for row in plateau.cases)
-def pions_to_str(pions):
-    return ';'.join(f"{i},{j}" for (i,j) in pions)
-def str_to_plateau(s):
-    lines = s.strip().split('\n')
-    cases = [list(line) for line in lines]
-    from core.plateau import Plateau
-    plateau = Plateau()
-    plateau.cases = cases
-    return plateau
-def str_to_pions(s):
-    if not s:
-        return set()
-    return set(tuple(map(int, pos.split(','))) for pos in s.split(';'))
+    def generer_coups_possibles(self, depart, couleur, symbole):
+        coups = set()
+        for i in range(8):
+            for j in range(8):
+                arrivee = (i, j)
+                piece_arrivee = next((s for s in ['X', 'O'] if arrivee in self.pions[s]), None)
+                if piece_arrivee is None:
+                    mouvement_valide = (
+                        couleur == 'B' and self.est_mouvement_roi(depart, arrivee)
+                        or couleur == 'V' and self.est_mouvement_cavalier(depart, arrivee)
+                        or couleur == 'J' and self.est_mouvement_fou(depart, arrivee)
+                        or couleur == 'R' and self.est_mouvement_tour(depart, arrivee)
+                    )
+                    if mouvement_valide:
+                        coups.add(arrivee)
+        return coups
 
-def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, plateau=None, pions=None, wait_win=None):
-    import threading
-    if is_host:
-        noms = [player_name_blanc, player_name_noir]
-        sock.sendall(f"noms:{noms[0]},{noms[1]}".encode())
-        # Générer ou utiliser le plateau/pions
-        if plateau is None or pions is None:
-            from plateau_builder import creer_plateau
-            plateau, _ = creer_plateau()
-            pions = {
-                'X': {(0, 3), (0, 4), (1, 3), (1, 4)},
-                'O': {(6, 3), (6, 4), (7, 3), (7, 4)}
-            }
-        plateau_str = plateau_to_str(plateau)
-        pions_x_str = pions_to_str(pions['X'])
-        pions_o_str = pions_to_str(pions['O'])
-        sock.sendall((plateau_str + '\nENDPLATEAU\n').encode())
-        sock.sendall((pions_x_str + '\nENDPIONSX\n').encode())
-        sock.sendall((pions_o_str + '\nENDPIONSO\n').encode())
-        joueurs = [Joueur(noms[0], 'X'), Joueur(noms[1], 'O')]
-        jeu = JeuCongress(plateau, joueurs, mode="reseau", sock=sock, is_host=is_host, noms_joueurs=noms)
-        jeu.root = root
-        jeu.pions = pions
-        jeu.afficher_plateau()
-        jeu.jouer()
-    else:
-        def client_receive_and_start():
-            data = sock.recv(4096)
-            msg = data.decode()
-            noms = msg[5:].split(',')
-            def recv_until(sock, end_marker):
-                data = b''
-                while not data.decode(errors='ignore').endswith(end_marker):
-                    data += sock.recv(1024)
-                return data.decode().replace(end_marker, '').strip()
-            plateau_str = recv_until(sock, '\nENDPLATEAU\n')
-            pions_x_str = recv_until(sock, '\nENDPIONSX\n')
-            pions_o_str = recv_until(sock, '\nENDPIONSO\n')
-            plateau_local = str_to_plateau(plateau_str)
-            pions_local = {
-                'X': str_to_pions(pions_x_str),
-                'O': str_to_pions(pions_o_str)
-            }
-            def start_game():
-                if wait_win is not None:
-                    wait_win.destroy()
-                joueurs = [Joueur(noms[0], 'X'), Joueur(noms[1], 'O')]
-                jeu = JeuCongress(plateau_local, joueurs, mode="reseau", sock=sock, is_host=is_host, noms_joueurs=noms)
-                jeu.root = root
-                jeu.pions = pions_local
-                jeu.afficher_plateau()
-                jeu.jouer()
-            root.after(0, start_game)
-        threading.Thread(target=client_receive_and_start, daemon=True).start()
+    def est_mouvement_roi(self, depart, arrivee):
+        dl, dc = abs(arrivee[0] - depart[0]), abs(arrivee[1] - depart[1])
+        return dl <= 1 and dc <= 1 and (dl != 0 or dc != 0)
+
+    def est_mouvement_cavalier(self, depart, arrivee):
+        dl, dc = abs(arrivee[0] - depart[0]), abs(arrivee[1] - depart[1])
+        return (dl == 2 and dc == 1) or (dl == 1 and dc == 2)
+
+    def est_mouvement_fou(self, depart, arrivee):
+        if abs(arrivee[0] - depart[0]) != abs(arrivee[1] - depart[1]):
+            return False
+        sl, sc = (1 if arrivee[i] > depart[i] else -1 for i in range(2))
+        l, c = depart[0] + sl, depart[1] + sc
+        while (l, c) != arrivee:
+            if not (0 <= l < 8 and 0 <= c < 8) or (l, c) in self.pions['X'] or (l, c) in self.pions['O']:
+                return False
+            if self.plateau.cases[l][c] == 'J':
+                return (l, c) == arrivee
+            l += sl
+            c += sc
+        return self.plateau.cases[arrivee[0]][arrivee[1]] == 'J'
+
+    def est_mouvement_tour(self, depart, arrivee):
+        if depart[0] != arrivee[0] and depart[1] != arrivee[1]:
+            return False
+        sl, sc = (1 if arrivee[i] > depart[i] else -1 if arrivee[i] < depart[i] else 0 for i in range(2))
+        l, c = depart[0] + sl, depart[1] + sc
+        while (l, c) != arrivee:
+            if not (0 <= l < 8 and 0 <= c < 8) or (l, c) in self.pions['X'] or (l, c) in self.pions['O']:
+                return False
+            if self.plateau.cases[l][c] == 'R':
+                return (l, c) == arrivee
+            l += sl
+            c += sc
+        return self.plateau.cases[arrivee[0]][arrivee[1]] == 'R'
 # Pour test indépendant
 if __name__ == '__main__':
     plateau = Plateau()
