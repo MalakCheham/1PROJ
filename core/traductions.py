@@ -52,4 +52,5 @@ TRADUCTIONS = {
     "connexion_reussie": {"fr": "Connexion réussie !", "en": "Connected!"},
     "mode_jeu": {"fr": "Mode de jeu", "en": "Game Mode"},
     "entrer_nom_joueur": {"fr": "Entrez votre nom de joueur", "en": "Enter your player name"},
+    "serveur_arrete": {"fr": "Serveur arrêté", "en": "Server stopped"},
 }

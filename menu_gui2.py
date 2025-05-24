@@ -198,15 +198,7 @@ def play():
                 messagebox.showinfo(traduire("heberger"), traduire("serveur_arrete"))
                 dic_variables["game_ready"] = False
                 update_go_button_state()
-            attente_win = tk.Toplevel(root)
-            attente_win.title(traduire("heberger"))
-            center_window(attente_win, 300, 120)
-            attente_win.transient(root)
-            attente_win.grab_set()
-            attente_win.configure(bg="#e0f7fa")
-            label = tk.Label(attente_win, text=f"Serveur créé : {dic_variables.get('host_name','')}\n{get_local_ip()}:5555", font=("Helvetica", 13, "bold"), bg="#e0f7fa")
-            label.pack(pady=20)
-            tk.Button(attente_win, text="OK", command=attente_win.destroy, font=("Helvetica", 12, "bold"), bg="#4CAF50", fg="white").pack(pady=10)
+            # Correction : ne crée plus de fenêtre attente_win ici, laisse host_server la créer
             host_server(
                 server_name=dic_variables.get("host_name","Serveur"),
                 on_client_connect=on_client_connect,
