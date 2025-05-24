@@ -59,11 +59,11 @@ def open_host_window():
         update_go_button_state()
         for widget in root.winfo_children():
             widget.destroy()
-        # Afficher la fenêtre de choix du plateau APRÈS la connexion du client
         def lancer_partie_reseau(plateau=None, pions=None):
             start_network_game(is_host=True, player_name=player_name, sock=client_socket, plateau=plateau, pions=pions)
         def choix_plateau():
-            if dic_variables["plateau_mode"] == "auto":
+            mode = plateau_mode_var.get()
+            if mode == "auto":
                 from plateau_builder import creer_plateau
                 plateau, pions = creer_plateau()
                 apercu_win = tk.Toplevel(root)
@@ -83,7 +83,16 @@ def open_host_window():
                 btn.pack(pady=15)
             else:
                 QuadrantEditorLive(root, retour_callback=back_to_config, network_callback=lancer_partie_reseau)
-        choix_plateau()
+        # Fenêtre de choix du mode de plateau
+        choix_win = tk.Toplevel(root)
+        choix_win.title("Choix du plateau")
+        choix_win.geometry("320x180")
+        choix_win.configure(bg="#f0f4f8")
+        tk.Label(choix_win, text="Choisissez le mode de génération du plateau :", font=("Helvetica", 13), bg="#f0f4f8").pack(pady=10)
+        plateau_mode_var = tk.StringVar(value="auto")
+        tk.Radiobutton(choix_win, text="Automatique", variable=plateau_mode_var, value="auto", font=("Helvetica", 12), bg="#f0f4f8").pack(anchor="w", padx=30)
+        tk.Radiobutton(choix_win, text="Personnalisé", variable=plateau_mode_var, value="perso", font=("Helvetica", 12), bg="#f0f4f8").pack(anchor="w", padx=30)
+        tk.Button(choix_win, text="Valider", command=lambda: [choix_win.destroy(), choix_plateau()], bg="#4CAF50", fg="white", font=("Helvetica", 12, "bold")).pack(pady=15)
     def on_stop(attente_win):
         attente_win.destroy()
         messagebox.showinfo(traduire("heberger"), traduire("serveur_arrete"))
