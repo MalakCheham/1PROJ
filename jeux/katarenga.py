@@ -418,8 +418,7 @@ def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, 
                 if wait_win is not None:
                     wait_win.destroy()
                 joueurs = [Joueur(player_name_blanc_local, 'X'), Joueur(player_name_noir, 'O')]
-                jeu = JeuKatarenga(plateau_local, joueurs, mode="reseau", sock=sock, is_host=is_host, noms_joueurs=[player_name_blanc_local, player_name_noir], root=root)
-                jeu.pions = pions_local
+                jeu = JeuKatarenga(plateau_local, joueurs, pions=pions_local, mode="reseau", sock=sock, is_host=is_host, noms_joueurs=[player_name_blanc_local, player_name_noir], root=root)
                 jeu.afficher_plateau()
                 jeu.jouer()
             root.after(0, start_game)
