@@ -52,3 +52,45 @@ class Mouvement:
     def est_mouvement_valide(self, pions, symbole, depart, arrivee):
         r, c = depart
         return arrivee in self.get_possible_moves(self.plateau.grille, pions, r, c)
+
+def est_mouvement_roi(depart, arrivee):
+    dl, dc = abs(arrivee[0] - depart[0]), abs(arrivee[1] - depart[1])
+    return dl <= 1 and dc <= 1 and (dl != 0 or dc != 0)
+
+def est_mouvement_cavalier(depart, arrivee):
+    dl, dc = abs(arrivee[0] - depart[0]), abs(arrivee[1] - depart[1])
+    return (dl == 2 and dc == 1) or (dl == 1 and dc == 2)
+
+def est_mouvement_fou(depart, arrivee, plateau, pions):
+    if abs(arrivee[0] - depart[0]) != abs(arrivee[1] - depart[1]):
+        return False
+    sl = 1 if arrivee[0] > depart[0] else -1
+    sc = 1 if arrivee[1] > depart[1] else -1
+    l, c = depart[0] + sl, depart[1] + sc
+    while (l, c) != arrivee:
+        if not (0 <= l < 8 and 0 <= c < 8):
+            return False
+        if (l, c) in pions['X'] or (l, c) in pions['O']:
+            return False
+        if plateau.cases[l][c] == 'J':
+            return (l, c) == arrivee
+        l += sl
+        c += sc
+    return True
+
+def est_mouvement_tour(depart, arrivee, plateau, pions):
+    if depart[0] != arrivee[0] and depart[1] != arrivee[1]:
+        return False
+    sl = 0 if depart[0] == arrivee[0] else (1 if arrivee[0] > depart[0] else -1)
+    sc = 0 if depart[1] == arrivee[1] else (1 if arrivee[1] > depart[1] else -1)
+    l, c = depart[0] + sl, depart[1] + sc
+    while (l, c) != arrivee:
+        if not (0 <= l < 8 and 0 <= c < 8):
+            return False
+        if (l, c) in pions['X'] or (l, c) in pions['O']:
+            return False
+        if plateau.cases[l][c] == 'R':
+            return (l, c) == arrivee
+        l += sl
+        c += sc
+    return True

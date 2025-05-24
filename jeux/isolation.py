@@ -4,6 +4,7 @@ import os
 import subprocess
 import sys
 
+from core.mouvement import est_mouvement_roi, est_mouvement_cavalier, est_mouvement_fou, est_mouvement_tour
 from core.plateau import Plateau
 from core.joueur import Joueur
 from core.aide import get_regles
@@ -182,16 +183,14 @@ class JeuIsolation:
         for i in range(8):
             for j in range(8):
                 arrivee = (i, j)
-                if arrivee == depart:
-                    continue
-                if self.plateau.cases[i][j] in ['X', 'O']:
-                    continue
-                mouvement_valide = (couleur == 'B' and self.est_mouvement_roi(depart, arrivee)) or \
-                                   (couleur == 'V' and self.est_mouvement_cavalier(depart, arrivee)) or \
-                                   (couleur == 'J' and self.est_mouvement_fou(depart, arrivee)) or \
-                                   (couleur == 'R' and self.est_mouvement_tour(depart, arrivee))
-                if mouvement_valide:
-                    coups.add(arrivee)
+                piece_arrivee = next((s for s in ['X', 'O'] if arrivee in self.pions[s]), None)
+                if piece_arrivee is None or piece_arrivee != symbole:
+                    mouvement_valide = (couleur == 'B' and est_mouvement_roi(depart, arrivee)) or \
+                                       (couleur == 'V' and est_mouvement_cavalier(depart, arrivee)) or \
+                                       (couleur == 'J' and est_mouvement_fou(depart, arrivee, self.plateau, self.pions)) or \
+                                       (couleur == 'R' and est_mouvement_tour(depart, arrivee, self.plateau, self.pions))
+                    if mouvement_valide:
+                        coups.add(arrivee)
         return coups
 
     def position_valide(self, symbole, pos):

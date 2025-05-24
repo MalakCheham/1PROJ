@@ -8,6 +8,7 @@ from PIL import Image, ImageTk
 from core.plateau import Plateau
 from core.joueur import Joueur
 from core.aide import get_regles
+from core.mouvement import est_mouvement_roi, est_mouvement_cavalier, est_mouvement_fou, est_mouvement_tour
 from tkinter import messagebox
 
 class JeuKatarenga:
@@ -244,60 +245,139 @@ class JeuKatarenga:
                 arrivee = (i, j)
                 piece_arrivee = next((s for s in ['X', 'O'] if arrivee in self.pions[s]), None)
                 if piece_arrivee is None or piece_arrivee != symbole:
-                    mouvement_valide = (couleur == 'B' and self.est_mouvement_roi(depart, arrivee)) or \
-                                       (couleur == 'V' and self.est_mouvement_cavalier(depart, arrivee)) or \
-                                       (couleur == 'J' and self.est_mouvement_fou(depart, arrivee)) or \
-                                       (couleur == 'R' and self.est_mouvement_tour(depart, arrivee))
+                    mouvement_valide = (couleur == 'B' and est_mouvement_roi(depart, arrivee)) or \
+                                       (couleur == 'V' and est_mouvement_cavalier(depart, arrivee)) or \
+                                       (couleur == 'J' and est_mouvement_fou(depart, arrivee, self.plateau, self.pions)) or \
+                                       (couleur == 'R' and est_mouvement_tour(depart, arrivee, self.plateau, self.pions))
                     if mouvement_valide:
                         coups.add(arrivee)
         return coups
 
-    def est_mouvement_roi(self, depart, arrivee):
-        dl, dc = abs(arrivee[0] - depart[0]), abs(arrivee[1] - depart[1])
-        return dl <= 1 and dc <= 1 and (dl != 0 or dc != 0)
+    def apply_network_move(self, depart, arrivee):
+        # Get current player
+        joueur = self.joueur_actuel()
+        symbole = joueur.symbole
 
-    def est_mouvement_cavalier(self, depart, arrivee):
-        dl, dc = abs(arrivee[0] - depart[0]), abs(arrivee[1] - depart[1])
-        return (dl == 2 and dc == 1) or (dl == 1 and dc == 2)
+        # Check for piece at destination
+        piece_arrivee = next((s for s in ['X', 'O'] if arrivee in self.pions[s]), None)
+        
+        # Handle capture (after first turn)
+        if piece_arrivee and self.tour > 0:
+            self.pions[piece_arrivee].discard(arrivee)
 
-    def est_mouvement_fou(self, depart, arrivee):
-        if abs(arrivee[0] - depart[0]) != abs(arrivee[1] - depart[1]):
-            return False
-        sl = 1 if arrivee[0] > depart[0] else -1
-        sc = 1 if arrivee[1] > depart[1] else -1
-        l, c = depart[0] + sl, depart[1] + sc
-        while (l, c) != arrivee:
-            if not (0 <= l < 8 and 0 <= c < 8):
-                return False
-            if (l, c) in self.pions['X'] or (l, c) in self.pions['O']:
-                return False
-            if self.plateau.cases[l][c] == 'J':
-                # On ne peut pas aller au-delà de la première case jaune rencontrée
-                return (l, c) == arrivee
-            l += sl
-            c += sc
-        # On peut s'arrêter sur n'importe quelle couleur, mais si la case d'arrivée est jaune, c'est ok
-        return True
+        # Move piece
+        self.pions[symbole].discard(depart)
+        self.pions[symbole].add(arrivee)
 
-    def est_mouvement_tour(self, depart, arrivee):
-        # Mouvement en ligne ou colonne
-        if depart[0] != arrivee[0] and depart[1] != arrivee[1]:
-            return False
-        sl = 0 if depart[0] == arrivee[0] else (1 if arrivee[0] > depart[0] else -1)
-        sc = 0 if depart[1] == arrivee[1] else (1 if arrivee[1] > depart[1] else -1)
-        l, c = depart[0] + sl, depart[1] + sc
-        while (l, c) != arrivee:
-            if not (0 <= l < 8 and 0 <= c < 8):
-                return False
-            if (l, c) in self.pions['X'] or (l, c) in self.pions['O']:
-                return False
-            if self.plateau.cases[l][c] == 'R':
-                # On ne peut pas aller au-delà de la première case rouge rencontrée
-                return (l, c) == arrivee
-            l += sl
-            c += sc
-        # On peut s'arrêter sur n'importe quelle couleur, mais si la case d'arrivée est rouge, c'est ok
-        return True
+        # Update game state
+        self.tour += 1
+        self.selection = None
+        self.coups_possibles = set()
+
+        # Update UI
+        self.afficher_plateau()
+        self.update_info_joueur()
+        self.verifier_victoire()
+        self.lock_ui_if_needed()
+
+    def load_and_pack_button(self, image_path, text, parent, command, side="top", padx=5, pady=5):
+        try:
+            img = Image.open(os.path.join("assets", image_path)).resize((24, 24) if "arriere" in image_path or "interrogation" in image_path else (32, 32))
+            icon = ImageTk.PhotoImage(img)
+            btn = tk.Button(parent, image=icon, command=command, bg="#e6f2ff", bd=0)
+            btn.image = icon
+        except:
+            btn = tk.Button(parent, text=text, command=command, bg="#e6f2ff", bd=0)
+        btn.pack(side=side, padx=padx, pady=pady)
+
+    def joueur_actuel(self):
+        return self.joueurs[self.tour % 2]
+
+    def update_info_joueur(self):
+        if self.tour % 2 == 0:
+            couleur = 'Noir'
+        else:
+            couleur = 'Blanc'
+        if self.sock and self.noms_joueurs:
+            self.tour_label.config(text=f"Tour de {self.noms_joueurs[self.tour % 2]} ({couleur})")
+        else:
+            self.tour_label.config(text=f"Tour du Joueur {couleur}")
+        pions_x_restants = len(self.pions['X'])
+        pions_o_restants = len(self.pions['O'])
+        self.pions_restants_label.config(text=f"Pions Restants - Blanc: {pions_x_restants}, Noir: {pions_o_restants}")
+
+    def afficher_plateau(self):
+        taille = 50
+        self.canvas.delete("all")
+        colors = {'R': '#ff9999', 'J': '#ffffb3', 'B': '#99ccff', 'V': '#b3ffb3'}
+        for i in range(8):
+            for j in range(8):
+                fill = colors.get(self.plateau.cases[i][j], 'white')
+                self.canvas.create_rectangle(j * taille, i * taille, (j + 1) * taille, (i + 1) * taille, fill=fill)
+                for symbol, color in [('X', 'black'), ('O', 'white')]:
+                    if (i, j) in self.pions[symbol]:
+                        self.canvas.create_oval(j * taille + 10, i * taille + 10, (j + 1) * taille - 10, (i + 1) * taille - 10, fill=color)
+                if self.selection == (i, j):
+                    self.canvas.create_rectangle(j * taille, i * taille, (j + 1) * taille, (i + 1) * taille, outline='blue', width=3)
+                if (i, j) in self.coups_possibles:
+                    self.canvas.create_oval(j * taille + 20, i * taille + 20, (j + 1) * taille - 20, (i + 1) * taille - 20, fill='lightgreen')
+
+    def on_click(self, event):
+        ligne, colonne = event.y // 50, event.x // 50
+        joueur, symbole = self.joueur_actuel(), self.joueur_actuel().symbole
+        position_cliquee = (ligne, colonne)
+
+        if self.selection is None:
+            if position_cliquee in self.pions[symbole]:
+                self.selection = position_cliquee
+                couleur_depart = self.plateau.cases[self.selection[0]][self.selection[1]]
+                self.coups_possibles = self.generer_coups_possibles(self.selection, couleur_depart, symbole)
+                self.afficher_plateau()
+        else:
+            depart, arrivee = self.selection, position_cliquee
+            couleur_depart = self.plateau.cases[depart[0]][depart[1]]
+            piece_arrivee = next((s for s in ['X', 'O'] if arrivee in self.pions[s]), None)
+
+            if arrivee in self.coups_possibles:
+                if piece_arrivee and self.tour > 0:
+                    self.pions[piece_arrivee].discard(arrivee)
+                elif piece_arrivee:
+                    messagebox.showinfo("Invalide", "Les captures ne sont pas autorisées au premier tour.")
+                    return
+                self.pions[symbole].discard(depart)
+                self.pions[symbole].add(arrivee)
+                self.tour += 1
+                self.selection = None
+                self.coups_possibles = set()
+                self.afficher_plateau()
+                self.update_info_joueur()
+                self.verifier_victoire()
+                if self.sock:
+                    self.send_move(depart, arrivee)
+                self.lock_ui_if_needed()
+            else:
+                self.selection = None
+                self.coups_possibles = set()
+                if position_cliquee in self.pions[symbole]:
+                    self.selection = position_cliquee
+                    couleur_depart = self.plateau.cases[self.selection[0]][self.selection[1]]
+                    self.coups_possibles = self.generer_coups_possibles(self.selection, couleur_depart, symbole)
+                    self.afficher_plateau()
+
+    def generer_coups_possibles(self, depart, couleur, symbole):
+        coups = set()
+        for i in range(8):
+            for j in range(8):
+                arrivee = (i, j)
+                piece_arrivee = next((s for s in ['X', 'O'] if arrivee in self.pions[s]), None)
+                if piece_arrivee is None or piece_arrivee != symbole:
+                    mouvement_valide = (couleur == 'B' and est_mouvement_roi(depart, arrivee)) or \
+                                       (couleur == 'V' and est_mouvement_cavalier(depart, arrivee)) or \
+                                       (couleur == 'J' and est_mouvement_fou(depart, arrivee, self.plateau, self.pions)) or \
+                                       (couleur == 'R' and est_mouvement_tour(depart, arrivee, self.plateau, self.pions))
+                    if mouvement_valide:
+                        coups.add(arrivee)
+        return coups
 
     def verifier_victoire(self):
         joueur = self.joueur_actuel()
