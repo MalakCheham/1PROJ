@@ -319,6 +319,7 @@ def str_to_pions(s):
     return set(tuple(map(int, pos.split(','))) for pos in s.split(';'))
 
 def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, plateau=None, pions=None, wait_win=None):
+    import threading
     if is_host:
         sock.sendall(f"nom:{player_name_blanc}".encode())
         data = sock.recv(4096)
@@ -334,31 +335,39 @@ def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, 
         sock.sendall((plateau_str + '\nENDPLATEAU\n').encode())
         sock.sendall((pions_x_str + '\nENDPIONSX\n').encode())
         sock.sendall((pions_o_str + '\nENDPIONSO\n').encode())
+        joueurs = [Joueur(player_name_blanc, 'X'), Joueur(player_name_noir, 'O')]
+        jeu = JeuKatarenga(plateau, joueurs, mode="reseau", sock=sock, is_host=is_host, noms_joueurs=[player_name_blanc, player_name_noir], root=root)
+        jeu.pions = pions
+        jeu.afficher_plateau()
+        jeu.jouer()
     else:
-        data = sock.recv(4096)
-        player_name_blanc = data.decode()[4:]
-        sock.sendall(f"nom:{player_name_noir}".encode())
-        # Recevoir le plateau et les pions
-        def recv_until(sock, end_marker):
-            data = b''
-            while not data.decode(errors='ignore').endswith(end_marker):
-                data += sock.recv(1024)
-            return data.decode().replace(end_marker, '').strip()
-        plateau_str = recv_until(sock, '\nENDPLATEAU\n')
-        pions_x_str = recv_until(sock, '\nENDPIONSX\n')
-        pions_o_str = recv_until(sock, '\nENDPIONSO\n')
-        plateau = str_to_plateau(plateau_str)
-        pions = {
-            'X': str_to_pions(pions_x_str),
-            'O': str_to_pions(pions_o_str)
-        }
-        if wait_win is not None:
-            wait_win.destroy()
-    joueurs = [Joueur(player_name_blanc, 'X'), Joueur(player_name_noir, 'O')]
-    jeu = JeuKatarenga(plateau, joueurs, mode="reseau", sock=sock, is_host=is_host, noms_joueurs=[player_name_blanc, player_name_noir], root=root)
-    jeu.pions = pions
-    jeu.afficher_plateau()
-    jeu.jouer()
+        def client_receive_and_start():
+            data = sock.recv(4096)
+            player_name_blanc_local = data.decode()[4:]
+            sock.sendall(f"nom:{player_name_noir}".encode())
+            def recv_until(sock, end_marker):
+                data = b''
+                while not data.decode(errors='ignore').endswith(end_marker):
+                    data += sock.recv(1024)
+                return data.decode().replace(end_marker, '').strip()
+            plateau_str = recv_until(sock, '\nENDPLATEAU\n')
+            pions_x_str = recv_until(sock, '\nENDPIONSX\n')
+            pions_o_str = recv_until(sock, '\nENDPIONSO\n')
+            plateau_local = str_to_plateau(plateau_str)
+            pions_local = {
+                'X': str_to_pions(pions_x_str),
+                'O': str_to_pions(pions_o_str)
+            }
+            def start_game():
+                if wait_win is not None:
+                    wait_win.destroy()
+                joueurs = [Joueur(player_name_blanc_local, 'X'), Joueur(player_name_noir, 'O')]
+                jeu = JeuKatarenga(plateau_local, joueurs, mode="reseau", sock=sock, is_host=is_host, noms_joueurs=[player_name_blanc_local, player_name_noir], root=root)
+                jeu.pions = pions_local
+                jeu.afficher_plateau()
+                jeu.jouer()
+            root.after(0, start_game)
+        threading.Thread(target=client_receive_and_start, daemon=True).start()
 
 if __name__ == '__main__':
     plateau = Plateau()

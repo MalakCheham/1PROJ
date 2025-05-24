@@ -252,6 +252,7 @@ def str_to_positions(s):
     return pos
 
 def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, plateau=None, pions=None, wait_win=None):
+    import threading
     if is_host:
         noms = [player_name_blanc, player_name_noir]
         sock.sendall(f"noms:{noms[0]},{noms[1]}".encode())
@@ -266,30 +267,37 @@ def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, 
         positions_str = positions_to_str(positions)
         sock.sendall((plateau_str + '\nENDPLATEAU\n').encode())
         sock.sendall((positions_str + '\nENDPOSITIONS\n').encode())
-    else:
-        data = sock.recv(4096)
-        msg = data.decode()
-        noms = msg[5:].split(',')
-        def recv_until(sock, end_marker):
-            data = b''
-            while not data.decode(errors='ignore').endswith(end_marker):
-                data += sock.recv(1024)
-            return data.decode().replace(end_marker, '').strip()
-        plateau_str = recv_until(sock, '\nENDPLATEAU\n')
-        positions_str = recv_until(sock, '\nENDPOSITIONS\n')
-        plateau = str_to_plateau(plateau_str)
-        positions = str_to_positions(positions_str)
-        if wait_win is not None:
-            wait_win.destroy()
-    joueurs = [Joueur(noms[0], 'X'), Joueur(noms[1], 'O')]
-    jeu = JeuIsolation(plateau, joueurs, mode="reseau", sock=sock, is_host=is_host, noms_joueurs=noms)
-    jeu.root = root
-    if is_host:
+        joueurs = [Joueur(noms[0], 'X'), Joueur(noms[1], 'O')]
+        jeu = JeuIsolation(plateau, joueurs, mode="reseau", sock=sock, is_host=is_host, noms_joueurs=noms)
+        jeu.root = root
         jeu.positions = {'X': (0, 0), 'O': (7, 7)}
+        jeu.afficher_plateau()
+        jeu.jouer()
     else:
-        jeu.positions = positions
-    jeu.afficher_plateau()
-    jeu.jouer()
+        def client_receive_and_start():
+            data = sock.recv(4096)
+            msg = data.decode()
+            noms = msg[5:].split(',')
+            def recv_until(sock, end_marker):
+                data = b''
+                while not data.decode(errors='ignore').endswith(end_marker):
+                    data += sock.recv(1024)
+                return data.decode().replace(end_marker, '').strip()
+            plateau_str = recv_until(sock, '\nENDPLATEAU\n')
+            positions_str = recv_until(sock, '\nENDPOSITIONS\n')
+            plateau_local = str_to_plateau(plateau_str)
+            positions_local = str_to_positions(positions_str)
+            def start_game():
+                if wait_win is not None:
+                    wait_win.destroy()
+                joueurs = [Joueur(noms[0], 'X'), Joueur(noms[1], 'O')]
+                jeu = JeuIsolation(plateau_local, joueurs, mode="reseau", sock=sock, is_host=is_host, noms_joueurs=noms)
+                jeu.root = root
+                jeu.positions = positions_local
+                jeu.afficher_plateau()
+                jeu.jouer()
+            root.after(0, start_game)
+        threading.Thread(target=client_receive_and_start, daemon=True).start()
 
 # Test indépendant
 if __name__ == '__main__':
