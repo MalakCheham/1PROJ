@@ -24,7 +24,7 @@ def creer_plateau():
     }
     return plateau, pions
 
-def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto"):
+def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto", network_callback=None):
     root = tk.Tk()
     root.title("Aperçu du Plateau")
     root.configure(bg="#f0f4f8")
@@ -70,13 +70,16 @@ def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto"):
 
     def lancer_partie():
         root.destroy()
-        joueurs = [Joueur(0, 'X'), Joueur(1, 'O')]
-        if type_jeu == "katarenga":
-            JeuKatarenga(plateau, joueurs, pions).jouer()
-        elif type_jeu == "congress":
-            JeuCongress(plateau, joueurs, pions).jouer()
-        elif type_jeu == "isolation":
-            JeuIsolation(plateau, joueurs).jouer()
+        if network_callback:
+            network_callback(plateau, pions)
+        else:
+            joueurs = [Joueur(0, 'X'), Joueur(1, 'O')]
+            if type_jeu == "katarenga":
+                JeuKatarenga(plateau, joueurs, pions).jouer()
+            elif type_jeu == "congress":
+                JeuCongress(plateau, joueurs, pions).jouer()
+            elif type_jeu == "isolation":
+                JeuIsolation(plateau, joueurs).jouer()
 
     btn = tk.Button(root, text="Lancer la Partie", command=lancer_partie,
                     bg="green", fg="white", font=("Helvetica", 12, "bold"))
