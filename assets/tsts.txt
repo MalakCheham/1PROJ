@@ -1,5 +1,0 @@
-choix mode => hote => revenir sur la fenetre principale :
-si choix généré automatiquement => affichier fenetre aperçu plateau => click sur lancer la partie => en attente d'un joueur => client rejoint => le jeu est lancé
-
-si choix quadrants personalisés => affichier fenetre créer un quadrant => click sur jouer avec ces quadrants => en attente d'un joueur => client rejoint => le jeu est lancé
-
