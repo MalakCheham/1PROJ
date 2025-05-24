@@ -11,7 +11,11 @@ from tkinter import messagebox
 from PIL import Image, ImageTk
 
 class JeuIsolation:
-    def __init__(self, plateau, joueurs, mode="1v1", sock=None, is_host=False, noms_joueurs=None):
+    def __init__(self, plateau, joueurs, mode="1v1", sock=None, is_host=False, noms_joueurs=None, root=None):
+        # Nettoyer le root si fourni
+        if root:
+            for widget in root.winfo_children():
+                widget.destroy()
         self.plateau = plateau
         self.joueurs = joueurs
         self.mode = mode
@@ -23,8 +27,7 @@ class JeuIsolation:
         self.is_host = is_host
         self.noms_joueurs = noms_joueurs or ["Joueur Blanc", "Joueur Noir"]
         self.reseau = sock is not None
-
-        self.root = tk.Tk()
+        self.root = root if root else tk.Tk()
         self.root.title("Isolation")
         self.root.configure(bg="#e6f2ff")
 

@@ -11,7 +11,11 @@ from tkinter import messagebox
 from PIL import Image, ImageTk
 
 class JeuCongress:
-    def __init__(self, plateau, joueurs, mode="1v1", sock=None, is_host=False, noms_joueurs=None):
+    def __init__(self, plateau, joueurs, mode="1v1", sock=None, is_host=False, noms_joueurs=None, root=None):
+        # Nettoyer le root si fourni
+        if root:
+            for widget in root.winfo_children():
+                widget.destroy()
         self.plateau = plateau
         self.joueurs = joueurs
         self.mode = mode
@@ -27,8 +31,7 @@ class JeuCongress:
         self.timer_seconds = 0
         self.timer_running = True
         self.selection = None
-
-        self.root = tk.Tk()
+        self.root = root if root else tk.Tk()
         self.root.title("Congress")
         self.root.configure(bg="#e6f2ff")
 

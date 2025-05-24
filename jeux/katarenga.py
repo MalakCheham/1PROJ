@@ -12,6 +12,10 @@ from tkinter import messagebox
 
 class JeuKatarenga:
     def __init__(self, plateau, joueurs, mode="1v1", root=None, sock=None, is_host=False, noms_joueurs=None):
+        # Nettoyer le root si fourni
+        if root:
+            for widget in root.winfo_children():
+                widget.destroy()
         self.plateau, self.joueurs, self.mode = plateau, joueurs, mode
         self.pions = {'X': {(0, j) for j in range(8)}, 'O': {(7, j) for j in range(8)}}
         self.tour, self.timer_seconds, self.timer_running, self.selection = 0, 0, True, None
