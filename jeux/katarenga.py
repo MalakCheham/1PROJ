@@ -352,6 +352,9 @@ class JeuKatarenga:
         from plateau_builder import lancer_plateau_builder
         lancer_plateau_builder("katarenga", self.mode)
 
+    def jouer(self):
+        self.root.mainloop()
+
 def plateau_to_str(plateau):
     return '\n'.join(''.join(row) for row in plateau.cases)
 def pions_to_str(pions):
