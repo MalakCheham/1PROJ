@@ -52,61 +52,15 @@ def open_host_window():
     player_name = simpledialog.askstring(traduire("heberger"), traduire("entrer_nom_joueur"), parent=root)
     if not player_name:
         return
-    def on_client_connect(attente_win, client_socket, addr):
-        attente_win.destroy()
-        messagebox.showinfo(traduire("heberger"), traduire("client_connecte"))
-        dic_variables["game_ready"] = True
-        update_go_button_state()
-        for widget in root.winfo_children():
-            widget.destroy()
-        def lancer_partie_reseau(plateau=None, pions=None):
-            start_network_game(is_host=True, player_name=player_name, sock=client_socket, plateau=plateau, pions=pions)
-        def choix_plateau():
-            mode = plateau_mode_var.get()
-            if mode == "auto":
-                from plateau_builder import creer_plateau
-                plateau, pions = creer_plateau()
-                apercu_win = tk.Toplevel(root)
-                apercu_win.title("Plateau généré")
-                apercu_win.geometry("420x480")
-                apercu_win.configure(bg="#f0f4f8")
-                canvas = tk.Canvas(apercu_win, width=400, height=400, bg="#f0f4f8", highlightthickness=0)
-                canvas.pack(pady=10)
-                taille = 50
-                colors = {'R': '#ff9999', 'J': '#ffffb3', 'B': '#99ccff', 'V': '#b3ffb3'}
-                for i in range(8):
-                    for j in range(8):
-                        couleur = plateau.cases[i][j]
-                        fill = colors.get(couleur, 'white')
-                        canvas.create_rectangle(j*taille, i*taille, (j+1)*taille, (i+1)*taille, fill=fill, outline="black")
-                btn = tk.Button(apercu_win, text="Jouer", command=lambda: [apercu_win.destroy(), lancer_partie_reseau(plateau, pions)], bg="#4CAF50", fg="white", font=("Helvetica", 12, "bold"))
-                btn.pack(pady=15)
-            else:
-                QuadrantEditorLive(root, retour_callback=back_to_config, network_callback=lancer_partie_reseau)
-        # Fenêtre de choix du mode de plateau
-        choix_win = tk.Toplevel(root)
-        choix_win.title("Choix du plateau")
-        choix_win.geometry("320x180")
-        choix_win.configure(bg="#f0f4f8")
-        tk.Label(choix_win, text="Choisissez le mode de génération du plateau :", font=("Helvetica", 13), bg="#f0f4f8").pack(pady=10)
-        plateau_mode_var = tk.StringVar(value="auto")
-        tk.Radiobutton(choix_win, text="Automatique", variable=plateau_mode_var, value="auto", font=("Helvetica", 12), bg="#f0f4f8").pack(anchor="w", padx=30)
-        tk.Radiobutton(choix_win, text="Personnalisé", variable=plateau_mode_var, value="perso", font=("Helvetica", 12), bg="#f0f4f8").pack(anchor="w", padx=30)
-        tk.Button(choix_win, text="Valider", command=lambda: [choix_win.destroy(), choix_plateau()], bg="#4CAF50", fg="white", font=("Helvetica", 12, "bold")).pack(pady=15)
-    def on_stop(attente_win):
-        attente_win.destroy()
-        messagebox.showinfo(traduire("heberger"), traduire("serveur_arrete"))
-        dic_variables["game_ready"] = False
-        update_go_button_state()
-    host_server(
-        server_name=name,
-        on_client_connect=on_client_connect,
-        on_stop=on_stop,
-        root=root,
-        tk=tk,
-        traduire=traduire,
-        center_window=center_window
-    )
+    dic_variables["host_name"] = name
+    dic_variables["player_name"] = player_name
+    dic_variables["is_host"] = True
+    dic_variables["is_client"] = False
+    dic_variables["network_mode"] = "reseau"
+    dic_variables["game_ready"] = True
+    update_go_button_state()
+    # On ne lance pas le serveur ici, ni de fenêtre d'attente !
+    # L'utilisateur revient à la config principale et clique sur 'Jouer' pour lancer la partie ET le serveur
 
 def open_network_window():
     """Ouvre la fenêtre pour choisir entre héberger ou rejoindre une partie réseau"""
@@ -176,31 +130,6 @@ def start_network_game(is_host, player_name=None, player_name_noir=None, sock=No
     else:
         tk.Label(root, text="Mode réseau non implémenté pour ce jeu.", font=("Helvetica", 15, "bold"), fg="#d32f2f", bg="#e6f2ff").pack(pady=60)
 
-def start_client_waiting(sock):
-    # Affiche une fenêtre d'attente côté client
-    for widget in root.winfo_children():
-        widget.destroy()
-    wait_win = tk.Toplevel(root)
-    wait_win.title("En attente de l'hôte")
-    wait_win.geometry("350x120")
-    wait_win.configure(bg="#e0f7fa")
-    tk.Label(wait_win, text="En attente que l'hôte prépare le plateau...", font=("Helvetica", 13, "bold"), bg="#e0f7fa").pack(pady=30)
-    root.update()
-    # Attendre la config du plateau (bloquant)
-    import threading
-    def attendre_lancement():
-        # On attend que le host envoie la config du plateau (voir jeux/*/lancer_jeu_reseau)
-        if dic_variables["jeu_demande"] == "katarenga":
-            from jeux.katarenga import lancer_jeu_reseau
-            lancer_jeu_reseau(root, is_host=False, player_name_blanc=None, player_name_noir=None, sock=sock, wait_win=wait_win)
-        elif dic_variables["jeu_demande"] == "isolation":
-            from jeux.isolation import lancer_jeu_reseau
-            lancer_jeu_reseau(root, is_host=False, player_name_blanc=None, player_name_noir=None, sock=sock, wait_win=wait_win)
-        elif dic_variables["jeu_demande"] == "congress":
-            from jeux.congress import lancer_jeu_reseau
-            lancer_jeu_reseau(root, is_host=False, player_name_blanc=None, player_name_noir=None, sock=sock, wait_win=wait_win)
-    threading.Thread(target=attendre_lancement, daemon=True).start()
-
 def join_server_ui(server, fenetre):
     """Demande le nom du joueur puis tente de rejoindre le serveur sélectionné"""
     fenetre.destroy()
@@ -213,12 +142,111 @@ def join_server_ui(server, fenetre):
     if sock:
         dic_variables["game_ready"] = True
         update_go_button_state()
-        # NE PAS démarrer le jeu tout de suite, afficher l'attente
-        start_client_waiting(sock)
+        # Lance la partie réseau immédiatement côté client
+        start_network_game(is_host=False, player_name=player_name, sock=sock)
     else:
         messagebox.showerror(traduire("join_server"), f"{traduire('tentative_connexion')} {server['nom']} ({ip})\n{traduire('connection_failed')}")
         dic_variables["game_ready"] = False
         update_go_button_state()
+
+def update_go_button_state():
+    """Active ou désactive le bouton 'Jouer' selon les choix de l'utilisateur"""
+    btn = dic_variables.get("play_btn")
+    if not btn:
+        return
+    if dic_variables["mode"] == "ia":
+        btn.config(state="normal", bg="#4CAF50")
+    elif dic_variables["mode"] == "1v1":
+        if dic_variables["network_mode"] == "local":
+            btn.config(state="normal", bg="#4CAF50")
+        elif dic_variables["network_mode"] == "reseau":
+            btn.config(state="normal", bg="#4CAF50")
+        else:
+            btn.config(state="disabled", bg="#888888")
+    else:
+        btn.config(state="disabled", bg="#888888")
+    # Affichage du mode courant
+    mode_label = dic_variables.get("mode_label")
+    if not mode_label:
+        mode_label = tk.Label(root, font=("Helvetica", 11, "italic"), bg="#e6f2ff", fg="#004d40")
+        mode_label.pack()
+        dic_variables["mode_label"] = mode_label
+    if dic_variables["network_mode"] == "local":
+        mode_label.config(text="Mode : Solo")
+    elif dic_variables["network_mode"] == "reseau":
+        if dic_variables.get("is_host"):
+            mode_label.config(text="Mode : Réseau (hôte)")
+        elif dic_variables.get("is_client"):
+            mode_label.config(text="Mode : Réseau (client)")
+        else:
+            mode_label.config(text="Mode : Réseau")
+    else:
+        mode_label.config(text="Mode : ?")
+
+def play():
+    """Lance la partie selon les choix de l'utilisateur"""
+    if dic_variables["network_mode"] == "reseau" and dic_variables.get("is_host"):
+        # Si l'utilisateur est l'hôte, lancer le serveur et la partie APRÈS le choix du plateau
+        def lancer_partie_reseau(plateau=None, pions=None):
+            from core.network.game_network import host_server
+            def on_client_connect(attente_win, client_socket, addr):
+                attente_win.destroy()
+                start_network_game(is_host=True, player_name=dic_variables.get("host_name"), sock=client_socket, plateau=plateau, pions=pions)
+            def on_stop(attente_win):
+                attente_win.destroy()
+                messagebox.showinfo(traduire("heberger"), traduire("serveur_arrete"))
+                dic_variables["game_ready"] = False
+                update_go_button_state()
+            attente_win = tk.Toplevel(root)
+            attente_win.title(traduire("heberger"))
+            center_window(attente_win, 300, 120)
+            attente_win.transient(root)
+            attente_win.grab_set()
+            attente_win.configure(bg="#e0f7fa")
+            label = tk.Label(attente_win, text=f"Serveur créé : {dic_variables.get('host_name','')}\n{get_local_ip()}:5555", font=("Helvetica", 13, "bold"), bg="#e0f7fa")
+            label.pack(pady=20)
+            tk.Button(attente_win, text="OK", command=attente_win.destroy, font=("Helvetica", 12, "bold"), bg="#4CAF50", fg="white").pack(pady=10)
+            host_server(
+                server_name=dic_variables.get("host_name","Serveur"),
+                on_client_connect=on_client_connect,
+                on_stop=on_stop,
+                root=root,
+                tk=tk,
+                traduire=traduire,
+                center_window=center_window
+            )
+        if dic_variables["plateau_mode"] == "auto":
+            from plateau_builder import creer_plateau
+            plateau, pions = creer_plateau()
+            apercu_win = tk.Toplevel(root)
+            apercu_win.title("Plateau généré")
+            apercu_win.geometry("420x480")
+            apercu_win.configure(bg="#f0f4f8")
+            canvas = tk.Canvas(apercu_win, width=400, height=400, bg="#f0f4f8", highlightthickness=0)
+            canvas.pack(pady=10)
+            taille = 50
+            colors = {'R': '#ff9999', 'J': '#ffffb3', 'B': '#99ccff', 'V': '#b3ffb3'}
+            for i in range(8):
+                for j in range(8):
+                    couleur = plateau.cases[i][j]
+                    fill = colors.get(couleur, 'white')
+                    canvas.create_rectangle(j*taille, i*taille, (j+1)*taille, (i+1)*taille, fill=fill, outline="black")
+            btn = tk.Button(apercu_win, text="Jouer", command=lambda: [apercu_win.destroy(), lancer_partie_reseau(plateau, pions)], bg="#4CAF50", fg="white", font=("Helvetica", 12, "bold"))
+            btn.pack(pady=15)
+        else:
+            QuadrantEditorLive(root, retour_callback=back_to_config, network_callback=lancer_partie_reseau)
+    elif dic_variables["network_mode"] == "reseau" and dic_variables.get("is_client"):
+        # Côté client, on lance la partie réseau immédiatement
+        start_network_game(is_host=False, player_name=dic_variables.get("player_name"), sock=dic_variables.get("client_socket"))
+    else:
+        # Solo ou IA : comportement inchangé
+        if dic_variables["plateau_mode"] == "auto":
+            root.destroy()
+            lancer_plateau_builder(dic_variables["jeu_demande"], dic_variables["mode"] == "ia", dic_variables["plateau_mode"])
+        elif dic_variables["plateau_mode"] == "perso":
+            for widget in root.winfo_children():
+                widget.destroy()
+            QuadrantEditorLive(root, retour_callback=back_to_config)
 
 def open_mode_choice_window():
     """Ouvre la fenêtre pour choisir entre solo et réseau"""
@@ -230,11 +258,15 @@ def open_mode_choice_window():
     fenetre.configure(bg="#e0f7fa")
     def set_local():
         dic_variables["network_mode"] = "local"
+        dic_variables["is_host"] = False
+        dic_variables["is_client"] = False
         dic_variables["game_ready"] = True
         update_go_button_state()
         fenetre.destroy()
     def set_reseau():
         dic_variables["network_mode"] = "reseau"
+        dic_variables["is_host"] = False
+        dic_variables["is_client"] = False
         dic_variables["game_ready"] = False
         update_go_button_state()
         fenetre.destroy()
@@ -312,39 +344,6 @@ def on_mode_change():
 def on_plateau_mode_change():
     """Met à jour le mode de plateau choisi dans le dictionnaire"""
     dic_variables["plateau_mode"] = dic_variables["plateau_mode_var"].get()
-
-def update_go_button_state():
-    """Active ou désactive le bouton 'Jouer' selon les choix de l'utilisateur"""
-    btn = dic_variables.get("play_btn")
-    if not btn:
-        return
-    if dic_variables["mode"] == "ia":
-        btn.config(state="normal", bg="#4CAF50")
-    elif dic_variables["mode"] == "1v1":
-        if dic_variables["network_mode"] == "local":
-            btn.config(state="normal", bg="#4CAF50")
-        elif dic_variables["network_mode"] == "reseau" and dic_variables["game_ready"]:
-            btn.config(state="normal", bg="#4CAF50")
-        else:
-            btn.config(state="disabled", bg="#888888")
-    else:
-        btn.config(state="disabled", bg="#888888")
-
-def play():
-    """Lance la partie selon les choix de l'utilisateur"""
-    if dic_variables["plateau_mode"] == "auto":
-        root.destroy()
-        lancer_plateau_builder(dic_variables["jeu_demande"], dic_variables["mode"] == "ia", dic_variables["plateau_mode"])
-    elif dic_variables["plateau_mode"] == "perso":
-        for widget in root.winfo_children():
-            widget.destroy()
-        QuadrantEditorLive(root, retour_callback=retour_vers_configuration)
-
-def retour_vers_configuration():
-    """Permet de revenir à l'écran de choix après l'éditeur de plateau"""
-    for widget in root.winfo_children():
-        widget.destroy()
-    afficher_interface_choix()
 
 def get_local_ip():
     """Renvoie l'adresse IP locale de la machine (pour le réseau)"""
