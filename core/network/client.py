@@ -12,8 +12,15 @@ def start_client(host="127.0.0.1", port=5555):
         return None
 
 def send_move(client, move):
-    client.sendall(move.encode())
+    try:
+        client.sendall(move.encode())
+    except Exception as e:
+        print(f"Error sending move: {e}")
 
 def receive_move(client):
-    data = client.recv(1024)
-    return data.decode()
+    try:
+        data = client.recv(1024)
+        return data.decode()
+    except Exception as e:
+        print(f"Error receiving move: {e}")
+        return None

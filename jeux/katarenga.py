@@ -12,24 +12,45 @@ from tkinter import messagebox
 
 class JeuKatarenga:
     def __init__(self, plateau, joueurs, mode="1v1", root=None, sock=None, is_host=False, noms_joueurs=None):
-        # Nettoyer le root si fourni
+        # Clean up root if provided
         if root:
             for widget in root.winfo_children():
                 widget.destroy()
-        self.plateau, self.joueurs, self.mode = plateau, joueurs, mode
-        self.pions = {'X': {(0, j) for j in range(8)}, 'O': {(7, j) for j in range(8)}}
-        self.tour, self.timer_seconds, self.timer_running, self.selection = 0, 0, True, None
-        self.coups_possibles = set()
+                
+        # Basic setup
+        self.plateau = plateau
+        self.joueurs = joueurs
+        self.mode = mode
         self.sock = sock
         self.is_host = is_host
+        self.noms_joueurs = noms_joueurs or ["Joueur Blanc", "Joueur Noir"]
         self.root = root if root else tk.Tk()
+        
+        # Game state
+        self.pions = {'X': {(0, j) for j in range(8)}, 'O': {(7, j) for j in range(8)}}
+        self.tour = 0
+        self.timer_seconds = 0
+        self.timer_running = True
+        self.selection = None
+        self.coups_possibles = set()
+
+        # UI Setup
         self.root.title("Katarenga")
         self.root.configure(bg="#e6f2ff")
-        self.noms_joueurs = noms_joueurs or ["Joueur Blanc", "Joueur Noir"]
 
+        self.setup_ui()
+        self.start_timer()
+
+        # Network setup
+        if self.sock:
+            self.setup_network()
+
+    def setup_ui(self):
+        # Top frame
         self.top_frame = tk.Frame(self.root, bg="#e6f2ff")
         self.top_frame.pack(fill="x", pady=5, padx=5)
 
+        # Labels
         self.tour_label = tk.Label(self.top_frame, text="", font=("Helvetica", 12, "bold"), bg="#e6f2ff", fg="#003366")
         self.tour_label.pack(side="top")
 
@@ -39,25 +60,94 @@ class JeuKatarenga:
         self.timer_label = tk.Label(self.top_frame, text="00:00", font=("Helvetica", 12, "bold"), bg="#e6f2ff", fg="#003366")
         self.timer_label.pack(side="top")
 
+        # Game canvas
         self.canvas = tk.Canvas(self.root, width=400, height=400)
         self.canvas.pack()
-        self.afficher_plateau()
-        self.canvas.bind("<Button-1>", self.on_click)
 
+        # Buttons
         self.load_and_pack_button("en-arriere.png", "<", self.top_frame, self.retour_menu, "left")
         self.load_and_pack_button("point-dinterrogation.png", "?", self.top_frame, self.aide_popup, "right")
         self.load_and_pack_button("fleche-pivotante-vers-la-gauche.png", "Rejouer", self.root, self.rejouer, "bottom", pady=10)
 
         self.update_info_joueur()
-        self.start_timer()
-        if self.sock:
-            threading.Thread(target=self.network_listener, daemon=True).start()
-            self.lock_ui_if_needed()
+        self.afficher_plateau()
+        self.canvas.bind("<Button-1>", self.on_click)
+
+    def setup_network(self):
+        # Start network listener thread
+        threading.Thread(target=self.network_listener, daemon=True).start()
+        
+        # Set up initial UI state based on player role
+        self.lock_ui_if_needed()
+
+    def network_listener(self):
+        while True:
+            try:
+                if not self.sock:
+                    break
+                    
+                data = self.sock.recv(1024)
+                if not data:
+                    break
+                    
+                msg = data.decode()
+                if msg.startswith('move:'):
+                    # Parse move data
+                    coords = msg[5:].split('->')
+                    depart = tuple(map(int, coords[0].split(',')))
+                    arrivee = tuple(map(int, coords[1].split(',')))
+                    
+                    # Apply move on UI thread
+                    self.root.after(0, lambda: self.apply_network_move(depart, arrivee))
+            except Exception as e:
+                print(f"Network error: {e}")
+                break
+
+    def lock_ui_if_needed(self):
+        if not self.sock:
+            return
+            
+        mon_symbole = 'X' if self.is_host else 'O'
+        if (self.tour % 2 == 0 and mon_symbole != 'X') or (self.tour % 2 == 1 and mon_symbole != 'O'):
+            self.canvas.unbind("<Button-1>")
         else:
             self.canvas.bind("<Button-1>", self.on_click)
 
-    def jouer(self):
-        self.root.mainloop()
+    def send_move(self, depart, arrivee):
+        if self.sock:
+            try:
+                msg = f"move:{depart[0]},{depart[1]}->{arrivee[0]},{arrivee[1]}".encode()
+                self.sock.sendall(msg)
+            except Exception as e:
+                print(f"Error sending move: {e}")
+                messagebox.showerror("Error", "Failed to send move to other player")
+
+    def apply_network_move(self, depart, arrivee):
+        # Get current player
+        joueur = self.joueur_actuel()
+        symbole = joueur.symbole
+
+        # Check for piece at destination
+        piece_arrivee = next((s for s in ['X', 'O'] if arrivee in self.pions[s]), None)
+        
+        # Handle capture (after first turn)
+        if piece_arrivee and self.tour > 0:
+            self.pions[piece_arrivee].discard(arrivee)
+
+        # Move piece
+        self.pions[symbole].discard(depart)
+        self.pions[symbole].add(arrivee)
+
+        # Update game state
+        self.tour += 1
+        self.selection = None
+        self.coups_possibles = set()
+
+        # Update UI
+        self.afficher_plateau()
+        self.update_info_joueur()
+        self.verifier_victoire()
+        self.lock_ui_if_needed()
 
     def load_and_pack_button(self, image_path, text, parent, command, side="top", padx=5, pady=5):
         try:
@@ -71,35 +161,6 @@ class JeuKatarenga:
 
     def joueur_actuel(self):
         return self.joueurs[self.tour % 2]
-
-    def lock_ui_if_needed(self):
-        if not self.sock:
-            return
-        mon_symbole = 'X' if self.is_host else 'O'
-        if (self.tour % 2 == 0 and mon_symbole != 'X') or (self.tour % 2 == 1 and mon_symbole != 'O'):
-            self.canvas.unbind("<Button-1>")
-        else:
-            self.canvas.bind("<Button-1>", self.on_click)
-
-    def network_listener(self):
-        while True:
-            try:
-                data = self.sock.recv(4096)
-                if not data:
-                    break
-                msg = data.decode()
-                if msg.startswith('move:'):
-                    coords = msg[5:].split('->')
-                    depart = tuple(map(int, coords[0].split(',')))
-                    arrivee = tuple(map(int, coords[1].split(',')))
-                    self.apply_network_move(depart, arrivee)
-            except Exception:
-                break
-
-    def send_move(self, depart, arrivee):
-        if self.sock:
-            msg = f"move:{depart[0]},{depart[1]}->{arrivee[0]},{arrivee[1]}".encode()
-            self.sock.sendall(msg)
 
     def update_info_joueur(self):
         if self.tour % 2 == 0:
@@ -171,21 +232,6 @@ class JeuKatarenga:
                     couleur_depart = self.plateau.cases[self.selection[0]][self.selection[1]]
                     self.coups_possibles = self.generer_coups_possibles(self.selection, couleur_depart, symbole)
                     self.afficher_plateau()
-
-    def apply_network_move(self, depart, arrivee):
-        joueur, symbole = self.joueur_actuel(), self.joueur_actuel().symbole
-        piece_arrivee = next((s for s in ['X', 'O'] if arrivee in self.pions[s]), None)
-        if piece_arrivee and self.tour > 0:
-            self.pions[piece_arrivee].discard(arrivee)
-        self.pions[symbole].discard(depart)
-        self.pions[symbole].add(arrivee)
-        self.tour += 1
-        self.selection = None
-        self.coups_possibles = set()
-        self.afficher_plateau()
-        self.update_info_joueur()
-        self.verifier_victoire()
-        self.lock_ui_if_needed()
 
     def generer_coups_possibles(self, depart, couleur, symbole):
         coups = set()
