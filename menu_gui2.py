@@ -186,7 +186,7 @@ def update_go_button_state():
 def play():
     """Lance la partie selon les choix de l'utilisateur"""
     if dic_variables["network_mode"] == "reseau" and dic_variables.get("is_host"):
-        # Si l'utilisateur est l'hôte, lancer le serveur et la partie APRÈS le choix du plateau
+        # Si l'utilisateur est l'hôte, on affiche d'abord l'aperçu ou l'éditeur, puis la fenêtre d'attente APRÈS le clic sur "Lancer la partie"
         def lancer_partie_reseau(plateau=None, pions=None):
             from core.network.game_network import host_server
             def on_client_connect(attente_win, client_socket, addr):
@@ -216,10 +216,13 @@ def play():
                 center_window=center_window
             )
         if dic_variables["plateau_mode"] == "auto":
-            from plateau_builder import creer_plateau
-            plateau, pions = creer_plateau()
-            lancer_partie_reseau(plateau, pions)
+            # Afficher l'aperçu du plateau, puis lancer la partie réseau APRÈS clic sur "Lancer la Partie"
+            def on_lancer_partie(plateau, pions):
+                # Après validation de l'aperçu, afficher la fenêtre d'attente
+                lancer_partie_reseau(plateau, pions)
+            lancer_plateau_builder(dic_variables["jeu_demande"], False, "auto", on_lancer_partie)
         else:
+            # Quadrants personnalisés : l'éditeur appelle le callback réseau après clic sur "Jouer avec ces quadrants"
             QuadrantEditorLive(root, retour_callback=back_to_config, network_callback=lancer_partie_reseau)
     elif dic_variables["network_mode"] == "reseau" and dic_variables.get("is_client"):
         # Côté client, on lance la partie réseau immédiatement
