@@ -218,21 +218,7 @@ def play():
         if dic_variables["plateau_mode"] == "auto":
             from plateau_builder import creer_plateau
             plateau, pions = creer_plateau()
-            apercu_win = tk.Toplevel(root)
-            apercu_win.title("Plateau généré")
-            apercu_win.geometry("420x480")
-            apercu_win.configure(bg="#f0f4f8")
-            canvas = tk.Canvas(apercu_win, width=400, height=400, bg="#f0f4f8", highlightthickness=0)
-            canvas.pack(pady=10)
-            taille = 50
-            colors = {'R': '#ff9999', 'J': '#ffffb3', 'B': '#99ccff', 'V': '#b3ffb3'}
-            for i in range(8):
-                for j in range(8):
-                    couleur = plateau.cases[i][j]
-                    fill = colors.get(couleur, 'white')
-                    canvas.create_rectangle(j*taille, i*taille, (j+1)*taille, (i+1)*taille, fill=fill, outline="black")
-            btn = tk.Button(apercu_win, text="Jouer", command=lambda: [apercu_win.destroy(), lancer_partie_reseau(plateau, pions)], bg="#4CAF50", fg="white", font=("Helvetica", 12, "bold"))
-            btn.pack(pady=15)
+            lancer_partie_reseau(plateau, pions)
         else:
             QuadrantEditorLive(root, retour_callback=back_to_config, network_callback=lancer_partie_reseau)
     elif dic_variables["network_mode"] == "reseau" and dic_variables.get("is_client"):
