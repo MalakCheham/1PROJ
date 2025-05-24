@@ -45,22 +45,56 @@ def back_to_config():
     afficher_interface_choix()
 
 def open_host_window():
-    """Ouvre la fenêtre pour héberger une partie réseau"""
     name = simpledialog.askstring(traduire("heberger"), traduire("entrer_nom_serveur"), parent=root)
     if not name:
         return
     player_name = simpledialog.askstring(traduire("heberger"), traduire("entrer_nom_joueur"), parent=root)
     if not player_name:
         return
-    dic_variables["host_name"] = name
-    dic_variables["player_name"] = player_name
-    dic_variables["is_host"] = True
-    dic_variables["is_client"] = False
-    dic_variables["network_mode"] = "reseau"
-    dic_variables["game_ready"] = True
-    update_go_button_state()
-    # On ne lance pas le serveur ici, ni de fenêtre d'attente !
-    # L'utilisateur revient à la config principale et clique sur 'Jouer' pour lancer la partie ET le serveur
+    def on_client_connect(attente_win, client_socket, addr):
+        attente_win.destroy()
+        messagebox.showinfo(traduire("heberger"), traduire("client_connecte"))
+        dic_variables["game_ready"] = True
+        update_go_button_state()
+        for widget in root.winfo_children():
+            widget.destroy()
+        def lancer_partie_reseau(plateau=None, pions=None):
+            # Lancement du jeu réseau dans le thread principal
+            root.after(0, lambda: start_network_game(is_host=True, player_name=player_name, sock=client_socket, plateau=plateau, pions=pions))
+        if dic_variables["plateau_mode"] == "auto":
+            from plateau_builder import creer_plateau
+            plateau, pions = creer_plateau()
+            apercu_win = tk.Toplevel(root)
+            apercu_win.title("Plateau généré")
+            apercu_win.geometry("420x480")
+            apercu_win.configure(bg="#f0f4f8")
+            canvas = tk.Canvas(apercu_win, width=400, height=400, bg="#f0f4f8", highlightthickness=0)
+            canvas.pack(pady=10)
+            taille = 50
+            colors = {'R': '#ff9999', 'J': '#ffffb3', 'B': '#99ccff', 'V': '#b3ffb3'}
+            for i in range(8):
+                for j in range(8):
+                    couleur = plateau.cases[i][j]
+                    fill = colors.get(couleur, 'white')
+                    canvas.create_rectangle(j*taille, i*taille, (j+1)*taille, (i+1)*taille, fill=fill, outline="black")
+            btn = tk.Button(apercu_win, text="Jouer", command=lambda: [apercu_win.destroy(), lancer_partie_reseau(plateau, pions)], bg="#4CAF50", fg="white", font=("Helvetica", 12, "bold"))
+            btn.pack(pady=15)
+        else:
+            QuadrantEditorLive(root, retour_callback=back_to_config, network_callback=lancer_partie_reseau)
+    def on_stop(attente_win):
+        attente_win.destroy()
+        messagebox.showinfo(traduire("heberger"), traduire("serveur_arrete"))
+        dic_variables["game_ready"] = False
+        update_go_button_state()
+    host_server(
+        server_name=name,
+        on_client_connect=on_client_connect,
+        on_stop=on_stop,
+        root=root,
+        tk=tk,
+        traduire=traduire,
+        center_window=center_window
+    )
 
 def open_network_window():
     """Ouvre la fenêtre pour choisir entre héberger ou rejoindre une partie réseau"""
