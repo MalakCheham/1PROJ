@@ -118,6 +118,7 @@ def start_network_game(is_host, player_name=None, player_name_noir=None, sock=No
     else:
         player_name_blanc = None
         player_name_noir = player_name_noir or player_name
+    # Correction : toujours transmettre plateau et pions (ou positions) reçus du serveur au client
     if dic_variables["jeu_demande"] == "katarenga":
         from jeux.katarenga import lancer_jeu_reseau
         lancer_jeu_reseau(root, is_host=is_host, player_name_blanc=player_name_blanc, player_name_noir=player_name_noir, sock=sock, plateau=plateau, pions=pions)
