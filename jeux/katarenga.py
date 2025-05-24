@@ -30,6 +30,7 @@ class JeuKatarenga:
         if pions is not None:
             self.pions = pions
         else:
+            # Par défaut : ligne 0 = blancs, ligne 7 = noirs
             self.pions = {'X': {(0, j) for j in range(8)}, 'O': {(7, j) for j in range(8)}}
         self.tour = 0
         self.timer_seconds = 0

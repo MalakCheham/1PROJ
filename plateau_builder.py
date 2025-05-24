@@ -14,14 +14,17 @@ try:
 except ImportError:
     charger_quadrants_personnalises = None  # fallback si non défini
 
-def creer_plateau():
+def creer_plateau(type_jeu="katarenga"):
     couleurs = ['R', 'J', 'B', 'V']
     plateau = Plateau()
     plateau.cases = [[random.choice(couleurs) for _ in range(8)] for _ in range(8)]
-    pions = {
-        'X': {(0, 1), (0, 4), (1, 0), (1, 7)},
-        'O': {(7, 1), (7, 4), (6, 0), (6, 7)}
-    }
+    if type_jeu == "katarenga":
+        pions = {
+            'X': {(0, j) for j in range(8)},
+            'O': {(7, j) for j in range(8)}
+        }
+    else:
+        pions = {}  # ou la logique propre à chaque jeu
     return plateau, pions
 
 def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto", network_callback=None):
@@ -36,7 +39,7 @@ def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto", network
         pass
 
     if plateau_mode == "auto" or charger_quadrants_personnalises is None:
-        plateau, pions = creer_plateau()
+        plateau, pions = creer_plateau(type_jeu)
     else:
         plateau = Plateau()
         quadrants = charger_quadrants_personnalises(os.path.join("assets", "quadrants_custom"))
@@ -47,10 +50,13 @@ def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto", network
                 for dx in range(4):
                     for dy in range(4):
                         plateau.cases[positions[i][0] + dx][positions[i][1] + dy] = bloc[dx][dy]
-        pions = {
-            'X': {(0, 1), (0, 4), (1, 0), (1, 7)},
-            'O': {(7, 1), (7, 4), (6, 0), (6, 7)}
-        }
+        if type_jeu == "katarenga":
+            pions = {
+                'X': {(0, j) for j in range(8)},
+                'O': {(7, j) for j in range(8)}
+            }
+        else:
+            pions = {}
 
     titre = tk.Label(root, text="Plateau généré", font=("Helvetica", 16, "bold"), bg="#f0f4f8")
     titre.pack(pady=10)
@@ -75,7 +81,7 @@ def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto", network
         else:
             joueurs = [Joueur(0, 'X'), Joueur(1, 'O')]
             if type_jeu == "katarenga":
-                JeuKatarenga(plateau, joueurs, pions).jouer()
+                JeuKatarenga(plateau, joueurs, pions=pions).jouer()
             elif type_jeu == "congress":
                 JeuCongress(plateau, joueurs, pions).jouer()
             elif type_jeu == "isolation":

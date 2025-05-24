@@ -104,12 +104,12 @@ class QuadrantEditorLive:
                     plateau.cases[positions[i][0] + dx][positions[i][1] + dy] = bloc[dx][dy]
 
         pions = {
-            'X': {(0, 1), (0, 4), (1, 0), (1, 7)},
-            'O': {(7, 1), (7, 4), (6, 0), (6, 7)}
-        }
+            'X': {(0, j) for j in range(8)},
+            'O': {(7, j) for j in range(8)}
+        }  # Seulement pour Katarenga
         joueurs = [Joueur(0, 'X'), Joueur(1, 'O')]
         if self.network_callback:
             self.network_callback(plateau, pions)
         else:
             self.root.destroy()
-            JeuKatarenga(plateau, joueurs, pions).jouer()
+            JeuKatarenga(plateau, joueurs, pions=pions).jouer()
