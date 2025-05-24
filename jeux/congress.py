@@ -9,7 +9,6 @@ from core.joueur import Joueur
 from core.aide import get_regles
 from tkinter import messagebox
 from PIL import Image, ImageTk
-from plateau_builder import creer_plateau
 
 class JeuCongress:
     def __init__(self, plateau, joueurs, mode="1v1", sock=None, is_host=False, noms_joueurs=None):
