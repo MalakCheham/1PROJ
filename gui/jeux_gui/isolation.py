@@ -1,3 +1,7 @@
+# Remplacer toute la logique Tkinter par Pygame dans chaque fichier de jeux_gui (congress.py, isolation.py, katarenga.py, plateau_builder.py, plateau_gui.py, quadrant_editor_live.py déjà fait).
+# Pour chaque fichier, créer une classe principale qui gère l'affichage, les boutons, la grille, etc. avec Pygame.
+# Utiliser pygame.font pour les textes, pygame.draw pour les boutons et la grille, et gérer les événements souris/clavier.
+
 import tkinter as tk
 import threading
 import os

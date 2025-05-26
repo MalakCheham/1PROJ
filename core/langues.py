@@ -1,5 +1,7 @@
-from core.parametres import LANGUE_ACTUELLE
+from core.parametres import get_language
 from core.traductions import TRADUCTIONS
 
-def traduire(clef):
-    return TRADUCTIONS.get(clef, {}).get(LANGUE_ACTUELLE, clef)
+
+def translate(key):
+    current_lang = get_language()
+    return TRADUCTIONS.get(key, {}).get(current_lang, key)

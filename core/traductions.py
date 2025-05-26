@@ -53,4 +53,9 @@ TRADUCTIONS = {
     "mode_jeu": {"fr": "Mode de jeu", "en": "Game Mode"},
     "entrer_nom_joueur": {"fr": "Entrez votre nom de joueur", "en": "Enter your player name"},
     "serveur_arrete": {"fr": "Serveur arrêté", "en": "Server stopped"},
+    "bienvenue_portail": {"fr": "Bienvenue dans le portail d'accueil du jeu !", "en": "Welcome to the game portal!"},
+    "entrez_nom_utilisateur": {"fr": "Entrez votre nom d'utilisateur pour vous amuser :", "en": "Enter your username to have fun:"},
+    "entrez_portail": {"fr": "Entrez dans le portail", "en": "Enter the portal"},
+    "sous_titre_modes": {"fr": "Faites votre choix parmi les modes de jeux passionnants ci-dessous.", "en": "Make your choice among the exciting game modes below."},
+    "choisissez_mode_jeu": {"fr": "Choisissez votre mode de jeu", "en": "Choose your game mode"},
 }

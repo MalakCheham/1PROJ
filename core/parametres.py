@@ -1,13 +1,25 @@
 import os
 
-chemin_langue = os.path.join("assets", "langue.txt")
-if os.path.exists(chemin_langue):
-    with open(chemin_langue, "r", encoding="utf-8") as f:
-        LANGUE_ACTUELLE = f.read().strip()
-else:
-    LANGUE_ACTUELLE = "fr"
+current_language = None
+language_file_path = os.path.join("assets", "language.txt")
 
-def set_langue(langue):
-    global LANGUE_ACTUELLE
-    if langue in ["fr", "en"]:
-        LANGUE_ACTUELLE = langue
+def load_language():
+    global current_language
+    if current_language is None:
+        if os.path.exists(language_file_path):
+            with open(language_file_path, 'r', encoding='utf-8') as f:
+                current_language = f.read().strip()
+        else:
+            current_language = 'fr'
+    return current_language
+
+
+def get_language():
+    return load_language()
+
+
+def set_language(lang):
+    global current_language
+    with open(language_file_path, 'w', encoding='utf-8') as f:
+        f.write(lang)
+    current_language = lang  # Met à jour la variable globale immédiatement
