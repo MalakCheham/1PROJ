@@ -13,7 +13,7 @@ def draw_choix_jeu(self):
     logo_size = self.font_title.get_height() + 10
     logo_img = pygame.transform.smoothscale(self.logo, (logo_size, logo_size))
     self.screen.blit(logo_img, (30, header_height//2 - logo_size//2))
-    titre = self.font_title.render(f"Bienvenue {self.username} !", True, (0,77,64))
+    titre = self.font_title.render(f"{translate('bienvenue') if hasattr(self, 'username') and self.username else translate('bienvenue_portail')} {self.username + ' !' if self.username else ''}", True, (0,77,64))
     titre_rect = titre.get_rect()
     titre_rect.centery = header_height//2
     titre_rect.x = 50 + logo_size
@@ -30,7 +30,7 @@ def draw_choix_jeu(self):
     except:
         pass
     if getattr(self, 'show_logout_menu', False):
-        logout_label = self.font_small.render("Se déconnecter", True, (0,77,64))
+        logout_label = self.font_small.render(translate("se_deconnecter"), True, (0,77,64))
         w, h = logout_label.get_size()
         menu_rect = pygame.Rect(circle_x - w - 16, circle_y + circle_radius + 10, w + 32, h + 16)
         pygame.draw.rect(self.screen, (255,255,255), menu_rect, border_radius=8)
@@ -52,14 +52,16 @@ def draw_choix_jeu(self):
             self.screen.blit(img, (x+10, y+10))
         except:
             pygame.draw.rect(self.screen, (200,200,200), (x+10, y+10, 240, 160))
-        self.screen.blit(self.font.render(mode["titre"], True, (0,51,102)), (x+20, y+190))
-        for i, line in enumerate(self.wrap_text(mode["desc"], 32)):
+        titre_mod = translate(f"mode_{mode['id']}") if f"mode_{mode['id']}" in dir(self) or f"mode_{mode['id']}" in globals() or f"mode_{mode['id']}" in locals() or True else mode["titre"]
+        self.screen.blit(self.font.render(titre_mod, True, (0,51,102)), (x+20, y+190))
+        desc_mod = translate(f"desc_{mode['id']}") if f"desc_{mode['id']}" in dir(self) or f"desc_{mode['id']}" in globals() or f"desc_{mode['id']}" in locals() or True else mode["desc"]
+        for i, line in enumerate(self.wrap_text(desc_mod, 32)):
             self.screen.blit(self.font_small.render(line, True, (0,0,0)), (x+20, y+230+i*25))
         btn = pygame.Rect(x+30, y+400, 200, 50)
         pygame.draw.rect(self.screen, (76, 175, 80), btn)
         pygame.draw.rect(self.screen, (0,0,0), btn, 2)
         self.screen.blit(self.help_icon, (btn.x+8, btn.y+8))
-        self.screen.blit(self.font_small.render("Lancer ce mode", True, (255,255,255)), (btn.x+50, btn.y+13))
+        self.screen.blit(self.font_small.render(translate("lancer_ce_mode"), True, (255,255,255)), (btn.x+50, btn.y+13))
         mode["btn_rect"] = btn
     # Barre de volume
     self.draw_volume_bar()

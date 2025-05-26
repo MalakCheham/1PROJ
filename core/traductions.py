@@ -58,4 +58,13 @@ TRADUCTIONS = {
     "entrez_portail": {"fr": "Entrez dans le portail", "en": "Enter the portal"},
     "sous_titre_modes": {"fr": "Faites votre choix parmi les modes de jeux passionnants ci-dessous.", "en": "Make your choice among the exciting game modes below."},
     "choisissez_mode_jeu": {"fr": "Choisissez votre mode de jeu", "en": "Choose your game mode"},
+    "bienvenue": {"fr": "Bienvenue", "en": "Welcome"},
+    "lancer_ce_mode": {"fr": "Lancer ce mode", "en": "Launch this mode"},
+    "mode_katarenga": {"fr": "Katarenga", "en": "Katarenga"},
+    "mode_congress": {"fr": "Congress", "en": "Congress"},
+    "mode_isolation": {"fr": "Isolation", "en": "Isolation"},
+    "desc_katarenga": {"fr": "Un mode de jeu inspiré du shogi et des échecs.", "en": "A game mode inspired by shogi and chess."},
+    "desc_congress": {"fr": "Un mode de réflexion où chaque coup compte.", "en": "A thinking mode where every move counts."},
+    "desc_isolation": {"fr": "Un mode duel tactique pour isoler l'adversaire.", "en": "A tactical duel mode to isolate your opponent."},
+    "se_deconnecter": {"fr": "Se déconnecter", "en": "Logout"},
 }
