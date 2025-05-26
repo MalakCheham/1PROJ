@@ -59,7 +59,7 @@ TRADUCTIONS = {
     "sous_titre_modes": {"fr": "Faites votre choix parmi les modes de jeux passionnants ci-dessous.", "en": "Make your choice among the exciting game modes below."},
     "choisissez_mode_jeu": {"fr": "Choisissez votre mode de jeu", "en": "Choose your game mode"},
     "bienvenue": {"fr": "Bienvenue", "en": "Welcome"},
-    "lancer_ce_mode": {"fr": "Lancer ce mode", "en": "Launch this mode"},
+    "lancer_ce_mode": {"fr": "Jouer", "en": "Play"},
     "mode_katarenga": {"fr": "Katarenga", "en": "Katarenga"},
     "mode_congress": {"fr": "Congress", "en": "Congress"},
     "mode_isolation": {"fr": "Isolation", "en": "Isolation"},

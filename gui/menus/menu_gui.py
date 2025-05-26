@@ -4,7 +4,7 @@ import os
 from core.parametres import set_language
 from core.langues import translate
 from core.musique import jouer_musique
-from gui.menus.choix_jeu_page import draw_choix_jeu
+from gui.menus.choix_gui import draw_choix_jeu
 
 # --- Etats du menu ---
 PAGE_ACCUEIL = "accueil"
@@ -141,17 +141,16 @@ class PortailGame:
         color = (66, 155, 70) if btn_hovered else (76, 175, 80)
         btn_draw_rect = btn_rect.copy()
         if btn_hovered:
+            # Animation halo + translation
+            halo = pygame.Surface((btn_rect.width+18, btn_rect.height+18), pygame.SRCALPHA)
+            pygame.draw.ellipse(halo, (76,175,80,38), halo.get_rect())
+            self.screen.blit(halo, (btn_rect.x-9, btn_rect.y-9))
             btn_draw_rect.y -= 2
         pygame.draw.rect(self.screen, color, btn_draw_rect, border_radius=22)
         pygame.draw.rect(self.screen, (0,0,0), btn_draw_rect, 2, border_radius=22)
-        try:
-            play_logo = pygame.image.load(os.path.join("assets", "play-button.png"))
-            play_logo = pygame.transform.smoothscale(play_logo, (40, 40))
-            self.screen.blit(play_logo, (btn_draw_rect.x+15, btn_draw_rect.y+12))
-        except:
-            pass
+        # Texte centré (pas d'icône)
         btn_label = self.font.render(translate("entrez_portail"), True, (255,255,255))
-        btn_label_rect = btn_label.get_rect(centery=btn_draw_rect.centery, x=btn_draw_rect.x + (btn_draw_rect.width - btn_label.get_width())//2 + 20)
+        btn_label_rect = btn_label.get_rect(center=btn_draw_rect.center)
         self.screen.blit(btn_label, btn_label_rect)
         self.btn_rect = btn_draw_rect
 
@@ -195,7 +194,7 @@ class PortailGame:
     def handle_event(self, event):
         # Accueil
         if self.page == PAGE_ACCUEIL:
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if event.type == pygame.MOUSEBUTTONDOWN and hasattr(event, 'pos'):
                 if hasattr(self, 'flag_fr_rect') and self.flag_fr_rect.collidepoint(event.pos):
                     set_language("fr"); pygame.time.wait(150); return
                 if hasattr(self, 'flag_uk_rect') and self.flag_uk_rect.collidepoint(event.pos):
@@ -224,7 +223,7 @@ class PortailGame:
                         pygame.mixer.music.set_volume(self.last_volume or 0.5)
                         self.muted = False
                     return
-            elif event.type == pygame.MOUSEMOTION and event.buttons[0]:
+            elif event.type == pygame.MOUSEMOTION and hasattr(event, 'pos') and event.buttons[0]:
                 if self.volume_bar_rect.collidepoint(event.pos):
                     rel_x = event.pos[0] - self.volume_bar_rect.x
                     v = min(max(rel_x / self.volume_bar_rect.width, 0), 1)
@@ -243,33 +242,36 @@ class PortailGame:
 
         # Choix de jeu
         if self.page == PAGE_CHOIX_JEU:
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                # Gestion du clic sur les drapeaux (en bas à droite)
+            if event.type == pygame.MOUSEBUTTONDOWN and hasattr(event, 'pos'):
+                # Gestion du menu déconnexion : toggle si clic sur l'icône, sinon ferme
+                if hasattr(self, 'lyrique_circle'):
+                    cx, cy, cr = self.lyrique_circle
+                    if (event.pos[0] - cx) ** 2 + (event.pos[1] - cy) ** 2 <= cr ** 2:
+                        self.show_logout_menu = not getattr(self, 'show_logout_menu', False)
+                        return
+                if getattr(self, 'show_logout_menu', False):
+                    if hasattr(self, 'logout_rect') and self.logout_rect and self.logout_rect.collidepoint(event.pos):
+                        self.page = PAGE_ACCUEIL
+                        self.username = ""
+                        self.show_logout_menu = False
+                        return
+                    else:
+                        self.show_logout_menu = False
+                        return
+                # Gestion drapeaux
                 if hasattr(self, 'flag_fr_rect') and self.flag_fr_rect.collidepoint(event.pos):
                     set_language("fr"); pygame.time.wait(120); return
                 if hasattr(self, 'flag_uk_rect') and self.flag_uk_rect.collidepoint(event.pos):
                     set_language("en"); pygame.time.wait(120); return
-                cx, cy, cr = self.lyrique_circle
-                dx, dy = event.pos[0] - cx, event.pos[1] - cy
-                if dx*dx + dy*dy <= cr*cr:
-                    self.show_logout_menu = True; return
-                if getattr(self, 'show_logout_menu', False) and self.logout_rect and self.logout_rect.collidepoint(event.pos):
-                    self.page = PAGE_ACCUEIL; self.username = ""; self.input_active = False; self.show_logout_menu = False; return
-                if getattr(self, 'show_logout_menu', False):
-                    in_circle = (event.pos[0]-cx)**2 + (event.pos[1]-cy)**2 <= cr**2
-                    if not (self.logout_rect and self.logout_rect.collidepoint(event.pos)) and not in_circle:
-                        self.show_logout_menu = False; return
-                for mode in self.modes:
-                    if mode.get("btn_rect") and mode["btn_rect"].collidepoint(event.pos):
-                        print(f"Lancer le mode: {mode['titre']}")
-                if self.volume_bar_rect.collidepoint(event.pos):
+                # Gestion volume
+                if hasattr(self, 'volume_bar_rect') and self.volume_bar_rect.collidepoint(event.pos):
                     rel_x = event.pos[0] - self.volume_bar_rect.x
                     v = min(max(rel_x / self.volume_bar_rect.width, 0), 1)
                     pygame.mixer.music.set_volume(v)
                     self.last_volume = v
                     self.muted = False
                     return
-                if self.volume_icon_rect.collidepoint(event.pos):
+                if hasattr(self, 'volume_icon_rect') and self.volume_icon_rect.collidepoint(event.pos):
                     if not self.muted:
                         self.last_volume = pygame.mixer.music.get_volume()
                         pygame.mixer.music.set_volume(0.0)
@@ -278,7 +280,78 @@ class PortailGame:
                         pygame.mixer.music.set_volume(self.last_volume or 0.5)
                         self.muted = False
                     return
-            elif event.type == pygame.MOUSEMOTION and event.buttons[0]:
+                # Gestion déconnexion
+                if hasattr(self, 'logout_rect') and self.logout_rect and self.logout_rect.collidepoint(event.pos):
+                    self.page = PAGE_ACCUEIL
+                    self.username = ""
+                    return
+            if getattr(self, 'sous_menu_mode', None) in ('katarenga', 'isolation', 'congress'):
+                # Gestion des clics dans le double sous-menu
+                if event.type == pygame.MOUSEBUTTONDOWN and hasattr(event, 'pos'):
+                    # Zone 1 : type de partie
+                    for rect, ia, label in getattr(self, 'type_partie_btns', []):
+                        if rect.collidepoint(event.pos):
+                            self.type_partie_choix = (ia, label)
+                            return
+                    # Zone 2 : plateau
+                    for rect, mode in getattr(self, 'plateau_btns', []):
+                        if rect.collidepoint(event.pos):
+                            # Il faut que le type de partie soit choisi avant de lancer
+                            if not hasattr(self, 'type_partie_choix'):
+                                return
+                            ia, label = self.type_partie_choix
+                            if mode == 'auto':
+                                from gui.jeux_gui.plateau_builder import lancer_plateau_builder
+                                lancer_plateau_builder(self.sous_menu_mode, mode_ia=ia, plateau_mode="auto", lang="fr" if not hasattr(self, 'lang') else self.lang)
+                                self.sous_menu_mode = None
+                                del self.type_partie_choix
+                                return
+                            elif mode == 'build':
+                                if self.sous_menu_mode == 'katarenga':
+                                    from gui.jeux_gui.quadrant_editor_live import QuadrantEditorLivePygame
+                                    QuadrantEditorLivePygame()
+                                    self.sous_menu_mode = None
+                                    del self.type_partie_choix
+                                    return
+                                # Pour isolation/congress : à adapter si éditeur spécifique
+                    # Bouton retour
+                    if hasattr(self, 'sous_menu_retour_rect') and self.sous_menu_retour_rect.collidepoint(event.pos):
+                        self.sous_menu_mode = None
+                        if hasattr(self, 'type_partie_choix'):
+                            del self.type_partie_choix
+                        return
+                # Gestion drapeaux et volume (identique)
+                if hasattr(event, 'pos') and hasattr(self, 'flag_fr_rect') and self.flag_fr_rect.collidepoint(event.pos):
+                    set_language("fr"); pygame.time.wait(120); return
+                if hasattr(event, 'pos') and hasattr(self, 'flag_uk_rect') and self.flag_uk_rect.collidepoint(event.pos):
+                    set_language("en"); pygame.time.wait(120); return
+                if hasattr(event, 'pos') and self.volume_bar_rect.collidepoint(event.pos):
+                    rel_x = event.pos[0] - self.volume_bar_rect.x
+                    v = min(max(rel_x / self.volume_bar_rect.width, 0), 1)
+                    pygame.mixer.music.set_volume(v)
+                    self.last_volume = v
+                    self.muted = False
+                    return
+                if hasattr(event, 'pos') and self.volume_icon_rect.collidepoint(event.pos):
+                    if not self.muted:
+                        self.last_volume = pygame.mixer.music.get_volume()
+                        pygame.mixer.music.set_volume(0.0)
+                        self.muted = True
+                    else:
+                        pygame.mixer.music.set_volume(self.last_volume or 0.5)
+                        self.muted = False
+                    return
+                return
+            if event.type == pygame.MOUSEBUTTONDOWN and hasattr(event, 'pos'):
+                for mode in self.modes:
+                    if mode.get("btn_rect") and mode["btn_rect"].collidepoint(event.pos):
+                        if mode["id"] in ("katarenga", "isolation", "congress"):
+                            self.sous_menu_mode = mode["id"]
+                            if hasattr(self, 'type_partie_choix'):
+                                del self.type_partie_choix
+                            return
+                        # ...autres modes...
+            elif event.type == pygame.MOUSEMOTION and hasattr(event, 'pos') and event.buttons[0]:
                 if self.volume_bar_rect.collidepoint(event.pos):
                     rel_x = event.pos[0] - self.volume_bar_rect.x
                     v = min(max(rel_x / self.volume_bar_rect.width, 0), 1)
