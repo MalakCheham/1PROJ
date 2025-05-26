@@ -9,6 +9,8 @@ from core.plateau import Plateau
 from core.joueur import Joueur
 from core.aide import get_regles
 from tkinter import messagebox
+from core.musique import jouer_musique
+jouer_musique()
  
 class JeuKatarenga:
     def __init__(self, plateau, joueurs, pions=None, mode="1v1", root=None, sock=None, is_host=False, noms_joueurs=None):

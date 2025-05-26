@@ -11,6 +11,8 @@ from core.aide import get_regles
 from core.mouvement import est_mouvement_roi, est_mouvement_cavalier, est_mouvement_fou, est_mouvement_tour
 from tkinter import messagebox
 from PIL import Image, ImageTk
+from core.musique import jouer_musique
+jouer_musique()
 
 class JeuCongress:
     def __init__(self, plateau, joueurs, mode="1v1", sock=None, is_host=False, noms_joueurs=None, root=None):

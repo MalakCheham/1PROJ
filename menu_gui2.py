@@ -11,6 +11,9 @@ from core.langues import traduire
 from tkinter import messagebox, simpledialog
 from PIL import Image, ImageTk
 from core.network.game_network import host_server, join_server, start_discovery, stop_discovery
+from core.musique import jouer_musique
+jouer_musique()
+
 
 """Variables globales"""
 dic_variables = {
@@ -349,11 +352,5 @@ root.iconphoto(False, icon_img)
 
 # On gènere la fenêtre principale
 afficher_interface_choix()
-
-# Lancer la musique 
-pygame.mixer.init()
-pygame.mixer.music.load(os.path.join("assets", "musique.mp3"))
-pygame.mixer.music.set_volume(0.5)
-pygame.mixer.music.play(-1)
 
 root.mainloop()

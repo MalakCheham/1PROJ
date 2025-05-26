@@ -10,6 +10,8 @@ from core.joueur import Joueur
 from core.aide import get_regles
 from tkinter import messagebox
 from PIL import Image, ImageTk
+from core.musique import jouer_musique
+jouer_musique()
 
 class JeuIsolation:
     def __init__(self, plateau, joueurs, mode="1v1", sock=None, is_host=False, noms_joueurs=None, root=None):
