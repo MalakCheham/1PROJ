@@ -326,7 +326,7 @@ def afficher_interface_choix(root):
 
     # Sélecteur de langue en bas à droite
     def on_language_changed(new_lang):
-        # Préserver le volume, le mode, le network_mode, le plateau_mode, etc.
+        # Préserver le volume, le mode, lenetwork_mode, le plateau_mode, etc.
         try:
             current_volume = soundbar.volume_var.get()
         except Exception:
@@ -386,6 +386,26 @@ def afficher_interface_choix(root):
     dic_variables["mode_label"] = tk.Label(main_frame, font=("Helvetica", 11, "italic"), bg="#f0f0f0", fg="#004d40")
     dic_variables["mode_label"].pack(pady=(0, 10))
     update_go_button_state(root)
+
+    # Bouton retour menu principal (menu_gui)
+    def retour_menu():
+        import menu_gui
+        try:
+            current_volume = root.volume_var.get()
+        except AttributeError:
+            try:
+                from core.musique import SoundBar
+                current_volume = SoundBar.last_volume
+            except Exception:
+                current_volume = None
+        for w in root.winfo_children():
+            w.destroy()
+        menu_gui.show_menu(root, volume=current_volume)
+    img_retour = Image.open(os.path.join("assets", "en-arriere.png")).resize((48, 48))
+    icon_retour = ImageTk.PhotoImage(img_retour)
+    btn_retour = tk.Button(root, image=icon_retour, command=retour_menu, bg="#f0f0f0", bd=0, relief="flat", cursor="hand2", activebackground="#e0e0e0")
+    btn_retour.image = icon_retour
+    btn_retour.place(relx=0.0, rely=0.5, anchor="w", x=18)
 
 def on_mode_change(root):
     """Met à jour le mode de jeu choisi dans le dictionnaire"""
