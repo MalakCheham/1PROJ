@@ -93,6 +93,19 @@ class KatarengaGame:
                 tile_textures[k] = None
         px = offset_x
         py = offset_y
+        # Précharge les images de pions avec gestion du fond
+        pion_noir_img = None
+        pion_blanc_img = None
+        try:
+            pion_noir_img = pygame.image.load(os.path.join("assets", "pion_noir.png")).convert_alpha()
+            pion_noir_img = pygame.transform.smoothscale(pion_noir_img, (cell_size-8, cell_size-8))
+        except Exception:
+            pion_noir_img = None
+        try:
+            pion_blanc_img = pygame.image.load(os.path.join("assets", "pion_blanc.png")).convert_alpha()
+            pion_blanc_img = pygame.transform.smoothscale(pion_blanc_img, (cell_size-8, cell_size-8))
+        except Exception:
+            pion_blanc_img = None
         for i in range(8):
             for j in range(8):
                 val = self.plateau.cases[i][j]
@@ -106,9 +119,15 @@ class KatarengaGame:
                 pygame.draw.rect(screen, (62, 30, 11), rect, 1)
                 # Pions
                 if (i, j) in self.pions['X']:
-                    pygame.draw.circle(screen, (0,0,0), rect.center, cell_size//3)
+                    if pion_noir_img:
+                        screen.blit(pion_noir_img, pion_noir_img.get_rect(center=rect.center))
+                    else:
+                        pygame.draw.circle(screen, (0,0,0), rect.center, cell_size//3)
                 elif (i, j) in self.pions['O']:
-                    pygame.draw.circle(screen, (255,255,255), rect.center, cell_size//3)
+                    if pion_blanc_img:
+                        screen.blit(pion_blanc_img, pion_blanc_img.get_rect(center=rect.center))
+                    else:
+                        pygame.draw.circle(screen, (255,255,255), rect.center, cell_size//3)
                 # Sélection visuelle claire
                 if self.selection == (i, j):
                     pygame.draw.rect(screen, (255, 215, 0), rect, 6)  # surlignage épais jaune
