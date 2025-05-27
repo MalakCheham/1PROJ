@@ -122,12 +122,13 @@ def show_menu(root=None, username=None, volume=None):
     from core.musique import SoundBar, regler_volume
     from core.parametres import LanguageSelector
     # Barre de son en bas à gauche
-    soundbar = SoundBar(root)
-    if volume is not None:
-        soundbar.volume_var.set(volume)
-        regler_volume(volume)
+    if hasattr(root, 'volume_var'):
+        root.volume_var.set(volume if volume is not None else root.volume_var.get())
+        soundbar = SoundBar(root, volume_var=root.volume_var)
     else:
-        regler_volume(soundbar.volume_var.get())
+        root.volume_var = tk.IntVar(value=volume if volume is not None else 50)
+        soundbar = SoundBar(root, volume_var=root.volume_var)
+    regler_volume(root.volume_var.get())
     soundbar.place(relx=0.0, rely=1.0, anchor="sw", x=10, y=-10)
 
     # Sélecteur de langue en bas à droite

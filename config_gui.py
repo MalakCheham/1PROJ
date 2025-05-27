@@ -314,14 +314,13 @@ def afficher_interface_choix(root):
             initial_volume = root.volume_var.get()
         except Exception:
             pass
-    # Crée ou synchronise la SoundBar et root.volume_var
     if hasattr(root, 'volume_var'):
         root.volume_var.set(initial_volume)
         soundbar = SoundBar(root, volume_var=root.volume_var)
     else:
         root.volume_var = tk.IntVar(value=initial_volume)
         soundbar = SoundBar(root, volume_var=root.volume_var)
-    regler_volume(initial_volume)
+    regler_volume(root.volume_var.get())
     soundbar.place(relx=0.0, rely=1.0, anchor="sw", x=10, y=-10)
 
     # Sélecteur de langue en bas à droite

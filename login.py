@@ -106,13 +106,16 @@ class LoginScreen(tk.Frame):
     def build_sound_controls(self):
         from core.musique import SoundBar, regler_volume
         # Use the initial volume if provided, otherwise default
-        if hasattr(self, 'volume_var'):
+        if hasattr(self.master, 'volume_var'):
+            self.master.volume_var.set(self._init_volume if self._init_volume is not None else self.master.volume_var.get())
+            self.volume_var = self.master.volume_var
             frame = SoundBar(self, volume_var=self.volume_var)
         else:
             initial = self._init_volume if self._init_volume is not None else 50
             self.volume_var = tk.IntVar(value=initial)
+            self.master.volume_var = self.volume_var
             frame = SoundBar(self, volume_var=self.volume_var)
-            regler_volume(initial)
+        regler_volume(self.volume_var.get())
         frame.pack(side="left", anchor="sw", padx=10, pady=10)
 
     def build_language_selector(self):
