@@ -16,7 +16,7 @@ def set_langue(langue):
 
 class LanguageSelector(tk.Frame):
     def __init__(self, master, assets_dir, callback=None, **kwargs):
-        super().__init__(master, bg="#f9f6e3", **kwargs)
+        super().__init__(master, bg="#f0f0f0", **kwargs)
         self.assets_dir = assets_dir
         self.callback = callback
         self.lang_var = tk.StringVar(value=LANGUE_ACTUELLE)
@@ -27,7 +27,7 @@ class LanguageSelector(tk.Frame):
             btn = tk.Radiobutton(
                 self, image=self.images[code], variable=self.lang_var, value=code,
                 indicatoron=0, borderwidth=0, width=40, height=40,
-                selectcolor='#e0e0e0', bg='#f9f6e3', activebackground='#e0e0e0',
+                selectcolor='#e0e0e0', bg='#f0f0f0', activebackground='#e0e0e0',
                 relief='flat', highlightthickness=0, cursor='hand2',
                 command=self.change_language)
             btn.image = self.images[code]

@@ -17,17 +17,17 @@ def show_menu(root=None, username=None, volume=None):
         set_username(username)
     root = root or tk.Tk()
     root.geometry("900x800")
-    root.configure(bg="#f9f6e3")
+    root.configure(bg="#f0f0f0")
     for w in root.winfo_children():
         w.destroy()
 
     # Entête plus grosse, couleur adaptée pour contraste icône
-    header_bg = "#e0e0d2"  # gris clair chaud, bon contraste pour icône lyrique
+    header_bg = "#e0e0e0"  # couleur plus standard pour compatibilité macOS
     header = tk.Frame(root, bg=header_bg, height=80)
     header.pack(side="top", fill="x")
 
     from core.langues import traduire
-    bienvenue = tk.Label(header, text=f"{traduire('bienvenue')} {USERNAME}", font=("Helvetica", 22, "bold"), bg=header_bg, fg="#5b7fce")
+    bienvenue = tk.Label(header, text=f"{traduire('bienvenue')} {USERNAME}", font=("Arial", 22, "bold"), bg=header_bg, fg="#5b7fce")
     bienvenue.pack(side="left", padx=32, pady=18)
 
     # Utiliser la variable globale ASSETS_DIR, ne pas la redéfinir dans la fonction
@@ -55,18 +55,18 @@ def show_menu(root=None, username=None, volume=None):
         menu.tk_popup(event.x_root, event.y_root)
     btn_icon.bind("<Button-1>", show_logout_menu)
 
-    body = tk.Frame(root, bg="#f9f6e3")
+    body = tk.Frame(root, bg="#f0f0f0")
     body.pack(expand=True, fill="both")
     body.grid_rowconfigure(0, weight=1)
     body.grid_columnconfigure((0,1,2), weight=1)
 
-    center_frame = tk.Frame(body, bg="#f9f6e3")
+    center_frame = tk.Frame(body, bg="#f0f0f0")
     center_frame.place(relx=0.5, rely=0.5, anchor="center")
 
     modes = [
-        ("Kataranga", "#eeeeeb", traduire("desc_katarenga")),
-        ("Congress", "#eeeeeb", traduire("desc_congress")),
-        ("Isolation", "#eeeeeb", traduire("desc_isolation"))
+        ("Kataranga", "#e0e0e0", traduire("desc_katarenga")),
+        ("Congress", "#e0e0e0", traduire("desc_congress")),
+        ("Isolation", "#e0e0e0", traduire("desc_isolation"))
     ]
     frames = []
     for i, (mode, color, desc) in enumerate(modes):
@@ -74,7 +74,7 @@ def show_menu(root=None, username=None, volume=None):
         frame.grid(row=0, column=i, padx=24, pady=0, sticky="nsew")
         frames.append(frame)
         # Titre centré
-        label = tk.Label(frame, text=mode, font=("Helvetica", 16, "bold"), bg=color, fg="#5b7fce", anchor="center")
+        label = tk.Label(frame, text=mode, font=("Arial", 16, "bold"), bg=color, fg="#5b7fce", anchor="center")
         label.pack(pady=(8, 0), fill="x")
 
         star_img = Image.open(os.path.join(ASSETS_DIR, "etoile.png")).convert("RGBA").resize((120, 120))
@@ -84,13 +84,13 @@ def show_menu(root=None, username=None, volume=None):
         star_lbl.pack(pady=(2, 0))
         
         # Description centrée
-        desc_lbl = tk.Label(frame, text=desc, font=("Helvetica", 10), bg=color, fg="#444", wraplength=180, anchor="center")
+        desc_lbl = tk.Label(frame, text=desc, font=("Arial", 10), bg=color, fg="#444", wraplength=180, anchor="center")
         desc_lbl.pack(pady=(2, 0), fill="x")
         
         spacer = tk.Label(frame, bg=color)
         spacer.pack(expand=True, fill="both")
         
-        play_btn = tk.Button(frame, text=traduire("jouer"), font=("Helvetica", 11, "bold"), bg="#4CAF50", fg="white", relief="ridge", cursor="hand2")
+        play_btn = tk.Button(frame, text=traduire("jouer"), font=("Arial", 11, "bold"), bg="#4CAF50", fg="white", relief="ridge", cursor="hand2")
         play_btn.pack(pady=(6, 12), fill="x", side="bottom")
         frame.pack_propagate(False)
 

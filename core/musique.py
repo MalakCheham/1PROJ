@@ -27,7 +27,7 @@ def reprendre():
 
 class SoundBar(tk.Frame):
     def __init__(self, master, volume_var=None, **kwargs):
-        super().__init__(master, bg="#f9f6e3", **kwargs)
+        super().__init__(master, bg="#f0f0f0", **kwargs)  # couleur plus standard
         from PIL import Image, ImageTk
         import os
         self.ASSETS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets")
@@ -35,12 +35,12 @@ class SoundBar(tk.Frame):
         vol_icon = ImageTk.PhotoImage(Image.open(os.path.join(self.ASSETS_DIR, "volume-reduit.png")).resize((32, 32)))
         self.icons = {'mute': mute_icon, 'vol': vol_icon}
         self.volume_var = volume_var or tk.IntVar(value=50)
-        self.sound_icon = tk.Label(self, image=vol_icon, bg="#f9f6e3", cursor="hand2")
+        self.sound_icon = tk.Label(self, image=vol_icon, bg="#f0f0f0", cursor="hand2")
         self.sound_icon.image = vol_icon
         self.sound_icon.pack(side="left", padx=(0, 6))
         self.scale = tk.Scale(self, from_=0, to=100, orient="horizontal",
                               variable=self.volume_var, showvalue=0, length=160,
-                              command=self.on_volume_change, bg="#f9f6e3", highlightthickness=0)
+                              command=self.on_volume_change, bg="#f0f0f0", highlightthickness=0)
         self.scale.pack(side="left")
         self.sound_icon.bind("<Button-1>", self.toggle_mute)
         self.on_volume_change(self.volume_var.get())

@@ -16,11 +16,11 @@ class LoginScreen(tk.Frame):
 
         root = master or tk.Tk()
 
-        super().__init__(root, bg="#f9f6e3")
+        super().__init__(root, bg="#f0f0f0")
 
         self.master = root
         self.master.geometry("900x800")
-        self.master.configure(bg="#f9f6e3")
+        self.master.configure(bg="#f0f0f0")
         self.load_icon()
         self.pack(expand=True, fill="both")
         self.build_ui()
@@ -47,26 +47,26 @@ class LoginScreen(tk.Frame):
         for widget in self.winfo_children():
             widget.destroy()
 
-        center_frame = tk.Frame(self, bg="#f9f6e3")
+        center_frame = tk.Frame(self, bg="#f0f0f0")
         center_frame.place(relx=0.5, rely=0.5, anchor="center")
 
-        logo_frame = tk.Frame(center_frame, bg="#f9f6e3")
+        logo_frame = tk.Frame(center_frame, bg="#f0f0f0")
         logo_frame.pack(pady=(30, 10))
         
         img = Image.open(os.path.join(ASSETS_DIR, "logo.png")).resize((180, 180))
         logo_img = ImageTk.PhotoImage(img)
-        lbl = tk.Label(logo_frame, image=logo_img, bg="#f9f6e3")
+        lbl = tk.Label(logo_frame, image=logo_img, bg="#f0f0f0")
         lbl.image = logo_img
         lbl.pack()
 
         tk.Label(center_frame, text=traduire("bienvenue_portail"),
-                 font=("Helvetica", 18, "bold"), bg="#f9f6e3", fg="#004d99").pack(pady=10)
+                 font=("Arial", 18, "bold"), bg="#f0f0f0", fg="#004d99").pack(pady=10)
         tk.Label(center_frame, text=traduire("entrez_nom_utilisateur"),
-                 font=("Helvetica", 13), bg="#f9f6e3").pack(pady=10)
+                 font=("Arial", 13), bg="#f0f0f0").pack(pady=10)
 
         self.username_var = tk.StringVar()
         entry = tk.Entry(center_frame, textvariable=self.username_var,
-                         font=("Helvetica", 13), width=18, bg="#fff",
+                         font=("Arial", 13), width=18, bg="#fff",
                          bd=2, relief="groove", justify="center",
                          highlightthickness=2, highlightbackground="#b3d9ff",
                          highlightcolor="#4CAF50")
@@ -74,7 +74,7 @@ class LoginScreen(tk.Frame):
         entry.focus_set()
 
         btn = tk.Button(center_frame, text=traduire("entrez_portail"),
-                        font=("Helvetica", 13, "bold"), bg="#4CAF50", fg="white",
+                        font=("Arial", 13, "bold"), bg="#4CAF50", fg="white",
                         activebackground="#388e3c", activeforeground="white",
                         width=20, height=2, bd=0, relief="ridge",
                         cursor="hand2", command=self.enter_portal)
