@@ -48,8 +48,8 @@ def open_settings():
     frame_langue.pack(pady=15, padx=15, fill="x")
     tk.Label(frame_langue, text="🌐", bg="#f0f4f8").pack(side="left")
     tk.Label(frame_langue, text=traduire("langue"), bg="#f0f4f8", font=("Helvetica", 11)).pack(side="left", padx=10)
-    tk.Button(frame_langue, text="FR", width=5, command=lambda: change_language("fr")).pack(side="right", padx=5)
-    tk.Button(frame_langue, text="EN", width=5, command=lambda: change_language("en")).pack(side="right", padx=5)
+    tk.Button(frame_langue, text="FR", width=5, command=lambda: change_language("fr", fen)).pack(side="right", padx=5)
+    tk.Button(frame_langue, text="EN", width=5, command=lambda: change_language("en", fen)).pack(side="right", padx=5)
 
     frame_retour = tk.Frame(fen, bg="#f0f4f8")
     frame_retour.pack(pady=15)
@@ -61,39 +61,37 @@ def open_settings():
     except:
         tk.Button(frame_retour, text="Retour", command=fen.destroy).pack()
 
-def change_language(code):
-    chemin_langue = os.path.join("assets", "langue.txt")
-    with open(chemin_langue, "w", encoding="utf-8") as f:
-        f.write(code)
-    parametres.LANGUE_ACTUELLE = code
+def build_interface(root=None):
+    if root is None:
+        from tkinter import _default_root
+        root = _default_root
     for widget in root.winfo_children():
         widget.destroy()
-    build_interface()
-
-def launch_game(jeu_type):
-    try:
-        subprocess.Popen([sys.executable, "menu_gui2.py", jeu_type])
-        root.destroy()
-    except Exception as e:
-        messagebox.showerror("Erreur", f"Impossible de lancer le jeu : {e}")
-
-def build_interface():
     frame_top = tk.Frame(root, bg="#e6f2ff")
     frame_top.pack(side="top", fill="x", pady=10, padx=10)
     tk.Label(frame_top, text=traduire("titre"), font=("Helvetica", 16, "bold"), fg="#004d99", bg="#e6f2ff").pack(side="left")
-
     try:
         icone_image = Image.open(os.path.join("assets", "lyrique.png")).resize((24, 24))
         icone = ImageTk.PhotoImage(icone_image)
-        bouton_options = tk.Button(frame_top, image=icone, bg="#e6f2ff", bd=0, command=open_settings)
+        def show_lyrique_menu(event=None):
+            menu = tk.Menu(root, tearoff=0)
+            menu.add_command(label="À propos", command=lambda: messagebox.showinfo("À propos", "Katarenga & Co.\nProjet B1"))
+            menu.add_command(label="Crédits", command=lambda: messagebox.showinfo("Crédits", "Développé par:\n Ibtihel BOUGUERN\n Malak CHEHAM\n Yassmine"))
+            menu.add_separator()
+            menu.add_command(label="Se déconnecter", command=lambda: (import_login_and_show(root)))
+            menu.add_command(label="Fermer", command=root.quit)
+            menu.tk_popup(event.x_root, event.y_root) if event else menu.post(0, 0)
+        def import_login_and_show(root):
+            import login
+            login.show_login(root)
+        bouton_options = tk.Button(frame_top, image=icone, bg="#e6f2ff", bd=0)
         bouton_options.image = icone
         bouton_options.pack(side="right")
+        bouton_options.bind("<Button-1>", show_lyrique_menu)
     except:
         tk.Button(frame_top, text="⚙", command=open_settings).pack(side="right")
-
     frame = tk.Frame(root, bg="#e6f2ff")
     frame.pack(expand=True)
-
     style_btn = {
         "font": ("Helvetica", 12, "bold"),
         "bg": "#cce6ff",
@@ -107,22 +105,37 @@ def build_interface():
         "highlightthickness": 0,
         "cursor": "hand2"
     }
+    tk.Button(frame, text=traduire("jouer_katarenga"), command=lambda: launch_game("katarenga", root), **style_btn).pack(pady=10)
+    tk.Button(frame, text=traduire("jouer_congress"), command=lambda: launch_game("congress", root), **style_btn).pack(pady=10)
+    tk.Button(frame, text=traduire("jouer_isolation"), command=lambda: launch_game("isolation", root), **style_btn).pack(pady=10)
 
-    tk.Button(frame, text=traduire("jouer_katarenga"), command=lambda: launch_game("katarenga"), **style_btn).pack(pady=10)
-    tk.Button(frame, text=traduire("jouer_congress"), command=lambda: launch_game("congress"), **style_btn).pack(pady=10)
-    tk.Button(frame, text=traduire("jouer_isolation"), command=lambda: launch_game("isolation"), **style_btn).pack(pady=10)
+def launch_game(jeu_type, root):
+    try:
+        for widget in root.winfo_children():
+            widget.destroy()
+        import menu_gui2
+        menu_gui2.main(root, jeu_type)
+    except Exception as e:
+        messagebox.showerror("Erreur", f"Impossible de lancer le jeu : {e}")
 
-# === Fenêtre principale ===
-root = tk.Tk()
-root.title("KATARENGA&CO.")
-root.geometry("340x460")
-root.configure(bg="#e6f2ff")
+def change_language(code, root=None):
+    chemin_langue = os.path.join("assets", "langue.txt")
+    with open(chemin_langue, "w", encoding="utf-8") as f:
+        f.write(code)
+    parametres.LANGUE_ACTUELLE = code
+    build_interface(root)
 
-try:
-    icon_img = ImageTk.PhotoImage(file=os.path.join("assets", "logo.png"))
-    root.iconphoto(False, icon_img)
-except:
-    pass
+def main(root):
+    root.title("KATARENGA&CO.")
+    root.geometry("600x800")
+    root.configure(bg="#e6f2ff")
+    try:
+        icon_img = ImageTk.PhotoImage(file=os.path.join("assets", "logo.png"))
+        root.iconphoto(False, icon_img)
+    except:
+        pass
+    build_interface(root)
 
-build_interface()
-root.mainloop()
+# Appel direct uniquement si exécuté comme script principal
+if __name__ == "__main__":
+    main(tk.Tk())

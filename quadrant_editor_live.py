@@ -111,5 +111,6 @@ class QuadrantEditorLive:
         if self.network_callback:
             self.network_callback(plateau, pions)
         else:
-            self.root.destroy()
+            for widget in self.root.winfo_children():
+                widget.destroy()
             JeuKatarenga(plateau, joueurs, pions=pions).jouer()

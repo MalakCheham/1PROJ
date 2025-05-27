@@ -25,7 +25,7 @@ dic_variables = {
     "plateau_mode": "auto"
 }
 
-def center_window(win, width, height):
+def center_window(win, width, height, root):
     """Centre une fenêtre par rapport à la fenêtre principale (root)"""
     win.update_idletasks()
     x = root.winfo_x() + (root.winfo_width() // 2) - (width // 2)
@@ -36,18 +36,18 @@ def show_help():
     """Affiche la fenêtre d'aide avec les explications du jeu"""
     messagebox.showinfo(traduire("aide"), traduire("aide_texte"))
 
-def quit_app():
+def quit_app(root):
     """Ferme la fenêtre principale et relance le menu"""
     root.destroy()
     subprocess.Popen([sys.executable, "menu_gui.py"])
 
-def back_to_config():
+def back_to_config(root):
     """Retourne à l'écran de choix principal."""
     for widget in root.winfo_children():
         widget.destroy()
-    afficher_interface_choix()
+    afficher_interface_choix(root)
 
-def open_host_window():
+def open_host_window(root):
     """Ouvre la fenêtre pour héberger une partie réseau"""
     name = simpledialog.askstring(traduire("heberger"), traduire("entrer_nom_serveur"), parent=root)
     if not name:
@@ -61,27 +61,27 @@ def open_host_window():
     dic_variables["is_client"] = False
     dic_variables["network_mode"] = "reseau"
     dic_variables["game_ready"] = True
-    update_go_button_state()
+    update_go_button_state(root)
 
-def open_network_window():
+def open_network_window(root):
     """Ouvre la fenêtre pour choisir entre héberger ou rejoindre une partie réseau"""
     fenetre = tk.Toplevel(root)
     fenetre.title(traduire("choisir_mode_jeu"))
-    center_window(fenetre, 300, 180)
+    center_window(fenetre, 300, 180, root)
     fenetre.transient(root)
     fenetre.grab_set()
     fenetre.configure(bg="#e0f7fa")
     tk.Label(fenetre, text=traduire("choisir_reseau"), font=("Helvetica", 13, "bold"), bg="#e0f7fa").pack(pady=15)
-    btn_host = tk.Button(fenetre, text=traduire("heberger"), font=("Helvetica", 12), width=15, command=lambda: [fenetre.destroy(), open_host_window()])
+    btn_host = tk.Button(fenetre, text=traduire("heberger"), font=("Helvetica", 12), width=15, command=lambda: [fenetre.destroy(), open_host_window(root)])
     btn_host.pack(pady=5)
-    btn_join = tk.Button(fenetre, text=traduire("join_server"), font=("Helvetica", 12), width=15, command=lambda: [fenetre.destroy(), open_join_window()])
+    btn_join = tk.Button(fenetre, text=traduire("join_server"), font=("Helvetica", 12), width=15, command=lambda: [fenetre.destroy(), open_join_window(root)])
     btn_join.pack(pady=5)
 
-def open_join_window():
+def open_join_window(root):
     """Ouvre la fenêtre pour rejoindre une partie réseau existante"""
     fenetre = tk.Toplevel(root)
     fenetre.title(traduire("join_server"))
-    center_window(fenetre, 350, 350)
+    center_window(fenetre, 350, 350, root)
     fenetre.transient(root)
     fenetre.grab_set()
     fenetre.configure(bg="#e0f7fa")
@@ -92,7 +92,7 @@ def open_join_window():
     btns = []
     def add_server(srv):
         serveurs.append(srv)
-        btn = tk.Button(frame_list, text=f"{srv['nom']} ({srv['ip']}:{srv['port']})", font=("Helvetica", 12), width=30, anchor="w", command=lambda s=srv: join_server_ui(s, fenetre))
+        btn = tk.Button(frame_list, text=f"{srv['nom']} ({srv['ip']}:{srv['port']})", font=("Helvetica", 12), width=30, anchor="w", command=lambda s=srv: join_server_ui(s, fenetre, root))
         btn.pack(pady=3)
         btns.append(btn)
     discovery = start_discovery(add_server)
@@ -109,7 +109,7 @@ def open_join_window():
             discovery.found.clear()
     tk.Button(fenetre, text=traduire("rafraichir"), command=refresh, bg="#b2ebf2").pack(pady=5)
 
-def start_network_game(is_host, player_name=None, player_name_noir=None, sock=None, plateau=None, pions=None):
+def start_network_game(root, is_host, player_name=None, player_name_noir=None, sock=None, plateau=None, pions=None):
     """Lance la partie réseau avec les bons paramètres"""
     for widget in root.winfo_children():
         widget.destroy()
@@ -131,7 +131,7 @@ def start_network_game(is_host, player_name=None, player_name_noir=None, sock=No
     else:
         tk.Label(root, text="Mode réseau non implémenté pour ce jeu.", font=("Helvetica", 15, "bold"), fg="#d32f2f", bg="#e6f2ff").pack(pady=60)
 
-def join_server_ui(server, fenetre):
+def join_server_ui(server, fenetre, root):
     """Demande le nom du joueur puis tente de rejoindre le serveur sélectionné"""
     fenetre.destroy()
     player_name = simpledialog.askstring(traduire("join_server"), traduire("entrer_nom_joueur"), parent=root)
@@ -142,14 +142,14 @@ def join_server_ui(server, fenetre):
     sock = join_server(ip, port)
     if sock:
         dic_variables["game_ready"] = True
-        update_go_button_state()
-        start_network_game(is_host=False, player_name=player_name, sock=sock)
+        update_go_button_state(root)
+        start_network_game(root, is_host=False, player_name=player_name, sock=sock)
     else:
         messagebox.showerror(traduire("join_server"), f"{traduire('tentative_connexion')} {server['nom']} ({ip})\n{traduire('connection_failed')}")
         dic_variables["game_ready"] = False
-        update_go_button_state()
+        update_go_button_state(root)
 
-def update_go_button_state():
+def update_go_button_state(root):
     """Active ou désactive le bouton 'Jouer' selon les choix de l'utilisateur"""
     btn = dic_variables.get("play_btn")
     if not btn:
@@ -183,25 +183,19 @@ def update_go_button_state():
     else:
         mode_label.config(text="Mode : ?")
 
-def play():
+def play(root):
     """Lance la partie selon les choix de l'utilisateur"""
     if dic_variables["network_mode"] == "reseau" and dic_variables.get("is_host"):
         def lancer_partie_reseau(plateau=None, pions=None):
             from core.network.game_network import host_server
             def on_client_connect(attente_win, client_socket, addr):
                 attente_win.destroy()
-                root.after(0, lambda: start_network_game(
-                    is_host=True,
-                    player_name=dic_variables.get("host_name"),
-                    sock=client_socket,
-                    plateau=plateau,
-                    pions=pions
-                ))
+                root.after(0, lambda: start_network_game(root, is_host=True, player_name=dic_variables.get("host_name"), sock=client_socket, plateau=plateau, pions=pions))
             def on_stop(attente_win):
                 attente_win.destroy()
                 messagebox.showinfo(traduire("heberger"), traduire("serveur_arrete"))
                 dic_variables["game_ready"] = False
-                update_go_button_state()
+                update_go_button_state(root)
             host_server(
                 server_name=dic_variables.get("host_name","Serveur"),
                 on_client_connect=on_client_connect,
@@ -209,30 +203,31 @@ def play():
                 root=root,
                 tk=tk,
                 traduire=traduire,
-                center_window=center_window
+                center_window=lambda win, w, h: center_window(win, w, h, root)
             )
         if dic_variables["plateau_mode"] == "auto":
             def on_lancer_partie(plateau, pions):
                 lancer_partie_reseau(plateau, pions)
-            lancer_plateau_builder(dic_variables["jeu_demande"], False, "auto", on_lancer_partie)
+            lancer_plateau_builder(dic_variables["jeu_demande"], False, "auto", on_lancer_partie, root)
         else:
-            QuadrantEditorLive(root, retour_callback=back_to_config, network_callback=lancer_partie_reseau)
+            QuadrantEditorLive(root, retour_callback=lambda: back_to_config(root), network_callback=lancer_partie_reseau)
     elif dic_variables["network_mode"] == "reseau" and dic_variables.get("is_client"):
-        start_network_game(is_host=False, player_name=dic_variables.get("player_name"), sock=dic_variables.get("client_socket"))
+        start_network_game(root, is_host=False, player_name=dic_variables.get("player_name"), sock=dic_variables.get("client_socket"))
     else:
         if dic_variables["plateau_mode"] == "auto":
-            root.destroy()
-            lancer_plateau_builder(dic_variables["jeu_demande"], dic_variables["mode"] == "ia", dic_variables["plateau_mode"])
+            for widget in root.winfo_children():
+                widget.destroy()
+            lancer_plateau_builder(dic_variables["jeu_demande"], dic_variables["mode"] == "ia", dic_variables["plateau_mode"], None, root)
         elif dic_variables["plateau_mode"] == "perso":
             for widget in root.winfo_children():
                 widget.destroy()
-            QuadrantEditorLive(root, retour_callback=back_to_config)
+            QuadrantEditorLive(root, retour_callback=lambda: back_to_config(root))
 
-def open_mode_choice_window():
+def open_mode_choice_window(root):
     """Ouvre la fenêtre pour choisir entre solo et réseau"""
     fenetre = tk.Toplevel(root)
     fenetre.title(traduire("choisir_mode_jeu"))
-    center_window(fenetre, 300, 180)
+    center_window(fenetre, 300, 180, root)
     fenetre.transient(root)
     fenetre.grab_set()
     fenetre.configure(bg="#e0f7fa")
@@ -241,24 +236,28 @@ def open_mode_choice_window():
         dic_variables["is_host"] = False
         dic_variables["is_client"] = False
         dic_variables["game_ready"] = True
-        update_go_button_state()
+        update_go_button_state(root)
         fenetre.destroy()
     def set_reseau():
         dic_variables["network_mode"] = "reseau"
         dic_variables["is_host"] = False
         dic_variables["is_client"] = False
         dic_variables["game_ready"] = False
-        update_go_button_state()
+        update_go_button_state(root)
         fenetre.destroy()
-        open_network_window()
+        open_network_window(root)
     tk.Label(fenetre, text=traduire("choisir_mode_jeu"), font=("Helvetica", 13, "bold"), bg="#e0f7fa").pack(pady=15)
     btn_solo = tk.Button(fenetre, text=traduire("mode_solo"), font=("Helvetica", 12), width=15, command=set_local)
     btn_solo.pack(pady=5)
     btn_reseau = tk.Button(fenetre, text=traduire("mode_reseau"), font=("Helvetica", 12), width=15, command=set_reseau)
     btn_reseau.pack(pady=5)
 
-def afficher_interface_choix():
+def afficher_interface_choix(root):
     """Affiche l'écran principal de choix du mode de jeu et du plateau."""
+    # Nettoyer la fenêtre
+    for widget in root.winfo_children():
+        widget.destroy()
+
     frame_top = tk.Frame(root, bg="#e0f7fa")
     frame_top.pack(side="top", fill="x", pady=5, padx=5)
 
@@ -295,33 +294,33 @@ def afficher_interface_choix():
 
     frame1 = tk.Frame(frame_mode, bg="#fefbe9")
     frame1.pack(pady=10)
-    tk.Radiobutton(frame1, text=traduire("mode_1v1"), variable=dic_variables["mode_var"], value="1v1", font=("Helvetica", 12), bg="#fefbe9", command=on_mode_change).pack(side="left", padx=10)
-    btn_mode_select = tk.Button(frame1, text=traduire("mode_jeu"), font=("Helvetica", 12, "bold"), bg="#e0f7fa", bd=0, command=open_mode_choice_window)
+    tk.Radiobutton(frame1, text=traduire("mode_1v1"), variable=dic_variables["mode_var"], value="1v1", font=("Helvetica", 12), bg="#fefbe9", command=lambda: on_mode_change(root)).pack(side="left", padx=10)
+    btn_mode_select = tk.Button(frame1, text=traduire("mode_jeu"), font=("Helvetica", 12, "bold"), bg="#e0f7fa", bd=0, command=lambda: open_mode_choice_window(root))
     btn_mode_select.pack(side="left", padx=5)
 
     frame2 = tk.Frame(frame_mode, bg="#fefbe9")
     frame2.pack(pady=10)
-    tk.Radiobutton(frame2, text=traduire("mode_ia"), variable=dic_variables["mode_var"], value="ia", font=("Helvetica", 12), bg="#fefbe9", command=on_mode_change).pack(side="left", padx=10)
+    tk.Radiobutton(frame2, text=traduire("mode_ia"), variable=dic_variables["mode_var"], value="ia", font=("Helvetica", 12), bg="#fefbe9", command=lambda: on_mode_change(root)).pack(side="left", padx=10)
 
     # Choix du plateau
     frame_plateau = tk.Frame(root, bg="#fefbe9")
     frame_plateau.pack(pady=10)
 
     tk.Label(frame_plateau, text=traduire("plateau"), bg="#fefbe9", font=("Helvetica", 13)).pack()
-    tk.Radiobutton(frame_plateau, text=traduire("plateau_auto"), variable=dic_variables["plateau_mode_var"], value="auto", bg="#fefbe9", font=("Helvetica", 12), command=on_plateau_mode_change).pack(anchor="w", padx=20)
-    tk.Radiobutton(frame_plateau, text=traduire("plateau_perso"), variable=dic_variables["plateau_mode_var"], value="perso", bg="#fefbe9", font=("Helvetica", 12), command=on_plateau_mode_change).pack(anchor="w", padx=20)
+    tk.Radiobutton(frame_plateau, text=traduire("plateau_auto"), variable=dic_variables["plateau_mode_var"], value="auto", bg="#fefbe9", font=("Helvetica", 12), command=lambda: on_plateau_mode_change(root)).pack(anchor="w", padx=20)
+    tk.Radiobutton(frame_plateau, text=traduire("plateau_perso"), variable=dic_variables["plateau_mode_var"], value="perso", bg="#fefbe9", font=("Helvetica", 12), command=lambda: on_plateau_mode_change(root)).pack(anchor="w", padx=20)
 
     # Bouton pour jouer, stocké dans le dictionnaire
-    dic_variables["play_btn"] = tk.Button(root, text=traduire("play"), command=play, font=("Helvetica", 12, "bold"), bg="#4CAF50", fg="white", width=15, relief="flat", state="disabled")
+    dic_variables["play_btn"] = tk.Button(root, text=traduire("play"), command=lambda: play(root), font=("Helvetica", 12, "bold"), bg="#4CAF50", fg="white", width=15, relief="flat", state="disabled")
     dic_variables["play_btn"].pack(pady=20)
-    update_go_button_state()
+    update_go_button_state(root)
 
-def on_mode_change():
+def on_mode_change(root):
     """Met à jour le mode de jeu choisi dans le dictionnaire"""
     dic_variables["mode"] = dic_variables["mode_var"].get()
-    update_go_button_state()
+    update_go_button_state(root)
 
-def on_plateau_mode_change():
+def on_plateau_mode_change(root):
     """Met à jour le mode de plateau choisi dans le dictionnaire"""
     dic_variables["plateau_mode"] = dic_variables["plateau_mode_var"].get()
 
@@ -340,17 +339,14 @@ def fermer():
     root.destroy()
     subprocess.Popen([sys.executable, "menu_gui.py"])
 
-# Tkinter : crée la fenetre principale
-root = tk.Tk()
-root.title(traduire("titre"))
-root.geometry("360x580")
-root.configure(bg="#e6f2ff")
-
-# Tkinter : charger l'icone
-icon_img = ImageTk.PhotoImage(file=os.path.join("assets", "logo.png"))
-root.iconphoto(False, icon_img)
-
-# On gènere la fenêtre principale
-afficher_interface_choix()
-
-root.mainloop()
+def main(root, jeu_type):
+    global dic_variables
+    dic_variables = {
+        "jeu_demande": jeu_type,
+        "network_mode": "local",
+        "client_socket": None,
+        "mode": "1v1",
+        "game_ready": False,
+        "plateau_mode": "auto"
+    }
+    afficher_interface_choix(root)

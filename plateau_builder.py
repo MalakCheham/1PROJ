@@ -27,8 +27,14 @@ def creer_plateau(type_jeu="katarenga"):
         pions = {}  # ou la logique propre à chaque jeu
     return plateau, pions
 
-def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto", network_callback=None):
-    root = tk.Tk()
+def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto", network_callback=None, root=None):
+    if root is None:
+        root = tk.Tk()
+        own_root = True
+    else:
+        own_root = False
+        for widget in root.winfo_children():
+            widget.destroy()
     root.title("Aperçu du Plateau")
     root.configure(bg="#f0f4f8")
 
@@ -75,7 +81,8 @@ def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto", network
             canvas.create_rectangle(j*taille, i*taille, (j+1)*taille, i*taille + taille, fill=fill, outline="black")
 
     def lancer_partie():
-        root.destroy()
+        for widget in root.winfo_children():
+            widget.destroy()
         if network_callback:
             network_callback(plateau, pions)
         else:
@@ -91,4 +98,5 @@ def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto", network
                     bg="green", fg="white", font=("Helvetica", 12, "bold"))
     btn.pack(pady=15)
 
-    root.mainloop()
+    if own_root:
+        root.mainloop()

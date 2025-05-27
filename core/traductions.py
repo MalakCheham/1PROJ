@@ -1,5 +1,5 @@
 TRADUCTIONS = {
-    "titre": {"fr": "KATARENGA&CO.", "en": "KATARENGA&CO."},
+    "titre": {"fr": "Portail d'accueil du jeu", "en": "Game Home Portal"},
     "parametres": {"fr": "PARAMÈTRES", "en": "SETTINGS"},
     "volume_effets": {"fr": "Volume effets", "en": "Sound effects"},
     "volume_musique": {"fr": "Volume musique", "en": "Music volume"},
@@ -53,4 +53,7 @@ TRADUCTIONS = {
     "mode_jeu": {"fr": "Mode de jeu", "en": "Game Mode"},
     "entrer_nom_joueur": {"fr": "Entrez votre nom de joueur", "en": "Enter your player name"},
     "serveur_arrete": {"fr": "Serveur arrêté", "en": "Server stopped"},
+    "bienvenue_portail": {"fr": "Bienvenue dans le portail d'accueil du jeu !", "en": "Welcome to the game portal!"},
+    "entrez_nom_utilisateur": {"fr": "Entrez votre nom d'utilisateur pour vous amuser :", "en": "Enter your username to have fun:"},
+    "entrez_portail": {"fr": "Entrez dans le portail", "en": "Enter the portal"},
 }
