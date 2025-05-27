@@ -11,18 +11,17 @@ from core.parametres import LanguageSelector
 ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")
 
 class LoginScreen(tk.Frame):
-    def __init__(self, master=None):
+    def __init__(self, master=None, volume=None):
         from core.langues import traduire
 
         root = master or tk.Tk()
-
         super().__init__(root, bg="#f0f0f0")
-
         self.master = root
         self.master.geometry("900x800")
         self.master.configure(bg="#f0f0f0")
         self.load_icon()
         self.pack(expand=True, fill="both")
+        self._init_volume = volume  # Store initial volume
         self.build_ui()
         
         if not getattr(self.master, 'initialized', False):
@@ -102,16 +101,18 @@ class LoginScreen(tk.Frame):
         for widget in self.master.winfo_children():
             widget.destroy()
         username = self.username_var.get().strip()
-        menu_gui.main(self.master, username=username, volume=current_volume)
+        menu_gui.show_menu(self.master, username=username, volume=current_volume)
 
     def build_sound_controls(self):
+        from core.musique import SoundBar, regler_volume
+        # Use the initial volume if provided, otherwise default
         if hasattr(self, 'volume_var'):
-            from core.musique import SoundBar
             frame = SoundBar(self, volume_var=self.volume_var)
         else:
-            from core.musique import SoundBar
-            frame = SoundBar(self)
-            self.volume_var = frame.volume_var
+            initial = self._init_volume if self._init_volume is not None else 50
+            self.volume_var = tk.IntVar(value=initial)
+            frame = SoundBar(self, volume_var=self.volume_var)
+            regler_volume(initial)
         frame.pack(side="left", anchor="sw", padx=10, pady=10)
 
     def build_language_selector(self):
@@ -121,10 +122,10 @@ class LoginScreen(tk.Frame):
     def on_language_changed(self, new_lang):
         self.build_ui()
 
-def show_login(root=None):
+def show_login(root=None, volume=None):
     if root:
         for w in root.winfo_children():
             w.destroy()
-        LoginScreen(master=root)
+        screen = LoginScreen(master=root, volume=volume)
     else:
-        LoginScreen()
+        screen = LoginScreen(volume=volume)

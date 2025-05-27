@@ -12,7 +12,6 @@ from tkinter import messagebox, simpledialog
 from PIL import Image, ImageTk
 from core.network.game_network import host_server, join_server, start_discovery, stop_discovery
 from core.musique import jouer_musique
-jouer_musique()
 
 
 """Variables globales"""
@@ -272,42 +271,91 @@ def afficher_interface_choix(root):
     btn_icon.image = icon
     btn_icon.pack(side="right", padx=28, pady=12)
 
+    # Sous-menu lyrique (identique à menu_gui)
+    from tkinter import messagebox
+    def show_logout_menu(event):
+        menu = tk.Menu(root, tearoff=0)
+        menu.add_command(label=traduire("a_propos"), command=lambda: messagebox.showinfo(traduire("a_propos"), traduire("a_propos_texte")))
+        menu.add_command(label=traduire("credits"), command=lambda: messagebox.showinfo(traduire("credits"), traduire("credits_texte")))
+        menu.add_separator()
+        # Se déconnecter : retour à la page login
+        def go_to_login():
+            import login
+            try:
+                current_volume = root.volume_var.get()
+            except AttributeError:
+                try:
+                    from core.musique import SoundBar
+                    current_volume = SoundBar.last_volume
+                except Exception:
+                    current_volume = None
+            for w in root.winfo_children():
+                w.destroy()
+            login.show_login(root, volume=current_volume)
+        menu.add_command(label=traduire("se_deconnecter"), command=go_to_login)
+        menu.add_command(label=traduire("fermer"), command=root.quit)
+        menu.tk_popup(event.x_root, event.y_root)
+    btn_icon.bind("<Button-1>", show_logout_menu)
+
     # --- Ajout barre de son et sélecteur de langue en bas ---
     from core.musique import SoundBar, regler_volume
     from core.parametres import LanguageSelector
     # Barre de son en bas à gauche
-    soundbar = SoundBar(root)
-    volume = getattr(root, 'VOLUME', None)
-    if volume is not None:
-        soundbar.volume_var.set(volume)
-        regler_volume(volume)
+    # On récupère le volume transmis ou celui de menu_gui
+    volume_transmis = getattr(root, 'VOLUME', None)
+    # Priorité : dic_variables['volume'] > volume_transmis > root.volume_var.get() > 50
+    initial_volume = 50
+    if dic_variables.get('volume') is not None:
+        initial_volume = dic_variables['volume']
+    elif volume_transmis is not None:
+        initial_volume = volume_transmis
+    elif hasattr(root, 'volume_var'):
+        try:
+            initial_volume = root.volume_var.get()
+        except Exception:
+            pass
+    # Crée ou synchronise la SoundBar et root.volume_var
+    if hasattr(root, 'volume_var'):
+        root.volume_var.set(initial_volume)
+        soundbar = SoundBar(root, volume_var=root.volume_var)
     else:
-        regler_volume(soundbar.volume_var.get())
+        root.volume_var = tk.IntVar(value=initial_volume)
+        soundbar = SoundBar(root, volume_var=root.volume_var)
+    regler_volume(initial_volume)
     soundbar.place(relx=0.0, rely=1.0, anchor="sw", x=10, y=-10)
 
     # Sélecteur de langue en bas à droite
     def on_language_changed(new_lang):
-        # Préserver le volume actuel
+        # Préserver le volume, le mode, le network_mode, le plateau_mode, etc.
         try:
             current_volume = soundbar.volume_var.get()
         except Exception:
-            current_volume = volume
+            current_volume = dic_variables.get('volume')
+        current_mode = dic_variables.get("mode", "1v1")
+        current_network_mode = dic_variables.get("network_mode", "local")
+        current_plateau_mode = dic_variables.get("plateau_mode", "auto")
+        current_username = username
+        # On relance main avec les valeurs courantes
         import importlib
         import core.langues
         importlib.reload(core.langues)
-        main(root, dic_variables["jeu_demande"], username=username, volume=current_volume)
+        main(root, dic_variables["jeu_demande"], username=current_username, volume=current_volume, mode=current_mode, network_mode=current_network_mode, plateau_mode=current_plateau_mode)
     lang_selector = LanguageSelector(root, assets_dir="assets", callback=on_language_changed)
     lang_selector.place(relx=1.0, rely=1.0, anchor="se", x=-18, y=-18)
 
+    # Centrer le bloc principal de configuration au milieu de la fenêtre
+    main_frame = tk.Frame(root, bg="#f0f0f0")
+    main_frame.place(relx=0.5, rely=0.5, anchor="center")
+
     # Titre du jeu
-    tk.Label(root, text=traduire(dic_variables["jeu_demande"]).upper(), font=("Helvetica", 16, "bold"), fg="#004d40", bg="#f0f0f0").pack(pady=10)
+    tk.Label(main_frame, text=traduire(dic_variables["jeu_demande"]).upper(), font=("Helvetica", 16, "bold"), fg="#004d40", bg="#f0f0f0").pack(pady=10)
 
     # Variables Tkinter pour l'UI, stockées dans le dictionnaire
     dic_variables["mode_var"] = tk.StringVar(value=dic_variables["mode"])
     dic_variables["plateau_mode_var"] = tk.StringVar(value=dic_variables["plateau_mode"])
 
     # Choix du mode de jeu
-    frame_mode = tk.Frame(root, bg="#f0f0f0")
+    frame_mode = tk.Frame(main_frame, bg="#f0f0f0")
     frame_mode.pack(pady=10)
 
     frame1 = tk.Frame(frame_mode, bg="#f0f0f0")
@@ -321,7 +369,7 @@ def afficher_interface_choix(root):
     tk.Radiobutton(frame2, text=traduire("mode_ia"), variable=dic_variables["mode_var"], value="ia", font=("Helvetica", 12), bg="#f0f0f0", command=lambda: on_mode_change(root)).pack(side="left", padx=10)
 
     # Choix du plateau
-    frame_plateau = tk.Frame(root, bg="#f0f0f0")
+    frame_plateau = tk.Frame(main_frame, bg="#f0f0f0")
     frame_plateau.pack(pady=10)
 
     tk.Label(frame_plateau, text=traduire("plateau"), bg="#f0f0f0", font=("Helvetica", 13)).pack()
@@ -329,8 +377,14 @@ def afficher_interface_choix(root):
     tk.Radiobutton(frame_plateau, text=traduire("plateau_perso"), variable=dic_variables["plateau_mode_var"], value="perso", bg="#f0f0f0", font=("Helvetica", 12), command=lambda: on_plateau_mode_change(root)).pack(anchor="w", padx=20)
 
     # Bouton pour jouer, stocké dans le dictionnaire
-    dic_variables["play_btn"] = tk.Button(root, text=traduire("play"), command=lambda: play(root), font=("Helvetica", 12, "bold"), bg="#4CAF50", fg="white", width=15, relief="flat", state="disabled")
+    dic_variables["play_btn"] = tk.Button(main_frame, text=traduire("play"), command=lambda: play(root), font=("Helvetica", 12, "bold"), bg="#4CAF50", fg="white", width=15, relief="flat", state="disabled")
     dic_variables["play_btn"].pack(pady=20)
+
+    # Label du mode (solo/réseau) juste sous le bouton Jouer
+    if dic_variables.get("mode_label"):
+        dic_variables["mode_label"].destroy()
+    dic_variables["mode_label"] = tk.Label(main_frame, font=("Helvetica", 11, "italic"), bg="#f0f0f0", fg="#004d40")
+    dic_variables["mode_label"].pack(pady=(0, 10))
     update_go_button_state(root)
 
 def on_mode_change(root):
@@ -352,24 +406,19 @@ def get_local_ip():
         s.close()
     return ip
 
-def fermer():
-    """Ferme la fenêtre principale et relance le menu"""
-    root.destroy()
-    subprocess.Popen([sys.executable, "menu_gui.py"])
-
-def main(root, jeu_type, username=None, volume=None):
+def main(root, jeu_type, username=None, volume=None, mode=None, network_mode=None, plateau_mode=None):
     global dic_variables
     dic_variables = {
         "jeu_demande": jeu_type,
-        "network_mode": "local",
+        "network_mode": network_mode if network_mode is not None else "local",
         "client_socket": None,
-        "mode": "1v1",
+        "mode": mode if mode is not None else "1v1",
         "game_ready": False,
-        "plateau_mode": "auto",
+        "plateau_mode": plateau_mode if plateau_mode is not None else "auto",
         "username": username,
         "volume": volume
     }
-    # Stocker l'utilisateur sur root pour l'entête
+    
     if username:
         setattr(root, 'USERNAME', username)
     afficher_interface_choix(root)

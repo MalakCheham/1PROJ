@@ -40,9 +40,17 @@ def show_menu(root=None, username=None, volume=None):
     from tkinter import messagebox
     def import_login_and_show(root):
         import login
+        try:
+            current_volume = root.volume_var.get()
+        except AttributeError:
+            try:
+                from core.musique import SoundBar
+                current_volume = SoundBar.last_volume
+            except Exception:
+                current_volume = None
         for w in root.winfo_children():
             w.destroy()
-        login.show_login(root)
+        login.show_login(root, volume=current_volume)
 
     # Sous-menu déconnexion
     def show_logout_menu(event):
@@ -155,9 +163,4 @@ def logout(root):
             current_volume = None
     for w in root.winfo_children():
         w.destroy()
-    login.show_login(root)
-    if current_volume is not None:
-        regler_volume(current_volume)
-
-# Alias pour compatibilité avec login.py
-main = show_menu
+    login.show_login(root, volume=current_volume)
