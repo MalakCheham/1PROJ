@@ -253,6 +253,30 @@ class PortailGame:
         pygame.draw.rect(screen, (0,77,64), zone2_rect, 2, border_radius=18)
         label2 = self.font.render(translate("plateau"), 1, (0,51,102))
         screen.blit(label2, (zone2_rect.x+30, zone2_rect.y+30))
+        # Choix plateau_auto ou plateau_perso (radio boutons)
+        radio_y = zone2_rect.y+90
+        radio_x1 = zone2_rect.x+60
+        radio_x2 = zone2_rect.x+320
+        radio_radius = 16
+        # Détection sélection
+        selected_plateau = getattr(self, 'selected_plateau', 'auto')
+        mouse_pos = pygame.mouse.get_pos()
+        # Radio 1 : plateau_auto
+        auto_rect = pygame.Rect(radio_x1-radio_radius, radio_y-radio_radius, 2*radio_radius, 2*radio_radius)
+        pygame.draw.circle(screen, (0,77,64), (radio_x1, radio_y), radio_radius, 2)
+        if selected_plateau == 'auto':
+            pygame.draw.circle(screen, (66,155,70), (radio_x1, radio_y), radio_radius-5)
+        label_auto = self.font_small.render(translate("plateau_auto"), 1, (0,0,0))
+        screen.blit(label_auto, (radio_x1+28, radio_y-label_auto.get_height()//2))
+        # Radio 2 : plateau_perso (retour à la ligne)
+        radio_y2 = radio_y + 48  # Ajout d'un espacement vertical
+        perso_rect = pygame.Rect(radio_x1-radio_radius, radio_y2-radio_radius, 2*radio_radius, 2*radio_radius)
+        pygame.draw.circle(screen, (0,77,64), (radio_x1, radio_y2), radio_radius, 2)
+        if selected_plateau == 'perso':
+            pygame.draw.circle(screen, (66,155,70), (radio_x1, radio_y2), radio_radius-5)
+        label_perso = self.font_small.render(translate("plateau_perso"), 1, (0,0,0))
+        screen.blit(label_perso, (radio_x1+28, radio_y2-label_perso.get_height()//2))
+        self.plateau_radio_rects = [(auto_rect, 'auto'), (perso_rect, 'perso')]
         # Bouton retour centré en bas + bouton jouer à droite
         btn_retour = pygame.Rect(cx-130, zone2_rect.y+zone2_rect.height+40, 120, 44)
         btn_jouer = pygame.Rect(cx+10, zone2_rect.y+zone2_rect.height+40, 120, 44)
@@ -285,6 +309,50 @@ class PortailGame:
         self.flag_uk_rect = pygame.Rect(screen.get_width()-flag_size-margin, screen.get_height()-flag_size-margin, flag_size, flag_size)
         draw_flags(screen, self.flag_fr_rect, self.flag_uk_rect)
         draw_volume_bar(screen, self.muted, pygame.mixer.music.get_volume(), self.bar_rect, self.icon_rect)
+        # Affichage de l'icône d'aide (point d'interrogation)
+        help_icon = pygame.image.load(os.path.join("assets", "point-dinterrogation.png")).convert_alpha()
+        help_icon = pygame.transform.smoothscale(help_icon, (44, 44))
+        help_icon_rect = pygame.Rect(cx+320-54, 210+10, 44, 44)
+        screen.blit(help_icon, help_icon_rect)
+        self.help_icon_rect = help_icon_rect
+        # Affichage du sous-menu d'aide si besoin
+        if getattr(self, 'show_help_menu', False):
+            from core.aide import get_regles
+            regles_lines = get_regles(mode_id or "")
+            # Calcul dynamique de la taille du popup
+            max_width = 0
+            total_height = 0
+            for text, is_emoji in regles_lines:
+                font = pygame.font.SysFont("Segoe UI Emoji", 28, bold=True) if is_emoji and text.strip() else self.font_small
+                surf = font.render(text, True, (0,0,0))
+                max_width = max(max_width, surf.get_width())
+                total_height += surf.get_height() + 2
+            popup_w = max(480, max_width + 48)
+            popup_h = max(180, total_height + 90)  # 90 pour titre + marges
+            cx = screen.get_width()//2
+            popup_x = cx - popup_w//2
+            popup_y = 210 + 120 + 24
+            popup_rect = pygame.Rect(popup_x, popup_y, popup_w, popup_h)
+            pygame.draw.rect(screen, (255,255,255), popup_rect, border_radius=18)
+            pygame.draw.rect(screen, (0,77,64), popup_rect, 2, border_radius=18)
+            # Titre
+            titre_aide = self.font.render(translate("aide"), 1, (0,77,64))
+            screen.blit(titre_aide, (popup_x+24, popup_y+18))
+            # Affichage ligne à ligne avec gestion emoji/logo
+            y_text = popup_y+64
+            for text, is_emoji in regles_lines:
+                font = pygame.font.SysFont("Segoe UI Emoji", 28, bold=True) if is_emoji and text.strip() else self.font_small
+                surf = font.render(text, True, (0,0,0))
+                screen.blit(surf, (popup_x+24, y_text))
+                y_text += surf.get_height() + 2
+            # Fermer (croix)
+            close_rect = pygame.Rect(popup_x+popup_w-38, popup_y+10, 28, 28)
+            pygame.draw.circle(screen, (220,60,60), close_rect.center, 14)
+            pygame.draw.line(screen, (255,255,255), (close_rect.left+7, close_rect.top+7), (close_rect.right-7, close_rect.bottom-7), 3)
+            pygame.draw.line(screen, (255,255,255), (close_rect.right-7, close_rect.top+7), (close_rect.left+7, close_rect.bottom-7), 3)
+            self.help_close_rect = close_rect
+        else:
+            self.help_close_rect = None
 
     """
     Gestion des événements
@@ -372,6 +440,22 @@ class PortailGame:
                 if getattr(self, 'show_logout_menu', False):
                     self.show_logout_menu = False
                     return
+                # Icône d'aide
+                if hasattr(self, 'help_icon_rect') and self.help_icon_rect.collidepoint(event.pos):
+                    self.show_help_menu = True
+                    return
+                # Fermer l'aide
+                if getattr(self, 'show_help_menu', False) and getattr(self, 'help_close_rect', None):
+                    if self.help_close_rect.collidepoint(event.pos):
+                        self.show_help_menu = False
+                        return
+                if getattr(self, 'show_help_menu', False):
+                    # Si clic ailleurs que sur la popup, on ferme
+                    if not self.help_close_rect or not self.help_close_rect.collidepoint(event.pos):
+                        popup_rect = pygame.Rect(self.help_close_rect.x-442, self.help_close_rect.y-44, 480, 320)
+                        if not popup_rect.collidepoint(event.pos):
+                            self.show_help_menu = False
+                            return
                 # Bouton retour
                 if hasattr(self, 'btn_retour_rect') and self.btn_retour_rect.collidepoint(event.pos):
                     self.page = PAGE_CHOIX_JEU
@@ -380,6 +464,11 @@ class PortailGame:
                 if hasattr(self, 'btn_jouer_rect') and self.btn_jouer_rect.collidepoint(event.pos):
                     self.page = "PAGE_JEU"  # À remplacer par la page de jeu réelle
                     return
+                # Radio boutons plateau
+                for rect, value in getattr(self, 'plateau_radio_rects', []):
+                    if rect.collidepoint(event.pos):
+                        self.selected_plateau = value
+                        return
                 if self.flag_fr_rect.collidepoint(event.pos): set_language("fr"); pygame.time.wait(120)
                 if self.flag_uk_rect.collidepoint(event.pos): set_language("en"); pygame.time.wait(120)
                 if self.bar_rect.collidepoint(event.pos):
