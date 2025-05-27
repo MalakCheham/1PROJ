@@ -4,8 +4,6 @@ import os
 from functools import partial
 
 ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")
-
-# Variable globale pour le nom d'utilisateur (à setter depuis login.py)
 USERNAME = None
 
 def set_username(username):
@@ -21,8 +19,7 @@ def show_menu(root=None, username=None, volume=None):
     for w in root.winfo_children():
         w.destroy()
 
-    # Entête plus grosse, couleur adaptée pour contraste icône
-    header_bg = "#e0e0e0"  # couleur plus standard pour compatibilité macOS
+    header_bg = "#e0e0e0" 
     header = tk.Frame(root, bg=header_bg, height=80)
     header.pack(side="top", fill="x")
 
@@ -30,7 +27,7 @@ def show_menu(root=None, username=None, volume=None):
     bienvenue = tk.Label(header, text=f"{traduire('bienvenue')} {USERNAME}", font=("Arial", 22, "bold"), bg=header_bg, fg="#5b7fce")
     bienvenue.pack(side="left", padx=32, pady=18)
 
-    # Utiliser la variable globale ASSETS_DIR, ne pas la redéfinir dans la fonction
+    """Icone sous menu"""
     img = Image.open(os.path.join(ASSETS_DIR, "lyrique.png")).convert("RGBA").resize((40, 40))
     icon = ImageTk.PhotoImage(img)
     btn_icon = tk.Button(header, image=icon, bg=header_bg, bd=0, relief="flat", cursor="hand2", activebackground=header_bg, highlightthickness=0)
@@ -52,7 +49,7 @@ def show_menu(root=None, username=None, volume=None):
             w.destroy()
         login.show_login(root, volume=current_volume)
 
-    # Sous-menu déconnexion
+    """Sous menu"""
     def show_logout_menu(event):
         menu = tk.Menu(root, tearoff=0)
         menu.add_command(label=traduire("a_propos"), command=lambda: messagebox.showinfo(traduire("a_propos"), traduire("a_propos_texte")))
@@ -71,6 +68,7 @@ def show_menu(root=None, username=None, volume=None):
     center_frame = tk.Frame(body, bg="#f0f0f0")
     center_frame.place(relx=0.5, rely=0.5, anchor="center")
 
+    """Choix des modes de jeu"""
     modes = [
         ("Kataranga", "#e0e0e0", traduire("desc_katarenga")),
         ("Congress", "#e0e0e0", traduire("desc_congress")),
@@ -81,7 +79,6 @@ def show_menu(root=None, username=None, volume=None):
         frame = tk.Frame(center_frame, bg=color, bd=0, relief="ridge", height=290, width=260)
         frame.grid(row=0, column=i, padx=24, pady=0, sticky="nsew")
         frames.append(frame)
-        # Titre centré
         label = tk.Label(frame, text=mode, font=("Arial", 16, "bold"), bg=color, fg="#5b7fce", anchor="center")
         label.pack(pady=(8, 0), fill="x")
 
@@ -91,7 +88,6 @@ def show_menu(root=None, username=None, volume=None):
         star_lbl.image = star_icon
         star_lbl.pack(pady=(2, 0))
         
-        # Description centrée
         desc_lbl = tk.Label(frame, text=desc, font=("Arial", 10), bg=color, fg="#444", wraplength=180, anchor="center")
         desc_lbl.pack(pady=(2, 0), fill="x")
         
@@ -113,15 +109,13 @@ def show_menu(root=None, username=None, volume=None):
         play_btn.pack(pady=(6, 12), fill="x", side="bottom")
         frame.pack_propagate(False)
 
-    # Centrer verticalement les zones dans la fenêtre
     center_frame.grid_rowconfigure(0, weight=1)
     for i in range(len(modes)):
         center_frame.grid_columnconfigure(i, weight=1)
 
-    # --- Ajout barre de son et sélecteur de langue en bas ---
+    """Barre de son"""
     from core.musique import SoundBar, regler_volume
     from core.parametres import LanguageSelector
-    # Barre de son en bas à gauche
     if hasattr(root, 'volume_var'):
         root.volume_var.set(volume if volume is not None else root.volume_var.get())
         soundbar = SoundBar(root, volume_var=root.volume_var)
@@ -131,14 +125,12 @@ def show_menu(root=None, username=None, volume=None):
     regler_volume(root.volume_var.get())
     soundbar.place(relx=0.0, rely=1.0, anchor="sw", x=10, y=-10)
 
-    # Sélecteur de langue en bas à droite
+    """Langues"""
     def on_language_changed(new_lang):
-        # Préserver le volume actuel
         try:
             current_volume = soundbar.volume_var.get()
         except Exception:
             current_volume = volume
-        # Forcer la réinitialisation de la langue dans le module core.langues
         import importlib
         import core.langues
         importlib.reload(core.langues)

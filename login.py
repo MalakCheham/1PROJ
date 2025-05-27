@@ -89,7 +89,6 @@ class LoginScreen(tk.Frame):
 
     def enter_portal(self):
         import menu_gui
-        # Préserver le volume si possible
         try:
             current_volume = self.volume_var.get()
         except AttributeError:
@@ -103,9 +102,9 @@ class LoginScreen(tk.Frame):
         username = self.username_var.get().strip()
         menu_gui.show_menu(self.master, username=username, volume=current_volume)
 
+    """Barre de son"""
     def build_sound_controls(self):
         from core.musique import SoundBar, regler_volume
-        # Use the initial volume if provided, otherwise default
         if hasattr(self.master, 'volume_var'):
             self.master.volume_var.set(self._init_volume if self._init_volume is not None else self.master.volume_var.get())
             self.volume_var = self.master.volume_var

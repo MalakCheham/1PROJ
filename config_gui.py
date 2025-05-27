@@ -25,20 +25,10 @@ dic_variables = {
 }
 
 def center_window(win, width, height, root):
-    """Centre une fenêtre par rapport à la fenêtre principale (root)"""
     win.update_idletasks()
     x = root.winfo_x() + (root.winfo_width() // 2) - (width // 2)
     y = root.winfo_y() + (root.winfo_height() // 2) - (height // 2)
     win.geometry(f"{width}x{height}+{x}+{y}")
-
-def show_help():
-    """Affiche la fenêtre d'aide avec les explications du jeu"""
-    messagebox.showinfo(traduire("aide"), traduire("aide_texte"))
-
-def quit_app(root):
-    """Ferme la fenêtre principale et relance le menu"""
-    root.destroy()
-    subprocess.Popen([sys.executable, "menu_gui.py"])
 
 def back_to_config(root):
     """Retourne à l'écran de choix principal."""
@@ -164,7 +154,6 @@ def update_go_button_state(root):
             btn.config(state="disabled", bg="#888888")
     else:
         btn.config(state="disabled", bg="#888888")
-    # Affichage du mode courant
     mode_label = dic_variables.get("mode_label")
     if not mode_label:
         mode_label = tk.Label(root, font=("Helvetica", 11, "italic"), bg="#e6f2ff", fg="#004d40")
@@ -253,11 +242,8 @@ def open_mode_choice_window(root):
 
 def afficher_interface_choix(root):
     """Affiche l'écran principal de choix du mode de jeu et du plateau."""
-    # Nettoyer la fenêtre
     for widget in root.winfo_children():
         widget.destroy()
-
-    # --- Entête importée depuis menu_gui.py ---
     header_bg = "#e0e0e0"
     header = tk.Frame(root, bg=header_bg, height=80)
     header.pack(side="top", fill="x")
@@ -271,7 +257,7 @@ def afficher_interface_choix(root):
     btn_icon.image = icon
     btn_icon.pack(side="right", padx=28, pady=12)
 
-    # Sous-menu lyrique (identique à menu_gui)
+    """Sous menu"""
     from tkinter import messagebox
     def show_logout_menu(event):
         menu = tk.Menu(root, tearoff=0)
@@ -297,13 +283,10 @@ def afficher_interface_choix(root):
         menu.tk_popup(event.x_root, event.y_root)
     btn_icon.bind("<Button-1>", show_logout_menu)
 
-    # --- Ajout barre de son et sélecteur de langue en bas ---
+    """Barre de son"""
     from core.musique import SoundBar, regler_volume
     from core.parametres import LanguageSelector
-    # Barre de son en bas à gauche
-    # On récupère le volume transmis ou celui de menu_gui
     volume_transmis = getattr(root, 'VOLUME', None)
-    # Priorité : dic_variables['volume'] > volume_transmis > root.volume_var.get() > 50
     initial_volume = 50
     if dic_variables.get('volume') is not None:
         initial_volume = dic_variables['volume']
@@ -323,9 +306,8 @@ def afficher_interface_choix(root):
     regler_volume(root.volume_var.get())
     soundbar.place(relx=0.0, rely=1.0, anchor="sw", x=10, y=-10)
 
-    # Sélecteur de langue en bas à droite
+    """Langues"""
     def on_language_changed(new_lang):
-        # Préserver le volume, le mode, lenetwork_mode, le plateau_mode, etc.
         try:
             current_volume = soundbar.volume_var.get()
         except Exception:
@@ -334,7 +316,6 @@ def afficher_interface_choix(root):
         current_network_mode = dic_variables.get("network_mode", "local")
         current_plateau_mode = dic_variables.get("plateau_mode", "auto")
         current_username = username
-        # On relance main avec les valeurs courantes
         import importlib
         import core.langues
         importlib.reload(core.langues)
@@ -342,18 +323,14 @@ def afficher_interface_choix(root):
     lang_selector = LanguageSelector(root, assets_dir="assets", callback=on_language_changed)
     lang_selector.place(relx=1.0, rely=1.0, anchor="se", x=-18, y=-18)
 
-    # Centrer le bloc principal de configuration au milieu de la fenêtre
     main_frame = tk.Frame(root, bg="#f0f0f0")
     main_frame.place(relx=0.5, rely=0.5, anchor="center")
 
-    # Titre du jeu
     tk.Label(main_frame, text=traduire(dic_variables["jeu_demande"]).upper(), font=("Helvetica", 16, "bold"), fg="#004d40", bg="#f0f0f0").pack(pady=10)
 
-    # Variables Tkinter pour l'UI, stockées dans le dictionnaire
     dic_variables["mode_var"] = tk.StringVar(value=dic_variables["mode"])
     dic_variables["plateau_mode_var"] = tk.StringVar(value=dic_variables["plateau_mode"])
 
-    # Choix du mode de jeu
     frame_mode = tk.Frame(main_frame, bg="#f0f0f0")
     frame_mode.pack(pady=10)
 
@@ -367,7 +344,6 @@ def afficher_interface_choix(root):
     frame2.pack(pady=10)
     tk.Radiobutton(frame2, text=traduire("mode_ia"), variable=dic_variables["mode_var"], value="ia", font=("Helvetica", 12), bg="#f0f0f0", command=lambda: on_mode_change(root)).pack(side="left", padx=10)
 
-    # Choix du plateau
     frame_plateau = tk.Frame(main_frame, bg="#f0f0f0")
     frame_plateau.pack(pady=10)
 
@@ -375,18 +351,16 @@ def afficher_interface_choix(root):
     tk.Radiobutton(frame_plateau, text=traduire("plateau_auto"), variable=dic_variables["plateau_mode_var"], value="auto", bg="#f0f0f0", font=("Helvetica", 12), command=lambda: on_plateau_mode_change(root)).pack(anchor="w", padx=20)
     tk.Radiobutton(frame_plateau, text=traduire("plateau_perso"), variable=dic_variables["plateau_mode_var"], value="perso", bg="#f0f0f0", font=("Helvetica", 12), command=lambda: on_plateau_mode_change(root)).pack(anchor="w", padx=20)
 
-    # Bouton pour jouer, stocké dans le dictionnaire
     dic_variables["play_btn"] = tk.Button(main_frame, text=traduire("play"), command=lambda: play(root), font=("Helvetica", 12, "bold"), bg="#4CAF50", fg="white", width=15, relief="flat", state="disabled")
     dic_variables["play_btn"].pack(pady=20)
 
-    # Label du mode (solo/réseau) juste sous le bouton Jouer
     if dic_variables.get("mode_label"):
         dic_variables["mode_label"].destroy()
     dic_variables["mode_label"] = tk.Label(main_frame, font=("Helvetica", 11, "italic"), bg="#f0f0f0", fg="#004d40")
     dic_variables["mode_label"].pack(pady=(0, 10))
     update_go_button_state(root)
 
-    # Bouton retour menu principal (menu_gui)
+    """Bouton retour"""
     def retour_menu():
         import menu_gui
         try:
