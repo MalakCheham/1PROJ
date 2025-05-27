@@ -160,14 +160,14 @@ def update_go_button_state(root):
         mode_label.pack()
         dic_variables["mode_label"] = mode_label
     if dic_variables["network_mode"] == "local":
-        mode_label.config(text="Mode : Solo")
+        mode_label.config(text=traduire("mode_solo"))
     elif dic_variables["network_mode"] == "reseau":
         if dic_variables.get("is_host"):
-            mode_label.config(text="Mode : Réseau (hôte)")
+            mode_label.config(text=traduire("mode_reseau_hote"))
         elif dic_variables.get("is_client"):
-            mode_label.config(text="Mode : Réseau (client)")
+            mode_label.config(text=traduire("mode_reseau_client"))
         else:
-            mode_label.config(text="Mode : Réseau")
+            mode_label.config(text=traduire("mode_reseau"))
     else:
         mode_label.config(text="Mode : ?")
 

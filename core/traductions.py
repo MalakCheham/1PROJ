@@ -84,4 +84,6 @@ TRADUCTIONS = {
         "fr": "Développé par:\n Ibtihel BOUGUERN\n Malak CHEHAM\n Yassmine",
         "en": "Developed by:\n Ibtihel BOUGUERN\n Malak CHEHAM\n Yassmine"
     },
+    "mode_reseau_hote": {"fr": "Réseau (Hôte)", "en": "Network (Host)"},
+    "mode_reseau_client": {"fr": "Réseau (Client)", "en": "Network (Client)"},
 }
