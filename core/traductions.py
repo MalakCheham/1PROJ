@@ -67,5 +67,6 @@ TRADUCTIONS = {
     "desc_congress": {"fr": "Un mode de réflexion où chaque coup compte.", "en": "A thinking mode where every move counts."},
     "desc_isolation": {"fr": "Un mode duel tactique pour isoler l'adversaire.", "en": "A tactical duel mode to isolate your opponent."},
     "se_deconnecter": {"fr": "Se déconnecter", "en": "Logout"},
-    "configuration_du_jeu": {"fr": "Configuration du jeu", "en": "Game configuration"}
+    "configuration_du_jeu": {"fr": "Configuration du jeu", "en": "Game configuration"},
+    "plateau_genere": {"fr": "Plateau généré", "en": "Generated board"}
 }

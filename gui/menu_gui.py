@@ -1,12 +1,15 @@
 import pygame, sys, os
 import math
+import random
 from core.parametres import set_language
 from core.langues import translate, draw_flags, draw_hover_shadow
 from core.musique import jouer_musique, init_audio, draw_volume_bar
+from core.quadrants import generer_plateau_automatique
 
-PAGE_ACCUEIL = "accueil"
-PAGE_CHOIX_JEU = "choix_jeu"
-PAGE_CONFIG_JEU = "config_game"
+PAGE_HOME = "home"
+PAGE_CHOICE_GAME = "choice_game"
+PAGE_CONFIG_GAME = "config_game"
+PAGE_PREVIEW_GAME = "preview_game"
 
 # --- Données des modes de jeu ---
 MODES_JEU = [
@@ -30,6 +33,22 @@ MODES_JEU = [
     },
 ]
 
+def wrap_text(text, font, max_width):
+    words = text.split()
+    lines = []
+    current = ""
+    for word in words:
+        test = current + (" " if current else "") + word
+        if font.size(test)[0] <= max_width:
+            current = test
+        else:
+            if current:
+                lines.append(current)
+            current = word
+    if current:
+        lines.append(current)
+    return lines
+
 class PortailGame:
     """
     Fonctionnalité principale du portail d'accueil du jeu.
@@ -48,7 +67,7 @@ class PortailGame:
         self.input_active = False
         self.muted = False
         self.last_volume = init_audio()
-        self.page = PAGE_ACCUEIL
+        self.page = PAGE_HOME
         self.clock = pygame.time.Clock()
         self.run()
     
@@ -189,22 +208,6 @@ class PortailGame:
             screen.blit(self.font.render(titre_mod, 1, (0,51,102)), (x+20, y+150))
             # Desc (depuis traductions)
             desc_mod = translate(f"desc_{mode['id']}")
-            # Découpage intelligent pour ne pas dépasser la largeur de la carte
-            def wrap_text(text, font, max_width):
-                words = text.split()
-                lines = []
-                current = ""
-                for word in words:
-                    test = current + (" " if current else "") + word
-                    if font.size(test)[0] <= card_w-40:
-                        current = test
-                    else:
-                        if current:
-                            lines.append(current)
-                        current = word
-                if current:
-                    lines.append(current)
-                return lines
             desc_lines = wrap_text(desc_mod, self.font_small, card_w-40)
             for j, line in enumerate(desc_lines):
                 screen.blit(self.font_small.render(line, 1, (0,0,0)), (x+20, y+190+j*24))
@@ -355,17 +358,97 @@ class PortailGame:
             self.help_close_rect = None
 
     """
+    Affiche la prévisualisation du plateau généré
+    """
+    def draw_preview_game(self):
+        screen = self.screen
+        screen.fill((255, 248, 225))
+        # --- Entête ---
+        self.draw_header()
+        header_height = 90
+        footer_height = 80
+        zone_top = header_height
+        zone_bottom = screen.get_height() - footer_height
+        zone_height = zone_bottom - zone_top
+        zone_width = screen.get_width()
+        # --- Textures ---
+        TEXTURE_DIR = os.path.join("assets", "textures")
+        TEXTURE_FILES = {
+            'R': "case-rouge.png",
+            'B': "case-bleu.png",
+            'V': "case-vert.png",
+            'J': "case-jaune.png",
+        }
+        tile_textures = {}
+        # Taille dynamique pour que le plateau tienne dans le cadre et la fenêtre
+        cadre_margin = 72  # marge encore augmentée pour réduire davantage le cadre
+        cadre_w = min(zone_width, zone_height) - 2*cadre_margin
+        cadre_h = cadre_w
+        cell_size = cadre_w // 12  # diviser par 12 pour des cases plus petites
+        for k, fname in TEXTURE_FILES.items():
+            surf = pygame.image.load(os.path.join(TEXTURE_DIR, fname)).convert_alpha()
+            tile_textures[k] = pygame.transform.smoothscale(surf, (cell_size, cell_size))
+        # --- Cadre ---
+        try:
+            cadre_img = pygame.image.load(os.path.join(TEXTURE_DIR, "cadre.png")).convert_alpha()
+            cadre_img = pygame.transform.smoothscale(cadre_img, (cadre_w, cadre_h))
+            cadre_ok = True
+        except Exception as e:
+            cadre_img = None
+            cadre_ok = False
+        # Placement centré
+        offset_x = (zone_width - cadre_w) // 2
+        offset_y = zone_top + (zone_height - cadre_h) // 2
+        if cadre_ok and cadre_img:
+            screen.blit(cadre_img, (offset_x, offset_y))
+        else:
+            pygame.draw.rect(screen, (62, 30, 11), (offset_x, offset_y, cadre_w, cadre_h), 6)
+        # Plateau (cases texturées)
+        plateau_w = 8 * cell_size
+        plateau_h = 8 * cell_size
+        px = offset_x + (cadre_w - plateau_w)//2  # centré dans le cadre
+        py = offset_y + (cadre_h - plateau_h)//2
+        for i in range(8):
+            for j in range(8):
+                val = self.preview_plateau.cases[i][j]
+                tex = tile_textures.get(val)
+                if tex:
+                    screen.blit(tex, (px + j*cell_size, py + i*cell_size))
+                pygame.draw.rect(screen, (62, 30, 11), (px + j*cell_size, py + i*cell_size, cell_size, cell_size), 1)
+        # --- Titre centré AU HAUT DU CADRE ---
+        titre = self.font_title.render(translate("plateau_genere"), True, (0, 102, 68))
+        titre_y = offset_y - titre.get_height() - 18  # place le titre juste au-dessus du cadre, avec un petit espace
+        screen.blit(titre, (screen.get_width()//2 - titre.get_width()//2, titre_y))
+        # --- Bouton retour icône à gauche, centré verticalement par rapport au cadre ---
+        icon_img = pygame.image.load(os.path.join("assets", "en-arriere.png")).convert_alpha()
+        icon_size = 48
+        icon_img = pygame.transform.smoothscale(icon_img, (icon_size, icon_size))
+        icon_x = 32
+        icon_y = offset_y + cadre_h//2 - icon_size//2
+        icon_rect = pygame.Rect(icon_x, icon_y, icon_size, icon_size)
+        screen.blit(icon_img, icon_rect)
+        self.preview_btn_retour_rect = icon_rect
+        # Volume et langues (en bas comme avant)
+        self.bar_rect = pygame.Rect(40, screen.get_height()-60, 180, 18)
+        self.icon_rect = pygame.Rect(4, screen.get_height()-65, 28, 28)
+        flag_size, margin = 44, 24
+        self.flag_fr_rect = pygame.Rect(screen.get_width()-flag_size-margin, screen.get_height()-2*flag_size-margin-8, flag_size, flag_size)
+        self.flag_uk_rect = pygame.Rect(screen.get_width()-flag_size-margin, screen.get_height()-flag_size-margin, flag_size, flag_size)
+        draw_flags(screen, self.flag_fr_rect, self.flag_uk_rect)
+        draw_volume_bar(screen, self.muted, pygame.mixer.music.get_volume(), self.bar_rect, self.icon_rect)
+    
+    """
     Gestion des événements
     """
     def handle_event(self, event):
-        if self.page == PAGE_ACCUEIL:
+        if self.page == PAGE_HOME:
             if event.type == pygame.MOUSEBUTTONDOWN and hasattr(event, 'pos'):
                 if self.flag_fr_rect.collidepoint(event.pos): set_language("fr"); pygame.time.wait(120)
                 if self.flag_uk_rect.collidepoint(event.pos): set_language("en"); pygame.time.wait(120)
                 if self.input_rect.collidepoint(event.pos): self.input_active = True
                 else: self.input_active = False
                 if self.btn_rect.collidepoint(event.pos) and self.username.strip():
-                    self.page = PAGE_CHOIX_JEU
+                    self.page = PAGE_CHOICE_GAME
                     return
                 if self.bar_rect.collidepoint(event.pos):
                     v = min(max((event.pos[0]-self.bar_rect.x)/self.bar_rect.width,0),1)
@@ -379,7 +462,7 @@ class PortailGame:
                 if self.bar_rect.collidepoint(event.pos):
                     v = min(max((event.pos[0]-self.bar_rect.x)/self.bar_rect.width,0),1)
                     pygame.mixer.music.set_volume(v); self.last_volume = v; self.muted = False
-        elif self.page == PAGE_CHOIX_JEU:
+        elif self.page == PAGE_CHOICE_GAME:
             if event.type == pygame.MOUSEBUTTONDOWN and hasattr(event, 'pos'):
 
                 if hasattr(self, 'lyrique_circle'):
@@ -390,7 +473,7 @@ class PortailGame:
 
                 if getattr(self, 'show_logout_menu', False) and getattr(self, 'logout_rect', None):
                     if self.logout_rect.collidepoint(event.pos):
-                        self.page = PAGE_ACCUEIL
+                        self.page = PAGE_HOME
                         self.show_logout_menu = False
                         return
                     else:
@@ -403,7 +486,7 @@ class PortailGame:
                 for btn_rect, mode_id in getattr(self, 'mode_btn_rects', []):
                     if btn_rect.collidepoint(event.pos):
                         self.selected_mode = mode_id
-                        self.page = PAGE_CONFIG_JEU
+                        self.page = PAGE_CONFIG_GAME
                         return
                 if self.flag_fr_rect.collidepoint(event.pos): set_language("fr"); pygame.time.wait(120)
                 if self.flag_uk_rect.collidepoint(event.pos): set_language("en"); pygame.time.wait(120)
@@ -420,7 +503,7 @@ class PortailGame:
                     v = min(max((event.pos[0]-self.bar_rect.x)/self.bar_rect.width,0),1)
                     pygame.mixer.music.set_volume(v); self.last_volume = v; self.muted = False
         
-        elif self.page == PAGE_CONFIG_JEU:
+        elif self.page == PAGE_CONFIG_GAME:
             if event.type == pygame.MOUSEBUTTONDOWN and hasattr(event, 'pos'):
                 # Gestion du bouton cercle lyrique
                 if hasattr(self, 'lyrique_circle'):
@@ -431,7 +514,7 @@ class PortailGame:
                 # Gestion du sous-menu déconnexion
                 if getattr(self, 'show_logout_menu', False) and getattr(self, 'logout_rect', None):
                     if self.logout_rect.collidepoint(event.pos):
-                        self.page = PAGE_ACCUEIL
+                        self.page = PAGE_HOME
                         self.show_logout_menu = False
                         return
                     else:
@@ -458,11 +541,16 @@ class PortailGame:
                             return
                 # Bouton retour
                 if hasattr(self, 'btn_retour_rect') and self.btn_retour_rect.collidepoint(event.pos):
-                    self.page = PAGE_CHOIX_JEU
+                    self.page = PAGE_CHOICE_GAME
                     return
                 # Bouton jouer
                 if hasattr(self, 'btn_jouer_rect') and self.btn_jouer_rect.collidepoint(event.pos):
-                    self.page = "PAGE_JEU"  # À remplacer par la page de jeu réelle
+                    from core.plateau import Plateau
+                    plateau = Plateau()
+                    plateau.cases = generer_plateau_automatique()
+                    self.preview_plateau = plateau
+                    self.preview_pions = None
+                    self.page = PAGE_PREVIEW_GAME
                     return
                 # Radio boutons plateau
                 for rect, value in getattr(self, 'plateau_radio_rects', []):
@@ -484,6 +572,45 @@ class PortailGame:
                     v = min(max((event.pos[0]-self.bar_rect.x)/self.bar_rect.width,0),1)
                     pygame.mixer.music.set_volume(v); self.last_volume = v; self.muted = False
         
+        elif self.page == PAGE_PREVIEW_GAME:
+            if event.type == pygame.MOUSEBUTTONDOWN and hasattr(event, 'pos'):
+                # Gestion du bouton cercle lyrique
+                if hasattr(self, 'lyrique_circle'):
+                    x, y, r = self.lyrique_circle
+                    if (event.pos[0]-x)**2 + (event.pos[1]-y)**2 <= r**2:
+                        self.show_logout_menu = not getattr(self, 'show_logout_menu', False)
+                        return
+                # Gestion du sous-menu déconnexion
+                if getattr(self, 'show_logout_menu', False) and getattr(self, 'logout_rect', None):
+                    if self.logout_rect.collidepoint(event.pos):
+                        self.page = PAGE_HOME
+                        self.show_logout_menu = False
+                        return
+                    else:
+                        self.show_logout_menu = False
+                        return
+                if getattr(self, 'show_logout_menu', False):
+                    self.show_logout_menu = False
+                    return
+                # Bouton retour
+                if hasattr(self, 'preview_btn_retour_rect') and self.preview_btn_retour_rect.collidepoint(event.pos):
+                    self.page = PAGE_CONFIG_GAME
+                    return
+                # Volume et langues
+                if self.flag_fr_rect.collidepoint(event.pos): set_language("fr"); pygame.time.wait(120)
+                if self.flag_uk_rect.collidepoint(event.pos): set_language("en"); pygame.time.wait(120)
+                if self.bar_rect.collidepoint(event.pos):
+                    v = min(max((event.pos[0]-self.bar_rect.x)/self.bar_rect.width,0),1)
+                    pygame.mixer.music.set_volume(v); self.last_volume = v; self.muted = False
+                if self.icon_rect.collidepoint(event.pos):
+                    if not self.muted:
+                        self.last_volume = pygame.mixer.music.get_volume(); pygame.mixer.music.set_volume(0.0); self.muted = True
+                    else:
+                        pygame.mixer.music.set_volume(self.last_volume or 0.5); self.muted = False
+            elif event.type == pygame.MOUSEMOTION and hasattr(event, 'pos') and event.buttons[0]:
+                if self.bar_rect.collidepoint(event.pos):
+                    v = min(max((event.pos[0]-self.bar_rect.x)/self.bar_rect.width,0),1)
+                    pygame.mixer.music.set_volume(v); self.last_volume = v; self.muted = False
         if event.type == pygame.KEYDOWN and self.input_active:
             if event.key == pygame.K_BACKSPACE: self.username = self.username[:-1]
             elif event.key == pygame.K_RETURN and self.username.strip(): pass
@@ -499,12 +626,14 @@ class PortailGame:
                 if event.type == pygame.QUIT:
                     pygame.quit(); sys.exit()
                 self.handle_event(event)
-            if self.page == PAGE_ACCUEIL:
+            if self.page == PAGE_HOME:
                 self.draw_accueil()
-            elif self.page == PAGE_CHOIX_JEU:
+            elif self.page == PAGE_CHOICE_GAME:
                 self.draw_choix_jeu()
-            elif self.page == PAGE_CONFIG_JEU:
+            elif self.page == PAGE_CONFIG_GAME:
                 self.draw_config_jeu(getattr(self, 'selected_mode', None))
+            elif self.page == PAGE_PREVIEW_GAME:
+                self.draw_preview_game()
             pygame.display.flip(); self.clock.tick(30)
 
 
