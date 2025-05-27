@@ -1,7 +1,7 @@
 import pygame
 from core.langues import translate, draw_flags
 from core.musique import draw_volume_bar
-from gui.utils.ui_common import wrap_text
+from gui.utils.ui_common import wrap_text, render_text_fit
 
 def draw_choice_game(screen, font, font_small, font_title, MODES_JEU, muted, bar_rect, icon_rect, flag_fr_rect, flag_uk_rect, header_func=None):
     screen.fill((249,246,227))
@@ -11,15 +11,8 @@ def draw_choice_game(screen, font, font_small, font_title, MODES_JEU, muted, bar
     # Titre principal et sous-titre (depuis traductions)
     titre_modes = translate("sous_titre_modes")
     sous_titre = translate("choisissez_mode_jeu")
-    # Adapter dynamiquement la taille de la police du titre principal selon la largeur de la fenêtre
-    titre_font_size = max(24, min(48, screen.get_width() // 28))
-    titre_font = pygame.font.SysFont("Helvetica", titre_font_size, bold=True)
-    # Si le texte est trop large, on réduit la taille jusqu'à ce qu'il tienne
-    titre_render = titre_font.render(titre_modes, 1, (0,77,64))
-    while titre_render.get_width() > screen.get_width() - 80 and titre_font_size > 18:
-        titre_font_size -= 2
-        titre_font = pygame.font.SysFont("Helvetica", titre_font_size, bold=True)
-        titre_render = titre_font.render(titre_modes, 1, (0,77,64))
+    # Utilise render_text_fit pour que le titre tienne toujours dans la fenêtre
+    titre_render, _ = render_text_fit(titre_modes, "Helvetica", (0,77,64), screen.get_width()-80)
     screen.blit(titre_render, titre_render.get_rect(center=(cx, 150)))
     sous_titre_render = font_small.render(sous_titre, 1, (0,0,0))
     screen.blit(sous_titre_render, sous_titre_render.get_rect(center=(cx, 190)))
