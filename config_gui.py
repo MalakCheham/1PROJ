@@ -336,13 +336,9 @@ def afficher_interface_choix(root):
 
     frame1 = tk.Frame(frame_mode, bg="#f0f0f0")
     frame1.pack(pady=10)
-    tk.Radiobutton(frame1, text=traduire("mode_1v1"), variable=dic_variables["mode_var"], value="1v1", font=("Helvetica", 12), bg="#f0f0f0", command=lambda: on_mode_change(root)).pack(side="left", padx=10)
-    btn_mode_select = tk.Button(frame1, text=traduire("mode_jeu"), font=("Helvetica", 12, "bold"), bg="#e0f7fa", bd=0, command=lambda: open_mode_choice_window(root))
-    btn_mode_select.pack(side="left", padx=5)
 
-    frame2 = tk.Frame(frame_mode, bg="#f0f0f0")
-    frame2.pack(pady=10)
-    tk.Radiobutton(frame2, text=traduire("mode_ia"), variable=dic_variables["mode_var"], value="ia", font=("Helvetica", 12), bg="#f0f0f0", command=lambda: on_mode_change(root)).pack(side="left", padx=10)
+    tk.Radiobutton(frame1, text=traduire("mode_1v1"), variable=dic_variables["mode_var"], value="1v1", font=("Helvetica", 12), bg="#f0f0f0", command=lambda: on_mode_change(root)).pack(side="left", padx=10)
+    tk.Radiobutton(frame1, text=traduire("mode_ia"), variable=dic_variables["mode_var"], value="ia", font=("Helvetica", 12), bg="#f0f0f0", command=lambda: on_mode_change(root)).pack(side="left", padx=10)
 
     frame_plateau = tk.Frame(main_frame, bg="#f0f0f0")
     frame_plateau.pack(pady=10)
@@ -351,8 +347,12 @@ def afficher_interface_choix(root):
     tk.Radiobutton(frame_plateau, text=traduire("plateau_auto"), variable=dic_variables["plateau_mode_var"], value="auto", bg="#f0f0f0", font=("Helvetica", 12), command=lambda: on_plateau_mode_change(root)).pack(anchor="w", padx=20)
     tk.Radiobutton(frame_plateau, text=traduire("plateau_perso"), variable=dic_variables["plateau_mode_var"], value="perso", bg="#f0f0f0", font=("Helvetica", 12), command=lambda: on_plateau_mode_change(root)).pack(anchor="w", padx=20)
 
-    dic_variables["play_btn"] = tk.Button(main_frame, text=traduire("play"), command=lambda: play(root), font=("Helvetica", 12, "bold"), bg="#4CAF50", fg="white", width=15, relief="flat", state="disabled")
-    dic_variables["play_btn"].pack(pady=20)
+    btns_frame = tk.Frame(main_frame, bg="#f0f0f0")
+    btns_frame.pack(pady=20)
+    dic_variables["play_btn"] = tk.Button(btns_frame, text=traduire("play"), command=lambda: play(root), font=("Helvetica", 12, "bold"), bg="#4CAF50", fg="white", width=15, relief="flat", state="disabled")
+    dic_variables["play_btn"].pack(side="left", padx=5)
+    btn_mode_select = tk.Button(btns_frame, text=traduire("mode_jeu"), font=("Helvetica", 12, "bold"), bg="#4CAF50", fg="white", width=15, relief="flat", command=lambda: open_mode_choice_window(root))
+    btn_mode_select.pack(side="left", padx=5)
 
     if dic_variables.get("mode_label"):
         dic_variables["mode_label"].destroy()
