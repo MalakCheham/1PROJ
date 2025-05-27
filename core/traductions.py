@@ -1,5 +1,5 @@
 TRADUCTIONS = {
-    "titre": {"fr": "Portail d'accueil du jeu", "en": "Game Home Portal"},
+    "titre": {"fr": "KATARENGA&CO.", "en": "KATARENGA&CO."},
     "parametres": {"fr": "PARAMÈTRES", "en": "SETTINGS"},
     "volume_effets": {"fr": "Volume effets", "en": "Sound effects"},
     "volume_musique": {"fr": "Volume musique", "en": "Music volume"},
@@ -29,7 +29,7 @@ TRADUCTIONS = {
     "client_connected_from": {"fr": "Client connecté depuis {addr}", "en": "Client connected from {addr}"},
     "received_from": {"fr": "Reçu de {addr} : {msg}", "en": "Received from {addr}: {msg}"},
     "client_disconnected": {"fr": "Client {addr} déconnecté", "en": "Client {addr} disconnected"},
-    "plateau": {"fr": "Plateau :", "en": "Board:"},
+    "plateau": {"fr": "Configuration du plateau :", "en": "Configuration of the board:"},
     "plateau_auto": {"fr": "Généré automatiquement", "en": "Automatically generated"},
     "plateau_perso": {"fr": "Quadrants personnalisés", "en": "Custom quadrants"},
     "waiting_for_client": {"fr": "En attente qu'un joueur rejoigne la partie...", "en": "Waiting for a player to join the game..."},
@@ -56,4 +56,32 @@ TRADUCTIONS = {
     "bienvenue_portail": {"fr": "Bienvenue dans le portail d'accueil du jeu !", "en": "Welcome to the game portal!"},
     "entrez_nom_utilisateur": {"fr": "Entrez votre nom d'utilisateur pour vous amuser :", "en": "Enter your username to have fun:"},
     "entrez_portail": {"fr": "Entrez dans le portail", "en": "Enter the portal"},
+    "sous_titre_modes": {"fr": "Faites votre choix parmi les modes de jeux passionnants ci-dessous.", "en": "Make your choice among the exciting game modes below."},
+    "choisissez_mode_jeu": {"fr": "Choisissez votre mode de jeu", "en": "Choose your game mode"},
+    "bienvenue": {"fr": "Bienvenue", "en": "Welcome"},
+    "jouer": {"fr": "Jouer", "en": "Play"},
+    "mode_katarenga": {"fr": "Katarenga", "en": "Katarenga"},
+    "mode_congress": {"fr": "Congress", "en": "Congress"},
+    "mode_isolation": {"fr": "Isolation", "en": "Isolation"},
+    "desc_katarenga": {"fr": "Un mode de jeu inspiré du shogi et des échecs.", "en": "A game mode inspired by shogi and chess."},
+    "desc_congress": {"fr": "Un mode de réflexion où chaque coup compte.", "en": "A thinking mode where every move counts."},
+    "desc_isolation": {"fr": "Un mode duel tactique pour isoler l'adversaire.", "en": "A tactical duel mode to isolate your opponent."},
+    "se_deconnecter": {"fr": "Se déconnecter", "en": "Logout"},
+    "configuration_du_jeu": {"fr": "Configuration du jeu", "en": "Game configuration"},
+    "plateau_genere": {"fr": "Plateau généré", "en": "Generated board"},
+    "creer_quadrant_4x4": {"fr": "Créer un Quadrant 4x4", "en": "Create a 4x4 Quadrant"},
+    "sauvegarder_quadrant": {"fr": "Sauvegarder Quadrant", "en": "Save Quadrant"},
+    "nouveau_quadrant": {"fr": "Nouveau Quadrant", "en": "New Quadrant"},
+    "jouer_avec_quadrants": {"fr": "Jouer avec ces Quadrants", "en": "Play with these Quadrants"},
+    "a_propos": {"fr": "À propos", "en": "About"},
+    "credits": {"fr": "Crédits", "en": "Credits"},
+    "fermer": {"fr": "Fermer", "en": "Close"},
+    "a_propos_texte": {
+        "fr": "Smart Games.\nProjet B1",
+        "en": "Smart Games.\nProject B1"
+    },
+    "credits_texte": {
+        "fr": "Développé par:\n Ibtihel BOUGUERN\n Malak CHEHAM\n Yassmine",
+        "en": "Developed by:\n Ibtihel BOUGUERN\n Malak CHEHAM\n Yassmine"
+    },
 }
