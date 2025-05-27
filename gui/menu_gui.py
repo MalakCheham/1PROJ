@@ -8,13 +8,15 @@ from core.quadrants import generer_plateau_automatique
 from gui.utils.plateau_preview import draw_plateau_preview
 from gui.utils.game_config import draw_config_jeu
 from gui.utils.choice_game import draw_choice_game
+from gui.utils.ui_common import draw_custom_board
 
 PAGE_HOME = "home"
 PAGE_CHOICE_GAME = "choice_game"
 PAGE_CONFIG_GAME = "config_game"
 PAGE_PREVIEW_GAME = "preview_game"
+PAGE_CUSTOM_BOARD = "custom_board"
+PAGE_GAME = "game"
 
-# --- Données des modes de jeu ---
 MODES_JEU = [
     {
         "id": "katarenga",
@@ -56,6 +58,12 @@ class PortailGame:
         self.last_volume = init_audio()
         self.page = PAGE_HOME
         self.clock = pygame.time.Clock()
+        self.custom_board_state = {
+            "grille": [[None for _ in range(4)] for _ in range(4)],
+            "current_color": "R",
+            "quadrants": [],
+            "info_text": "Quadrant 1/4"
+        }
         self.run()
     
     """
@@ -158,6 +166,7 @@ class PortailGame:
     Affiche le menu de choix du jeu
     """
     def draw_choix_jeu(self):
+        self.screen.fill((249,246,227))
         self.mode_btn_rects = draw_choice_game(
             self.screen,
             self.font,
@@ -176,6 +185,7 @@ class PortailGame:
     Affiche la page de configuration du jeu
     """
     def draw_config_jeu(self, mode_id):
+        self.screen.fill((249,246,227))
         self.btn_retour_rect = None
         self.btn_jouer_rect = None
         self.plateau_radio_rects = []
@@ -209,6 +219,7 @@ class PortailGame:
     Affiche la prévisualisation du plateau généré
     """
     def draw_preview_game(self):
+        self.screen.fill((249,246,227))
         self.preview_btn_retour_rect = draw_plateau_preview(
             self.screen,
             self.font_title,
@@ -219,6 +230,32 @@ class PortailGame:
             header_func=self.draw_header
         )
     
+    """
+    Affiche l'éditeur de quadrants personnalisés
+    """
+    def draw_custom_board(self):
+        self.screen.fill((249,246,227))
+        # Affiche l'éditeur de quadrants personnalisés mutualisé
+        res = draw_custom_board(
+            self.screen,
+            self.font,
+            self.font_small,
+            self.font_title,
+            self.muted,
+            self.bar_rect,
+            self.icon_rect,
+            self.flag_fr_rect,
+            self.flag_uk_rect,
+            header_func=self.draw_header,
+            editor_state=self.custom_board_state,
+            show_logout_menu=getattr(self, 'show_logout_menu', False),
+            logout_rect=getattr(self, 'logout_rect', None)
+        )
+        self.custom_btns = res["btn_rects"]
+        self.custom_palette_rects = res["palette_rects"]
+        self.custom_grid_rect = res["grid_rect"]
+        self.custom_retour_rect = res["retour_rect"]
+
     """
     Gestion des événements
     """
@@ -327,13 +364,24 @@ class PortailGame:
                     return
                 # Bouton jouer
                 if hasattr(self, 'btn_jouer_rect') and self.btn_jouer_rect.collidepoint(event.pos):
-                    from core.plateau import Plateau
-                    plateau = Plateau()
-                    plateau.cases = generer_plateau_automatique()
-                    self.preview_plateau = plateau
-                    self.preview_pions = None
-                    self.page = PAGE_PREVIEW_GAME
-                    return
+                    if getattr(self, 'selected_plateau', 'auto') == 'perso':
+                        # Passage à l'éditeur de quadrants personnalisés
+                        self.custom_board_state = {
+                            "grille": [[None for _ in range(4)] for _ in range(4)],
+                            "current_color": "R",
+                            "quadrants": [],
+                            "info_text": "Quadrant 1/4"
+                        }
+                        self.page = PAGE_CUSTOM_BOARD
+                        return
+                    else:
+                        from core.plateau import Plateau
+                        plateau = Plateau()
+                        plateau.cases = generer_plateau_automatique()
+                        self.preview_plateau = plateau
+                        self.preview_pions = None
+                        self.page = PAGE_PREVIEW_GAME
+                        return
                 # Radio boutons plateau
                 for rect, value in getattr(self, 'plateau_radio_rects', []):
                     if rect.collidepoint(event.pos):
@@ -393,6 +441,90 @@ class PortailGame:
                 if self.bar_rect.collidepoint(event.pos):
                     v = min(max((event.pos[0]-self.bar_rect.x)/self.bar_rect.width,0),1)
                     pygame.mixer.music.set_volume(v); self.last_volume = v; self.muted = False
+        elif self.page == PAGE_CUSTOM_BOARD:
+            if event.type == pygame.MOUSEBUTTONDOWN and hasattr(event, 'pos'):
+                # Gestion du bouton cercle lyrique
+                if hasattr(self, 'lyrique_circle'):
+                    x, y, r = self.lyrique_circle
+                    if (event.pos[0]-x)**2 + (event.pos[1]-y)**2 <= r**2:
+                        self.show_logout_menu = not getattr(self, 'show_logout_menu', False)
+                        return
+                # Gestion du sous-menu déconnexion (affiché uniquement si lyrique_hovered)
+                # On ne traite le logout_rect que si show_logout_menu est actif, sinon on ne fait rien
+                if getattr(self, 'show_logout_menu', False) and getattr(self, 'logout_rect', None):
+                    if self.logout_rect.collidepoint(event.pos):
+                        self.page = PAGE_HOME
+                        self.show_logout_menu = False
+                        return
+                    else:
+                        self.show_logout_menu = False
+                        return
+                # Palette couleurs
+                for x, y, w, h, c in getattr(self, 'custom_palette_rects', []):
+                    rect = pygame.Rect(x, y, w, h)
+                    if rect.collidepoint(event.pos):
+                        self.custom_board_state["current_color"] = c
+                        return
+                # Grille 4x4
+                grid_x, grid_y, cell_size = self.custom_grid_rect
+                for i in range(4):
+                    for j in range(4):
+                        rect = pygame.Rect(grid_x + j*cell_size, grid_y + i*cell_size, cell_size, cell_size)
+                        if rect.collidepoint(event.pos):
+                            self.custom_board_state["grille"][i][j] = self.custom_board_state["current_color"]
+                            return
+                # Boutons
+                for key, rect in getattr(self, 'custom_btns', {}).items():
+                    if rect.collidepoint(event.pos):
+                        if key == "sauvegarder_quadrant":
+                            if any(None in row for row in self.custom_board_state["grille"]):
+                                self.custom_board_state["info_text"] = "Toutes les cases doivent être colorées."
+                                return
+                            self.custom_board_state["quadrants"].append({"recto": [row[:] for row in self.custom_board_state["grille"]]})
+                            if len(self.custom_board_state["quadrants"]) == 4:
+                                self.custom_board_state["info_text"] = "Les 4 quadrants sont prêts. Cliquez sur 'Jouer avec ces quadrants'."
+                            else:
+                                self.custom_board_state["grille"] = [[None for _ in range(4)] for _ in range(4)]
+                                self.custom_board_state["info_text"] = f"Quadrant {len(self.custom_board_state['quadrants'])+1}/4"
+                            return
+                        elif key == "nouveau_quadrant":
+                            self.custom_board_state["grille"] = [[None for _ in range(4)] for _ in range(4)]
+                            return
+                        elif key == "jouer_quadrants":
+                            if len(self.custom_board_state["quadrants"]) != 4:
+                                self.custom_board_state["info_text"] = "Il faut 4 quadrants pour jouer."
+                                return
+                            from core.plateau import Plateau
+                            plateau = Plateau()
+                            positions = [(0, 0), (0, 4), (4, 0), (4, 4)]
+                            for i, q in enumerate(self.custom_board_state["quadrants"]):
+                                bloc = q["recto"]
+                                for dx in range(4):
+                                    for dy in range(4):
+                                        plateau.cases[positions[i][0] + dx][positions[i][1] + dy] = bloc[dx][dy]
+                            self.preview_plateau = plateau
+                            self.preview_pions = None
+                            self.page = PAGE_PREVIEW_GAME
+                            return
+                # Bouton retour
+                if self.custom_retour_rect and self.custom_retour_rect.collidepoint(event.pos):
+                    self.page = PAGE_CONFIG_GAME
+                    return
+                # Volume/langues
+                if self.flag_fr_rect.collidepoint(event.pos): set_language("fr"); pygame.time.wait(120)
+                if self.flag_uk_rect.collidepoint(event.pos): set_language("en"); pygame.time.wait(120)
+                if self.bar_rect.collidepoint(event.pos):
+                    v = min(max((event.pos[0]-self.bar_rect.x)/self.bar_rect.width,0),1)
+                    pygame.mixer.music.set_volume(v); self.last_volume = v; self.muted = False
+                if self.icon_rect.collidepoint(event.pos):
+                    if not self.muted:
+                        self.last_volume = pygame.mixer.music.get_volume(); pygame.mixer.music.set_volume(0.0); self.muted = True
+                    else:
+                        pygame.mixer.music.set_volume(self.last_volume or 0.5); self.muted = False
+            elif event.type == pygame.MOUSEMOTION and hasattr(event, 'pos') and event.buttons[0]:
+                if self.bar_rect.collidepoint(event.pos):
+                    v = min(max((event.pos[0]-self.bar_rect.x)/self.bar_rect.width,0),1)
+                    pygame.mixer.music.set_volume(v); self.last_volume = v; self.muted = False
         if event.type == pygame.KEYDOWN and self.input_active:
             if event.key == pygame.K_BACKSPACE: self.username = self.username[:-1]
             elif event.key == pygame.K_RETURN and self.username.strip(): pass
@@ -416,6 +548,8 @@ class PortailGame:
                 self.draw_config_jeu(getattr(self, 'selected_mode', None))
             elif self.page == PAGE_PREVIEW_GAME:
                 self.draw_preview_game()
+            elif self.page == PAGE_CUSTOM_BOARD:
+                self.draw_custom_board()
             pygame.display.flip(); self.clock.tick(30)
 
 

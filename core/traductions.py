@@ -68,5 +68,9 @@ TRADUCTIONS = {
     "desc_isolation": {"fr": "Un mode duel tactique pour isoler l'adversaire.", "en": "A tactical duel mode to isolate your opponent."},
     "se_deconnecter": {"fr": "Se déconnecter", "en": "Logout"},
     "configuration_du_jeu": {"fr": "Configuration du jeu", "en": "Game configuration"},
-    "plateau_genere": {"fr": "Plateau généré", "en": "Generated board"}
+    "plateau_genere": {"fr": "Plateau généré", "en": "Generated board"},
+    "creer_quadrant_4x4": {"fr": "Créer un Quadrant 4x4", "en": "Create a 4x4 Quadrant"},
+    "sauvegarder_quadrant": {"fr": "Sauvegarder Quadrant", "en": "Save Quadrant"},
+    "nouveau_quadrant": {"fr": "Nouveau Quadrant", "en": "New Quadrant"},
+    "jouer_avec_quadrants": {"fr": "Jouer avec ces Quadrants", "en": "Play with these Quadrants"},
 }
