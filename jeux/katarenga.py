@@ -3,15 +3,15 @@ import subprocess
 import sys
 import threading
 import tkinter as tk
- 
+
 from PIL import Image, ImageTk
 from core.plateau import Plateau
 from core.joueur import Joueur
 from core.aide import get_regles
-from tkinter import messagebox
 from core.musique import jouer_musique
+from tkinter import messagebox
 jouer_musique()
- 
+
 class JeuKatarenga:
     def __init__(self, plateau, joueurs, pions=None, mode="1v1", root=None, sock=None, is_host=False, noms_joueurs=None):
         # Clean up root if provided
@@ -42,7 +42,7 @@ class JeuKatarenga:
  
         # UI Setup
         self.root.title("Katarenga")
-        self.root.configure(bg="#e6f2ff")
+        self.root.configure(bg="#f0f4f8")  # Harmonise le fond avec plateau_builder
  
         self.setup_ui()
         self.start_timer()
@@ -52,33 +52,145 @@ class JeuKatarenga:
             self.setup_network()
  
     def setup_ui(self):
-        # Top frame
-        self.top_frame = tk.Frame(self.root, bg="#e6f2ff")
-        self.top_frame.pack(fill="x", pady=5, padx=5)
- 
-        # Labels
-        self.tour_label = tk.Label(self.top_frame, text="", font=("Helvetica", 12, "bold"), bg="#e6f2ff", fg="#003366")
-        self.tour_label.pack(side="top")
- 
-        self.pions_restants_label = tk.Label(self.top_frame, text="", font=("Helvetica", 10), bg="#e6f2ff", fg="#003366")
-        self.pions_restants_label.pack(side="top")
- 
-        self.timer_label = tk.Label(self.top_frame, text="00:00", font=("Helvetica", 12, "bold"), bg="#e6f2ff", fg="#003366")
-        self.timer_label.pack(side="top")
- 
+        # --- HEADER ---
+        header_bg = "#e0e0e0"
+        header = tk.Frame(self.root, bg=header_bg, height=80)
+        header.pack(side="top", fill="x")
+        from core.langues import traduire
+        username = getattr(self.root, 'USERNAME', None)
+        # Afficher le nom du jeu dans le header
+        bienvenue = tk.Label(header, text="Katarenga", font=("Arial", 22, "bold"), bg=header_bg, fg="#5b7fce")
+        bienvenue.pack(side="left", padx=32, pady=18)
+        # Utilise le bon master pour les images si root transmis
+        img = Image.open(os.path.join("assets", "lyrique.png")).convert("RGBA").resize((40, 40))
+        if hasattr(self.root, 'tk'):
+            icon = ImageTk.PhotoImage(img, master=self.root)
+        else:
+            icon = ImageTk.PhotoImage(img)
+        self.icon = icon  # Empêche le garbage collection
+        btn_icon = tk.Button(header, image=self.icon, bg=header_bg, bd=0, relief="flat", cursor="hand2", activebackground=header_bg, highlightthickness=0)
+        btn_icon.image = self.icon
+        btn_icon.pack(side="right", padx=28, pady=12)
+
+        # Sous-menu (about, credits, logout, close)
+        from tkinter import messagebox
+        def show_logout_menu(event):
+            menu = tk.Menu(self.root, tearoff=0)
+            menu.add_command(label=traduire("a_propos"), command=lambda: messagebox.showinfo(traduire("a_propos"), traduire("a_propos_texte")))
+            menu.add_command(label=traduire("credits"), command=lambda: messagebox.showinfo(traduire("credits"), traduire("credits_texte")))
+            menu.add_separator()
+            def go_to_login():
+                import login
+                try:
+                    current_volume = self.root.volume_var.get()
+                except AttributeError:
+                    try:
+                        from core.musique import SoundBar
+                        current_volume = SoundBar.last_volume
+                    except Exception:
+                        current_volume = None
+                for w in self.root.winfo_children():
+                    w.destroy()
+                login.show_login(self.root, volume=current_volume)
+            menu.add_command(label=traduire("se_deconnecter"), command=go_to_login)
+            menu.add_command(label=traduire("fermer"), command=self.root.quit)
+            menu.tk_popup(event.x_root, event.y_root)
+        btn_icon.bind("<Button-1>", show_logout_menu)
+
+        # --- SoundBar & LanguageSelector ---
+        from core.musique import SoundBar, regler_volume
+        from core.parametres import LanguageSelector
+        volume_transmis = getattr(self.root, 'VOLUME', None)
+        initial_volume = 50
+        if hasattr(self.root, 'volume_var'):
+            try:
+                initial_volume = self.root.volume_var.get()
+            except Exception:
+                pass
+        elif volume_transmis is not None:
+            initial_volume = volume_transmis
+        if hasattr(self.root, 'volume_var'):
+            self.root.volume_var.set(initial_volume)
+            soundbar = SoundBar(self.root, volume_var=self.root.volume_var)
+        else:
+            self.root.volume_var = tk.IntVar(value=initial_volume)
+            soundbar = SoundBar(self.root, volume_var=self.root.volume_var)
+        regler_volume(self.root.volume_var.get())
+        soundbar.place(relx=0.0, rely=1.0, anchor="sw", x=10, y=-10)
+
+        def on_language_changed(new_lang):
+            try:
+                current_volume = soundbar.volume_var.get()
+            except Exception:
+                current_volume = getattr(self.root, 'volume_var', tk.IntVar(value=50)).get()
+            import importlib
+            import core.langues
+            importlib.reload(core.langues)
+            # Re-affiche juste l'UI sans regénérer la partie
+            self.redraw_ui_only()
+        lang_selector = LanguageSelector(self.root, assets_dir="assets", callback=on_language_changed)
+        lang_selector.place(relx=1.0, rely=1.0, anchor="se", x=-18, y=-18)
+
+        # --- Main Frame ---
+        main_frame = tk.Frame(self.root, bg="#f0f4f0")
+        main_frame.pack(pady=10)
+
+        # Labels harmonisés
+        self.tour_label = tk.Label(main_frame, text="", font=("Helvetica", 13, "bold"), bg="#f0f4f0", fg="#003366")
+        self.tour_label.pack(pady=(0,2))
+        self.pions_restants_label = tk.Label(main_frame, text="", font=("Helvetica", 11), bg="#f0f4f0", fg="#003366")
+        self.pions_restants_label.pack(pady=(0,2))
+        self.timer_label = tk.Label(main_frame, text="00:00", font=("Helvetica", 13, "bold"), bg="#f0f4f0", fg="#003366")
+        self.timer_label.pack(pady=(0,2))
+
         # Game canvas
-        self.canvas = tk.Canvas(self.root, width=400, height=400)
+        self.canvas = tk.Canvas(main_frame, width=400, height=400, bg="#f0f4f0", highlightthickness=0)
         self.canvas.pack()
- 
-        # Buttons
-        self.load_and_pack_button("en-arriere.png", "<", self.top_frame, self.retour_menu, "left")
-        self.load_and_pack_button("point-dinterrogation.png", "?", self.top_frame, self.aide_popup, "right")
+
+        # Bouton retour (vers config_ui)
+        def retour_config():
+            import config_gui
+            try:
+                current_volume = self.root.volume_var.get()
+            except AttributeError:
+                try:
+                    from core.musique import SoundBar
+                    current_volume = SoundBar.last_volume
+                except Exception:
+                    current_volume = None
+            for w in self.root.winfo_children():
+                w.destroy()
+            username = getattr(self.root, 'USERNAME', None)
+            config_gui.main(self.root, "katarenga", username=username, volume=current_volume)
+        img_retour = Image.open(os.path.join("assets", "en-arriere.png")).resize((48, 48))
+        if hasattr(self.root, 'tk'):
+            icon_retour = ImageTk.PhotoImage(img_retour, master=self.root)
+        else:
+            icon_retour = ImageTk.PhotoImage(img_retour)
+        self.icon_retour = icon_retour  # Empêche le garbage collection
+        btn_retour = tk.Button(self.root, image=self.icon_retour, command=retour_config, bg="#f0f4f0", bd=0, relief="flat", cursor="hand2", activebackground="#e0e0e0")
+        btn_retour.image = self.icon_retour
+        btn_retour.place(relx=0.0, rely=0.5, anchor="w", x=18)
+
+        # Boutons aide et rejouer (en bas)
+        self.load_and_pack_button("point-dinterrogation.png", "?", self.root, self.aide_popup, "bottom", pady=10)
         self.load_and_pack_button("fleche-pivotante-vers-la-gauche.png", "Rejouer", self.root, self.rejouer, "bottom", pady=10)
- 
+
         self.update_info_joueur()
         self.afficher_plateau()
         self.canvas.bind("<Button-1>", self.on_click)
- 
+        # Force update Tkinter pour éviter la page blanche
+        self.root.update_idletasks()
+        self.root.update()
+
+    def redraw_ui_only(self):
+        # Détruit et réaffiche l'UI sans toucher à l'état du jeu
+        for widget in self.root.winfo_children():
+            widget.destroy()
+        self.setup_ui()
+        self.update_info_joueur()
+        self.afficher_plateau()
+
     def setup_network(self):
         # Start network listener thread
         threading.Thread(target=self.network_listener, daemon=True).start()
@@ -169,18 +281,14 @@ class JeuKatarenga:
         return self.joueurs[self.tour % 2]
  
     def update_info_joueur(self):
-        if self.tour % 2 == 0:
-            couleur = 'Noir'
-        else:
-            couleur = 'Blanc'
-        if self.sock and self.noms_joueurs:
-            self.tour_label.config(text=f"Tour de {self.noms_joueurs[self.tour % 2]} ({couleur})")
-        else:
-            self.tour_label.config(text=f"Tour du Joueur {couleur}")
+        from core.langues import traduire
+        couleur = 'blanc' if self.tour % 2 == 0 else 'noir'
+        nom = self.noms_joueurs[self.tour % 2] if self.noms_joueurs else f"Joueur {traduire(couleur)}"
+        self.tour_label.config(text=f"{traduire('tour_de')} ({traduire(couleur)})")
         pions_x_restants = len(self.pions['X'])
         pions_o_restants = len(self.pions['O'])
-        self.pions_restants_label.config(text=f"Pions Restants - Blanc: {pions_x_restants}, Noir: {pions_o_restants}")
- 
+        self.pions_restants_label.config(text=f"{traduire('pions_restants')} - {traduire('blanc')}: {pions_x_restants}, {traduire('noir')}: {pions_o_restants}")
+
     def afficher_plateau(self):
         taille = 50
         self.canvas.delete("all")
@@ -297,15 +405,30 @@ class JeuKatarenga:
             self.pause_timer()
             couleur = 'Blanc' if joueur.symbole == 'X' else 'Noir'
             nom = getattr(joueur, 'nom', str(joueur))
-            messagebox.showinfo("Victoire!", f"Joueur {nom} ({'Blanc' if joueur.symbole == 'X' else 'Noir'}) a atteint la ligne adverse et a gagné!")
-            self.reprendre_timer()
-            self.rejouer()
+            messagebox.showinfo("Victoire!", f"{nom} ({'Blanc' if joueur.symbole == 'X' else 'Noir'}) a atteint la ligne adverse et a gagné!")
+            self.retour_login()
         elif not self.pions['O' if joueur.symbole == 'X' else 'X']:
             self.pause_timer()
             nom = getattr(joueur, 'nom', str(joueur))
             messagebox.showinfo("Victoire!", f"Joueur {nom} ({'Blanc' if joueur.symbole == 'X' else 'Noir'}) a gagné par capture!")
-            self.reprendre_timer()
-            self.rejouer()
+            self.retour_login()
+
+    def retour_login(self):
+        self.timer_running = False
+        if hasattr(self, "timer_id"):
+            self.root.after_cancel(self.timer_id)
+        for w in self.root.winfo_children():
+            w.destroy()
+        import login
+        try:
+            current_volume = self.root.volume_var.get()
+        except AttributeError:
+            try:
+                from core.musique import SoundBar
+                current_volume = SoundBar.last_volume
+            except Exception:
+                current_volume = None
+        login.show_login(self.root, volume=current_volume)
  
     def start_timer(self):
         self.timer_running = True
@@ -314,10 +437,17 @@ class JeuKatarenga:
     def update_timer(self):
         if not self.timer_running or not self.root.winfo_exists():
             return
-        minutes, seconds = divmod(self.timer_seconds, 60)
-        self.timer_label.config(text=f"{minutes:02d}:{seconds:02d}")
-        self.timer_seconds += 1
-        self.timer_id = self.root.after(1000, self.update_timer)
+        # Vérifie que le label existe avant de le mettre à jour
+        try:
+            minutes, seconds = divmod(self.timer_seconds, 60)
+            if self.timer_label.winfo_exists():
+                self.timer_label.config(text=f"{minutes:02d}:{seconds:02d}")
+            self.timer_seconds += 1
+            self.timer_id = self.root.after(1000, self.update_timer)
+        except tk.TclError:
+            # Le label ou la fenêtre a été détruit, on arrête le timer
+            self.timer_running = False
+            return
  
     def pause_timer(self):
         self.timer_running = False

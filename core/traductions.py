@@ -15,6 +15,8 @@ TRADUCTIONS = {
     "mode_ia": {"fr": "IA", "en": "AI"},
     "play": {"fr": "Jouer", "en": "Play"},
     "aide": {"fr": "Aide", "en": "Help"},
+    "blanc": {"fr": "Blanc", "en": "White"},
+    "noir": {"fr": "Noir", "en": "Black"},
     "aide_texte": {"fr": "Choisissez un mode :\n- 1 VS 1 : deux joueurs humains\n- IA : vous contre un adversaire aléatoire", "en": "Choose a mode:\n- 1 VS 1: two human players\n- AI: you against a random opponent"},
     "choisir_mode": {"fr": "Choisir le mode", "en": "Choose Mode"},
     "jouer_local_ou_online": {"fr": "Jouer en local ou en ligne ?", "en": "Play locally or online?"},
@@ -86,4 +88,6 @@ TRADUCTIONS = {
     },
     "mode_reseau_hote": {"fr": "Réseau (Hôte)", "en": "Network (Host)"},
     "mode_reseau_client": {"fr": "Réseau (Client)", "en": "Network (Client)"},
+    "tour_de": {"fr": "Tour de", "en": "Turn of"},
+    "pions_restants": {"fr": "Pions Restants", "en": "Remaining Pawns"},
 }

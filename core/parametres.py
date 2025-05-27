@@ -20,8 +20,8 @@ class LanguageSelector(tk.Frame):
         self.assets_dir = assets_dir
         self.callback = callback
         self.lang_var = tk.StringVar(value=LANGUE_ACTUELLE)
-        fr_img = ImageTk.PhotoImage(Image.open(os.path.join(assets_dir, "france.png")).resize((32, 32)))
-        en_img = ImageTk.PhotoImage(Image.open(os.path.join(assets_dir, "uk.png")).resize((32, 32)))
+        fr_img = ImageTk.PhotoImage(Image.open(os.path.join(assets_dir, "france.png")).resize((32, 32)), master=master)
+        en_img = ImageTk.PhotoImage(Image.open(os.path.join(assets_dir, "uk.png")).resize((32, 32)), master=master)
         self.images = {'fr': fr_img, 'en': en_img}
         for code in ("fr", "en"):
             btn = tk.Radiobutton(

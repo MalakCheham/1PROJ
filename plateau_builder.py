@@ -189,19 +189,24 @@ def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto", network
                 }.get(couleur, 'white')
                 canvas.create_rectangle(j*taille, i*taille, (j+1)*taille, i*taille + taille, fill=fill, outline="black")
 
-        def lancer_partie():
+        def lancer_partie(pions=pions):
             for widget in root.winfo_children():
                 widget.destroy()
             if network_callback:
                 network_callback(plateau, pions)
             else:
                 joueurs = [Joueur(0, 'X'), Joueur(1, 'O')]
-                if type_jeu == "katarenga":
-                    JeuKatarenga(plateau, joueurs, pions=pions).jouer()
+                if type_jeu in ("katarenga", "kataranga"):
+                    if not pions or not ('X' in pions and 'O' in pions):
+                        pions = {
+                            'X': {(0, j) for j in range(8)},
+                            'O': {(7, j) for j in range(8)}
+                        }
+                    JeuKatarenga(plateau, joueurs, pions=pions, root=root).jouer()
                 elif type_jeu == "congress":
-                    JeuCongress(plateau, joueurs, pions).jouer()
+                    JeuCongress(plateau, joueurs, pions, root=root).jouer()
                 elif type_jeu == "isolation":
-                    JeuIsolation(plateau, joueurs).jouer()
+                    JeuIsolation(plateau, joueurs, root=root).jouer()
 
         btns_frame = tk.Frame(main_frame, bg="#f0f4f0")
         btns_frame.pack(pady=15)

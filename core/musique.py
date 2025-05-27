@@ -28,15 +28,23 @@ def reprendre():
 class SoundBar(tk.Frame):
     def __init__(self, master, volume_var=None, **kwargs):
         super().__init__(master, bg="#f0f0f0", **kwargs)  # couleur plus standard
+        self.master = master
         from PIL import Image, ImageTk
         import os
-        self.ASSETS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "assets")
-        mute_icon = ImageTk.PhotoImage(Image.open(os.path.join(self.ASSETS_DIR, "cone-de-haut-parleur.png")).resize((32, 32)))
-        vol_icon = ImageTk.PhotoImage(Image.open(os.path.join(self.ASSETS_DIR, "volume-reduit.png")).resize((32, 32)))
-        self.icons = {'mute': mute_icon, 'vol': vol_icon}
+        # Correction : utilise le bon master pour les images
+        if hasattr(master, 'tk'):
+            vol_icon = ImageTk.PhotoImage(Image.open(os.path.join("assets", "cone-de-haut-parleur.png")).resize((24, 24)), master=master)
+            vol_icon_mute = ImageTk.PhotoImage(Image.open(os.path.join("assets", "volume-reduit.png")).resize((24, 24)), master=master)
+        else:
+            vol_icon = ImageTk.PhotoImage(Image.open(os.path.join("assets", "cone-de-haut-parleur.png")).resize((24, 24)))
+            vol_icon_mute = ImageTk.PhotoImage(Image.open(os.path.join("assets", "volume-reduit.png")).resize((24, 24)))
+        # Correction inversion : 'vol' = volume-reduit (volume faible), 'mute' = cone-de-haut-parleur (muet)
+        self.vol_icon = vol_icon_mute
+        self.vol_icon_mute = vol_icon
+        self.icons = {'vol': vol_icon_mute, 'mute': vol_icon}
         self.volume_var = volume_var or tk.IntVar(value=50)
-        self.sound_icon = tk.Label(self, image=vol_icon, bg="#f0f0f0", cursor="hand2")
-        self.sound_icon.image = vol_icon
+        self.sound_icon = tk.Label(self, image=self.vol_icon, bg="#f0f0f0", cursor="hand2")
+        self.sound_icon.image = self.vol_icon
         self.sound_icon.pack(side="left", padx=(0, 6))
         self.scale = tk.Scale(self, from_=0, to=100, orient="horizontal",
                               variable=self.volume_var, showvalue=0, length=160,
