@@ -76,7 +76,8 @@ class LoginScreen(tk.Frame):
         btn = tk.Button(center_frame, text=traduire("entrez_portail"),
                         font=("Arial", 13, "bold"), bg="#4CAF50", fg="white",
                         activebackground="#388e3c", activeforeground="white",
-                        width=20, height=2, bd=0, relief="ridge",
+                        width=20, height=2, bd=0, relief="flat",  # 'flat' pour compatibilité Mac
+                        highlightthickness=1, highlightbackground="#388e3c",
                         cursor="hand2", command=self.enter_portal)
         btn.pack(pady=30, ipadx=2, ipady=2)
         btn.bind("<Enter>", lambda e: btn.configure(bg="#43a047"))

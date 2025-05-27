@@ -90,7 +90,9 @@ def show_menu(root=None, username=None, volume=None):
         spacer = tk.Label(frame, bg=color)
         spacer.pack(expand=True, fill="both")
         
-        play_btn = tk.Button(frame, text=traduire("jouer"), font=("Arial", 11, "bold"), bg="#4CAF50", fg="white", relief="ridge", cursor="hand2")
+        play_btn = tk.Button(frame, text=traduire("jouer"), font=("Arial", 11, "bold"), bg="#4CAF50", fg="white",
+                             relief="flat", cursor="hand2", bd=0,
+                             highlightthickness=1, highlightbackground="#388e3c")
         play_btn.pack(pady=(6, 12), fill="x", side="bottom")
         frame.pack_propagate(False)
 
