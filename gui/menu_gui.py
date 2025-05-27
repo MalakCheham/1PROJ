@@ -5,6 +5,9 @@ from core.parametres import set_language
 from core.langues import translate, draw_flags, draw_hover_shadow
 from core.musique import jouer_musique, init_audio, draw_volume_bar
 from core.quadrants import generer_plateau_automatique
+from gui.utils.plateau_preview import draw_plateau_preview
+from gui.utils.game_config import draw_config_jeu
+from gui.utils.choice_game import draw_choice_game
 
 PAGE_HOME = "home"
 PAGE_CHOICE_GAME = "choice_game"
@@ -171,271 +174,66 @@ class PortailGame:
     Affiche le menu de choix du jeu
     """
     def draw_choix_jeu(self):
-        screen = self.screen
-        screen.fill((249,246,227))
-        self.draw_header()
-        cx = screen.get_width()//2
-        # Titre principal et sous-titre (depuis traductions)
-        titre_modes = translate("sous_titre_modes")
-        sous_titre = translate("choisissez_mode_jeu")
-        titre_font = pygame.font.SysFont("Helvetica", 28, bold=True)
-        titre_render = titre_font.render(titre_modes, 1, (0,77,64))
-        sous_titre_render = self.font_small.render(sous_titre, 1, (0,0,0))
-        screen.blit(titre_render, titre_render.get_rect(center=(cx, 150)))
-        screen.blit(sous_titre_render, sous_titre_render.get_rect(center=(cx, 190)))
-        # Modes de jeu
-        card_w, card_h = 300, 340
-        spacing = 40
-        total_w = len(MODES_JEU)*card_w + (len(MODES_JEU)-1)*spacing
-        start_x = (screen.get_width()-total_w)//2
-        y = 230  # Décalage sous header + titres
-        self.mode_btn_rects = []
-        mouse_pos = pygame.mouse.get_pos()
-        for i, mode in enumerate(MODES_JEU):
-            x = start_x + i*(card_w+spacing)
-            # Carte
-            card_rect = pygame.Rect(x, y, card_w, card_h)
-            pygame.draw.rect(screen, (255,255,255), card_rect, border_radius=18)
-            pygame.draw.rect(screen, (0,77,64), card_rect, 2, border_radius=18)
-            # Image
-            try:
-                img = pygame.transform.smoothscale(pygame.image.load(mode["image"]), (card_w-40, 120))
-                screen.blit(img, (x+20, y+20))
-            except:
-                pass
-            # Titre (depuis traductions)
-            titre_mod = translate(f"mode_{mode['id']}")
-            screen.blit(self.font.render(titre_mod, 1, (0,51,102)), (x+20, y+150))
-            # Desc (depuis traductions)
-            desc_mod = translate(f"desc_{mode['id']}")
-            desc_lines = wrap_text(desc_mod, self.font_small, card_w-40)
-            for j, line in enumerate(desc_lines):
-                screen.blit(self.font_small.render(line, 1, (0,0,0)), (x+20, y+190+j*24))
-            # Bouton jouer
-            btn_rect = pygame.Rect(x+card_w//2-60, y+card_h-70, 120, 44)
-            btn_hovered = btn_rect.collidepoint(mouse_pos)
-            color = (66,155,70) if btn_hovered else (76,175,80)
-            btn_draw_rect = btn_rect.copy(); btn_draw_rect.y -= 2 if btn_hovered else 0
-            if btn_hovered:
-                draw_hover_shadow(screen, btn_rect, color=(76,175,80,38), offset=6, border_radius=14)
-            pygame.draw.rect(screen, color, btn_draw_rect, border_radius=14)
-            pygame.draw.rect(screen, (0,0,0), btn_draw_rect, 2, border_radius=14)
-            btn_label = self.font_small.render(translate("lancer_ce_mode"), 1, (255,255,255))
-            screen.blit(btn_label, btn_label.get_rect(center=btn_draw_rect.center))
-            self.mode_btn_rects.append((btn_rect, mode["id"]))
-        
-        self.bar_rect = pygame.Rect(40, screen.get_height()-60, 180, 18)
-        self.icon_rect = pygame.Rect(4, screen.get_height()-65, 28, 28)
-        flag_size, margin = 44, 24
-        self.flag_fr_rect = pygame.Rect(screen.get_width()-flag_size-margin, screen.get_height()-2*flag_size-margin-8, flag_size, flag_size)
-        self.flag_uk_rect = pygame.Rect(screen.get_width()-flag_size-margin, screen.get_height()-flag_size-margin, flag_size, flag_size)
-        draw_flags(screen, self.flag_fr_rect, self.flag_uk_rect)
-        draw_volume_bar(screen, self.muted, pygame.mixer.music.get_volume(), self.bar_rect, self.icon_rect)
+        self.mode_btn_rects = draw_choice_game(
+            self.screen,
+            self.font,
+            self.font_small,
+            self.font_title,
+            MODES_JEU,
+            self.muted,
+            self.bar_rect,
+            self.icon_rect,
+            self.flag_fr_rect,
+            self.flag_uk_rect,
+            header_func=self.draw_header
+        )
     
     """
     Affiche la page de configuration du jeu
     """
     def draw_config_jeu(self, mode_id):
-        screen = self.screen
-        screen.fill((249,246,227))
-        self.draw_header()
-        cx = screen.get_width()//2
-        # Titre de la page
-        mode_label = translate(f"mode_{mode_id}") if mode_id else ""
-        titre = self.font_title.render(f"{translate('configuration_du_jeu')} : {mode_label}", 1, (0,77,64))
-        screen.blit(titre, titre.get_rect(center=(cx, 140)))
-        # 1ère ZONE : Mode de jeu
-        zone1_rect = pygame.Rect(cx-320, 210, 640, 120)
-        pygame.draw.rect(screen, (255,255,255), zone1_rect, border_radius=18)
-        pygame.draw.rect(screen, (0,77,64), zone1_rect, 2, border_radius=18)
-        label1 = self.font.render(translate("mode_de_jeu"), 1, (0,51,102))
-        screen.blit(label1, (zone1_rect.x+30, zone1_rect.y+30))
-        # 2ème ZONE : Configuration du plateau
-        zone2_rect = pygame.Rect(cx-320, 360, 640, 220)
-        pygame.draw.rect(screen, (255,255,255), zone2_rect, border_radius=18)
-        pygame.draw.rect(screen, (0,77,64), zone2_rect, 2, border_radius=18)
-        label2 = self.font.render(translate("plateau"), 1, (0,51,102))
-        screen.blit(label2, (zone2_rect.x+30, zone2_rect.y+30))
-        # Choix plateau_auto ou plateau_perso (radio boutons)
-        radio_y = zone2_rect.y+90
-        radio_x1 = zone2_rect.x+60
-        radio_x2 = zone2_rect.x+320
-        radio_radius = 16
-        # Détection sélection
-        selected_plateau = getattr(self, 'selected_plateau', 'auto')
-        mouse_pos = pygame.mouse.get_pos()
-        # Radio 1 : plateau_auto
-        auto_rect = pygame.Rect(radio_x1-radio_radius, radio_y-radio_radius, 2*radio_radius, 2*radio_radius)
-        pygame.draw.circle(screen, (0,77,64), (radio_x1, radio_y), radio_radius, 2)
-        if selected_plateau == 'auto':
-            pygame.draw.circle(screen, (66,155,70), (radio_x1, radio_y), radio_radius-5)
-        label_auto = self.font_small.render(translate("plateau_auto"), 1, (0,0,0))
-        screen.blit(label_auto, (radio_x1+28, radio_y-label_auto.get_height()//2))
-        # Radio 2 : plateau_perso (retour à la ligne)
-        radio_y2 = radio_y + 48  # Ajout d'un espacement vertical
-        perso_rect = pygame.Rect(radio_x1-radio_radius, radio_y2-radio_radius, 2*radio_radius, 2*radio_radius)
-        pygame.draw.circle(screen, (0,77,64), (radio_x1, radio_y2), radio_radius, 2)
-        if selected_plateau == 'perso':
-            pygame.draw.circle(screen, (66,155,70), (radio_x1, radio_y2), radio_radius-5)
-        label_perso = self.font_small.render(translate("plateau_perso"), 1, (0,0,0))
-        screen.blit(label_perso, (radio_x1+28, radio_y2-label_perso.get_height()//2))
-        self.plateau_radio_rects = [(auto_rect, 'auto'), (perso_rect, 'perso')]
-        # Bouton retour centré en bas + bouton jouer à droite
-        btn_retour = pygame.Rect(cx-130, zone2_rect.y+zone2_rect.height+40, 120, 44)
-        btn_jouer = pygame.Rect(cx+10, zone2_rect.y+zone2_rect.height+40, 120, 44)
-        mouse_pos = pygame.mouse.get_pos()
-        retour_hovered = btn_retour.collidepoint(mouse_pos)
-        jouer_hovered = btn_jouer.collidepoint(mouse_pos)
-        color_retour = (66,155,70) if retour_hovered else (76,175,80)
-        color_jouer = (66,155,70) if jouer_hovered else (76,175,80)
-        btn_retour_draw = btn_retour.copy(); btn_retour_draw.y -= 2 if retour_hovered else 0
-        btn_jouer_draw = btn_jouer.copy(); btn_jouer_draw.y -= 2 if jouer_hovered else 0
-        if retour_hovered:
-            draw_hover_shadow(screen, btn_retour, color=(76,175,80,38), offset=6, border_radius=14)
-        if jouer_hovered:
-            draw_hover_shadow(screen, btn_jouer, color=(76,175,80,38), offset=6, border_radius=14)
-        pygame.draw.rect(screen, color_retour, btn_retour_draw, border_radius=14)
-        pygame.draw.rect(screen, (0,0,0), btn_retour_draw, 2, border_radius=14)
-        pygame.draw.rect(screen, color_jouer, btn_jouer_draw, border_radius=14)
-        pygame.draw.rect(screen, (0,0,0), btn_jouer_draw, 2, border_radius=14)
-        btn_label_retour = self.font_small.render(translate("retour"), 1, (255,255,255))
-        btn_label_jouer = self.font_small.render(translate("lancer_ce_mode"), 1, (255,255,255))
-        screen.blit(btn_label_retour, btn_label_retour.get_rect(center=btn_retour_draw.center))
-        screen.blit(btn_label_jouer, btn_label_jouer.get_rect(center=btn_jouer_draw.center))
-        self.btn_retour_rect = btn_retour
-        self.btn_jouer_rect = btn_jouer
-        # Volume et langues
-        self.bar_rect = pygame.Rect(40, screen.get_height()-60, 180, 18)
-        self.icon_rect = pygame.Rect(4, screen.get_height()-65, 28, 28)
-        flag_size, margin = 44, 24
-        self.flag_fr_rect = pygame.Rect(screen.get_width()-flag_size-margin, screen.get_height()-2*flag_size-margin-8, flag_size, flag_size)
-        self.flag_uk_rect = pygame.Rect(screen.get_width()-flag_size-margin, screen.get_height()-flag_size-margin, flag_size, flag_size)
-        draw_flags(screen, self.flag_fr_rect, self.flag_uk_rect)
-        draw_volume_bar(screen, self.muted, pygame.mixer.music.get_volume(), self.bar_rect, self.icon_rect)
-        # Affichage de l'icône d'aide (point d'interrogation)
-        help_icon = pygame.image.load(os.path.join("assets", "point-dinterrogation.png")).convert_alpha()
-        help_icon = pygame.transform.smoothscale(help_icon, (44, 44))
-        help_icon_rect = pygame.Rect(cx+320-54, 210+10, 44, 44)
-        screen.blit(help_icon, help_icon_rect)
-        self.help_icon_rect = help_icon_rect
-        # Affichage du sous-menu d'aide si besoin
-        if getattr(self, 'show_help_menu', False):
-            from core.aide import get_regles
-            regles_lines = get_regles(mode_id or "")
-            # Calcul dynamique de la taille du popup
-            max_width = 0
-            total_height = 0
-            for text, is_emoji in regles_lines:
-                font = pygame.font.SysFont("Segoe UI Emoji", 28, bold=True) if is_emoji and text.strip() else self.font_small
-                surf = font.render(text, True, (0,0,0))
-                max_width = max(max_width, surf.get_width())
-                total_height += surf.get_height() + 2
-            popup_w = max(480, max_width + 48)
-            popup_h = max(180, total_height + 90)  # 90 pour titre + marges
-            cx = screen.get_width()//2
-            popup_x = cx - popup_w//2
-            popup_y = 210 + 120 + 24
-            popup_rect = pygame.Rect(popup_x, popup_y, popup_w, popup_h)
-            pygame.draw.rect(screen, (255,255,255), popup_rect, border_radius=18)
-            pygame.draw.rect(screen, (0,77,64), popup_rect, 2, border_radius=18)
-            # Titre
-            titre_aide = self.font.render(translate("aide"), 1, (0,77,64))
-            screen.blit(titre_aide, (popup_x+24, popup_y+18))
-            # Affichage ligne à ligne avec gestion emoji/logo
-            y_text = popup_y+64
-            for text, is_emoji in regles_lines:
-                font = pygame.font.SysFont("Segoe UI Emoji", 28, bold=True) if is_emoji and text.strip() else self.font_small
-                surf = font.render(text, True, (0,0,0))
-                screen.blit(surf, (popup_x+24, y_text))
-                y_text += surf.get_height() + 2
-            # Fermer (croix)
-            close_rect = pygame.Rect(popup_x+popup_w-38, popup_y+10, 28, 28)
-            pygame.draw.circle(screen, (220,60,60), close_rect.center, 14)
-            pygame.draw.line(screen, (255,255,255), (close_rect.left+7, close_rect.top+7), (close_rect.right-7, close_rect.bottom-7), 3)
-            pygame.draw.line(screen, (255,255,255), (close_rect.right-7, close_rect.top+7), (close_rect.left+7, close_rect.bottom-7), 3)
-            self.help_close_rect = close_rect
-        else:
-            self.help_close_rect = None
-
+        self.btn_retour_rect = None
+        self.btn_jouer_rect = None
+        self.plateau_radio_rects = []
+        self.help_icon_rect = None
+        self.help_close_rect = None
+        rects = draw_config_jeu(
+            self.screen,
+            self.font,
+            self.font_small,
+            self.font_title,
+            mode_id,
+            getattr(self, 'selected_plateau', 'auto'),
+            getattr(self, 'show_help_menu', False),
+            getattr(self, 'help_close_rect', None),
+            getattr(self, 'show_logout_menu', False),
+            getattr(self, 'logout_rect', None),
+            self.muted,
+            self.bar_rect,
+            self.icon_rect,
+            self.flag_fr_rect,
+            self.flag_uk_rect,
+            header_func=self.draw_header
+        )
+        self.btn_retour_rect = rects['btn_retour_rect']
+        self.btn_jouer_rect = rects['btn_jouer_rect']
+        self.plateau_radio_rects = rects['plateau_radio_rects']
+        self.help_icon_rect = rects['help_icon_rect']
+        self.help_close_rect = rects['help_close_rect']
+    
     """
     Affiche la prévisualisation du plateau généré
     """
     def draw_preview_game(self):
-        screen = self.screen
-        screen.fill((255, 248, 225))
-        # --- Entête ---
-        self.draw_header()
-        header_height = 90
-        footer_height = 80
-        zone_top = header_height
-        zone_bottom = screen.get_height() - footer_height
-        zone_height = zone_bottom - zone_top
-        zone_width = screen.get_width()
-        # --- Textures ---
-        TEXTURE_DIR = os.path.join("assets", "textures")
-        TEXTURE_FILES = {
-            'R': "case-rouge.png",
-            'B': "case-bleu.png",
-            'V': "case-vert.png",
-            'J': "case-jaune.png",
-        }
-        tile_textures = {}
-        # Taille dynamique pour que le plateau tienne dans le cadre et la fenêtre
-        cadre_margin = 72  # marge encore augmentée pour réduire davantage le cadre
-        cadre_w = min(zone_width, zone_height) - 2*cadre_margin
-        cadre_h = cadre_w
-        cell_size = cadre_w // 12  # diviser par 12 pour des cases plus petites
-        for k, fname in TEXTURE_FILES.items():
-            surf = pygame.image.load(os.path.join(TEXTURE_DIR, fname)).convert_alpha()
-            tile_textures[k] = pygame.transform.smoothscale(surf, (cell_size, cell_size))
-        # --- Cadre ---
-        try:
-            cadre_img = pygame.image.load(os.path.join(TEXTURE_DIR, "cadre.png")).convert_alpha()
-            cadre_img = pygame.transform.smoothscale(cadre_img, (cadre_w, cadre_h))
-            cadre_ok = True
-        except Exception as e:
-            cadre_img = None
-            cadre_ok = False
-        # Placement centré
-        offset_x = (zone_width - cadre_w) // 2
-        offset_y = zone_top + (zone_height - cadre_h) // 2
-        if cadre_ok and cadre_img:
-            screen.blit(cadre_img, (offset_x, offset_y))
-        else:
-            pygame.draw.rect(screen, (62, 30, 11), (offset_x, offset_y, cadre_w, cadre_h), 6)
-        # Plateau (cases texturées)
-        plateau_w = 8 * cell_size
-        plateau_h = 8 * cell_size
-        px = offset_x + (cadre_w - plateau_w)//2  # centré dans le cadre
-        py = offset_y + (cadre_h - plateau_h)//2
-        for i in range(8):
-            for j in range(8):
-                val = self.preview_plateau.cases[i][j]
-                tex = tile_textures.get(val)
-                if tex:
-                    screen.blit(tex, (px + j*cell_size, py + i*cell_size))
-                pygame.draw.rect(screen, (62, 30, 11), (px + j*cell_size, py + i*cell_size, cell_size, cell_size), 1)
-        # --- Titre centré AU HAUT DU CADRE ---
-        titre = self.font_title.render(translate("plateau_genere"), True, (0, 102, 68))
-        titre_y = offset_y - titre.get_height() - 18  # place le titre juste au-dessus du cadre, avec un petit espace
-        screen.blit(titre, (screen.get_width()//2 - titre.get_width()//2, titre_y))
-        # --- Bouton retour icône à gauche, centré verticalement par rapport au cadre ---
-        icon_img = pygame.image.load(os.path.join("assets", "en-arriere.png")).convert_alpha()
-        icon_size = 48
-        icon_img = pygame.transform.smoothscale(icon_img, (icon_size, icon_size))
-        icon_x = 32
-        icon_y = offset_y + cadre_h//2 - icon_size//2
-        icon_rect = pygame.Rect(icon_x, icon_y, icon_size, icon_size)
-        screen.blit(icon_img, icon_rect)
-        self.preview_btn_retour_rect = icon_rect
-        # Volume et langues (en bas comme avant)
-        self.bar_rect = pygame.Rect(40, screen.get_height()-60, 180, 18)
-        self.icon_rect = pygame.Rect(4, screen.get_height()-65, 28, 28)
-        flag_size, margin = 44, 24
-        self.flag_fr_rect = pygame.Rect(screen.get_width()-flag_size-margin, screen.get_height()-2*flag_size-margin-8, flag_size, flag_size)
-        self.flag_uk_rect = pygame.Rect(screen.get_width()-flag_size-margin, screen.get_height()-flag_size-margin, flag_size, flag_size)
-        draw_flags(screen, self.flag_fr_rect, self.flag_uk_rect)
-        draw_volume_bar(screen, self.muted, pygame.mixer.music.get_volume(), self.bar_rect, self.icon_rect)
+        self.preview_btn_retour_rect = draw_plateau_preview(
+            self.screen,
+            self.font_title,
+            self.font_small,
+            self.preview_plateau,
+            self.muted,
+            None, None, None, None,
+            header_func=self.draw_header
+        )
     
     """
     Gestion des événements
