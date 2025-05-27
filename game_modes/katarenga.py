@@ -93,19 +93,12 @@ class KatarengaGame:
                 tile_textures[k] = None
         px = offset_x
         py = offset_y
-        # Précharge les images de pions avec gestion du fond
-        pion_noir_img = None
-        pion_blanc_img = None
-        try:
-            pion_noir_img = pygame.image.load(os.path.join("assets", "pion_noir.png")).convert_alpha()
-            pion_noir_img = pygame.transform.smoothscale(pion_noir_img, (cell_size-8, cell_size-8))
-        except Exception:
-            pion_noir_img = None
-        try:
-            pion_blanc_img = pygame.image.load(os.path.join("assets", "pion_blanc.png")).convert_alpha()
-            pion_blanc_img = pygame.transform.smoothscale(pion_blanc_img, (cell_size-8, cell_size-8))
-        except Exception:
-            pion_blanc_img = None
+
+        pion_noir_img = pygame.image.load(os.path.join("assets", "pion_noir.png")).convert_alpha()
+        pion_noir_img = pygame.transform.smoothscale(pion_noir_img, (cell_size-8, cell_size-8))
+        pion_blanc_img = pygame.image.load(os.path.join("assets", "pion_blanc.png")).convert_alpha()
+        pion_blanc_img = pygame.transform.smoothscale(pion_blanc_img, (cell_size-8, cell_size-8))
+        
         for i in range(8):
             for j in range(8):
                 val = self.plateau.cases[i][j]
