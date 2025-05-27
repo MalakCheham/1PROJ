@@ -90,10 +90,18 @@ def show_menu(root=None, username=None, volume=None):
         spacer = tk.Label(frame, bg=color)
         spacer.pack(expand=True, fill="both")
         
+        def jouer_depuis_menu(mode):
+            from config_gui import main as config_main
+            jeu_demande = mode.lower()
+            for w in root.winfo_children():
+                w.destroy()
+            config_main(root, jeu_demande, username=USERNAME, volume=volume)
+        
         play_btn = tk.Button(frame, text=traduire("jouer"), font=("Arial", 11, "bold"), bg="#219150", fg="white",
                              relief="flat", cursor="hand2", bd=0,
                              highlightthickness=1, highlightbackground="#19713c",
-                             activebackground="#19713c", activeforeground="white")
+                             activebackground="#19713c", activeforeground="white",
+                             command=lambda m=mode: jouer_depuis_menu(m))
         play_btn.pack(pady=(6, 12), fill="x", side="bottom")
         frame.pack_propagate(False)
 

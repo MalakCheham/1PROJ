@@ -258,57 +258,75 @@ def afficher_interface_choix(root):
     for widget in root.winfo_children():
         widget.destroy()
 
-    frame_top = tk.Frame(root, bg="#e0f7fa")
-    frame_top.pack(side="top", fill="x", pady=5, padx=5)
+    # --- Entête importée depuis menu_gui.py ---
+    header_bg = "#e0e0e0"
+    header = tk.Frame(root, bg=header_bg, height=80)
+    header.pack(side="top", fill="x")
+    from core.langues import traduire
+    username = dic_variables.get('username') or getattr(root, 'USERNAME', None)
+    bienvenue = tk.Label(header, text=f"{traduire('bienvenue')} {username if username else ''}", font=("Arial", 22, "bold"), bg=header_bg, fg="#5b7fce")
+    bienvenue.pack(side="left", padx=32, pady=18)
+    img = Image.open(os.path.join("assets", "lyrique.png")).convert("RGBA").resize((40, 40))
+    icon = ImageTk.PhotoImage(img)
+    btn_icon = tk.Button(header, image=icon, bg=header_bg, bd=0, relief="flat", cursor="hand2", activebackground=header_bg, highlightthickness=0)
+    btn_icon.image = icon
+    btn_icon.pack(side="right", padx=28, pady=12)
 
-    # Bouton retour
-    try:
-        retour_img = Image.open(os.path.join("assets", "en-arriere.png")).resize((24, 24))
-        retour_icon = ImageTk.PhotoImage(retour_img)
-        btn_retour = tk.Button(frame_top, image=retour_icon, command=quit_app, bg="#e0f7fa", bd=0)
-        btn_retour.image = retour_icon
-        btn_retour.pack(side="left")
-    except:
-        tk.Button(frame_top, text="<", command=quit_app, bg="#e0f7fa", bd=0).pack(side="left")
+    # --- Ajout barre de son et sélecteur de langue en bas ---
+    from core.musique import SoundBar, regler_volume
+    from core.parametres import LanguageSelector
+    # Barre de son en bas à gauche
+    soundbar = SoundBar(root)
+    volume = getattr(root, 'VOLUME', None)
+    if volume is not None:
+        soundbar.volume_var.set(volume)
+        regler_volume(volume)
+    else:
+        regler_volume(soundbar.volume_var.get())
+    soundbar.place(relx=0.0, rely=1.0, anchor="sw", x=10, y=-10)
 
-    # Bouton aide
-    try:
-        help_img = Image.open(os.path.join("assets", "point-dinterrogation.png")).resize((24, 24))
-        help_icon = ImageTk.PhotoImage(help_img)
-        btn_help = tk.Button(frame_top, image=help_icon, command=show_help, bg="#e0f7fa", bd=0)
-        btn_help.image = help_icon
-        btn_help.pack(side="right")
-    except:
-        tk.Button(frame_top, text="?", command=show_help, bg="#e0f7fa", bd=0).pack(side="right")
+    # Sélecteur de langue en bas à droite
+    def on_language_changed(new_lang):
+        # Préserver le volume actuel
+        try:
+            current_volume = soundbar.volume_var.get()
+        except Exception:
+            current_volume = volume
+        import importlib
+        import core.langues
+        importlib.reload(core.langues)
+        main(root, dic_variables["jeu_demande"], username=username, volume=current_volume)
+    lang_selector = LanguageSelector(root, assets_dir="assets", callback=on_language_changed)
+    lang_selector.place(relx=1.0, rely=1.0, anchor="se", x=-18, y=-18)
 
     # Titre du jeu
-    tk.Label(root, text=traduire(dic_variables["jeu_demande"]).upper(), font=("Helvetica", 16, "bold"), fg="#004d40", bg="#fefbe9").pack(pady=10)
+    tk.Label(root, text=traduire(dic_variables["jeu_demande"]).upper(), font=("Helvetica", 16, "bold"), fg="#004d40", bg="#f0f0f0").pack(pady=10)
 
     # Variables Tkinter pour l'UI, stockées dans le dictionnaire
     dic_variables["mode_var"] = tk.StringVar(value=dic_variables["mode"])
     dic_variables["plateau_mode_var"] = tk.StringVar(value=dic_variables["plateau_mode"])
 
     # Choix du mode de jeu
-    frame_mode = tk.Frame(root, bg="#fefbe9")
+    frame_mode = tk.Frame(root, bg="#f0f0f0")
     frame_mode.pack(pady=10)
 
-    frame1 = tk.Frame(frame_mode, bg="#fefbe9")
+    frame1 = tk.Frame(frame_mode, bg="#f0f0f0")
     frame1.pack(pady=10)
-    tk.Radiobutton(frame1, text=traduire("mode_1v1"), variable=dic_variables["mode_var"], value="1v1", font=("Helvetica", 12), bg="#fefbe9", command=lambda: on_mode_change(root)).pack(side="left", padx=10)
+    tk.Radiobutton(frame1, text=traduire("mode_1v1"), variable=dic_variables["mode_var"], value="1v1", font=("Helvetica", 12), bg="#f0f0f0", command=lambda: on_mode_change(root)).pack(side="left", padx=10)
     btn_mode_select = tk.Button(frame1, text=traduire("mode_jeu"), font=("Helvetica", 12, "bold"), bg="#e0f7fa", bd=0, command=lambda: open_mode_choice_window(root))
     btn_mode_select.pack(side="left", padx=5)
 
-    frame2 = tk.Frame(frame_mode, bg="#fefbe9")
+    frame2 = tk.Frame(frame_mode, bg="#f0f0f0")
     frame2.pack(pady=10)
-    tk.Radiobutton(frame2, text=traduire("mode_ia"), variable=dic_variables["mode_var"], value="ia", font=("Helvetica", 12), bg="#fefbe9", command=lambda: on_mode_change(root)).pack(side="left", padx=10)
+    tk.Radiobutton(frame2, text=traduire("mode_ia"), variable=dic_variables["mode_var"], value="ia", font=("Helvetica", 12), bg="#f0f0f0", command=lambda: on_mode_change(root)).pack(side="left", padx=10)
 
     # Choix du plateau
-    frame_plateau = tk.Frame(root, bg="#fefbe9")
+    frame_plateau = tk.Frame(root, bg="#f0f0f0")
     frame_plateau.pack(pady=10)
 
-    tk.Label(frame_plateau, text=traduire("plateau"), bg="#fefbe9", font=("Helvetica", 13)).pack()
-    tk.Radiobutton(frame_plateau, text=traduire("plateau_auto"), variable=dic_variables["plateau_mode_var"], value="auto", bg="#fefbe9", font=("Helvetica", 12), command=lambda: on_plateau_mode_change(root)).pack(anchor="w", padx=20)
-    tk.Radiobutton(frame_plateau, text=traduire("plateau_perso"), variable=dic_variables["plateau_mode_var"], value="perso", bg="#fefbe9", font=("Helvetica", 12), command=lambda: on_plateau_mode_change(root)).pack(anchor="w", padx=20)
+    tk.Label(frame_plateau, text=traduire("plateau"), bg="#f0f0f0", font=("Helvetica", 13)).pack()
+    tk.Radiobutton(frame_plateau, text=traduire("plateau_auto"), variable=dic_variables["plateau_mode_var"], value="auto", bg="#f0f0f0", font=("Helvetica", 12), command=lambda: on_plateau_mode_change(root)).pack(anchor="w", padx=20)
+    tk.Radiobutton(frame_plateau, text=traduire("plateau_perso"), variable=dic_variables["plateau_mode_var"], value="perso", bg="#f0f0f0", font=("Helvetica", 12), command=lambda: on_plateau_mode_change(root)).pack(anchor="w", padx=20)
 
     # Bouton pour jouer, stocké dans le dictionnaire
     dic_variables["play_btn"] = tk.Button(root, text=traduire("play"), command=lambda: play(root), font=("Helvetica", 12, "bold"), bg="#4CAF50", fg="white", width=15, relief="flat", state="disabled")
@@ -339,7 +357,7 @@ def fermer():
     root.destroy()
     subprocess.Popen([sys.executable, "menu_gui.py"])
 
-def main(root, jeu_type):
+def main(root, jeu_type, username=None, volume=None):
     global dic_variables
     dic_variables = {
         "jeu_demande": jeu_type,
@@ -347,6 +365,11 @@ def main(root, jeu_type):
         "client_socket": None,
         "mode": "1v1",
         "game_ready": False,
-        "plateau_mode": "auto"
+        "plateau_mode": "auto",
+        "username": username,
+        "volume": volume
     }
+    # Stocker l'utilisateur sur root pour l'entête
+    if username:
+        setattr(root, 'USERNAME', username)
     afficher_interface_choix(root)
