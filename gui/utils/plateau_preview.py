@@ -49,6 +49,19 @@ def draw_plateau_preview(screen, font_title, font_small, preview_plateau, muted,
         cadre_ok = False
     offset_x = (zone_width - cadre_w) // 2
     offset_y = zone_top + (zone_height - cadre_h) // 2
+    # --- Titre centré AU HAUT DU CADRE ---
+    titre = font_title.render(translate("plateau_genere"), True, (0, 102, 68))
+    titre_y = offset_y - titre.get_height() - 18
+    screen.blit(titre, (screen_w//2 - titre.get_width()//2, titre_y))
+    # --- Bouton retour icône à gauche, centré verticalement par rapport à la zone plateau ---
+    icon_img = pygame.image.load(os.path.join("assets", "en-arriere.png")).convert_alpha()
+    icon_size = 48
+    icon_img = pygame.transform.smoothscale(icon_img, (icon_size, icon_size))
+    icon_x = offset_x - icon_size - 24
+    icon_y = offset_y + cadre_h//2 - icon_size//2
+    retour_rect = pygame.Rect(icon_x, icon_y, icon_size, icon_size)
+    screen.blit(icon_img, retour_rect)
+    # --- Cadre et plateau centrés ---
     if cadre_ok and cadre_img:
         screen.blit(cadre_img, (offset_x, offset_y))
     else:
@@ -65,18 +78,6 @@ def draw_plateau_preview(screen, font_title, font_small, preview_plateau, muted,
             if tex:
                 screen.blit(tex, (px + j*cell_size, py + i*cell_size))
             pygame.draw.rect(screen, (62, 30, 11), (px + j*cell_size, py + i*cell_size, cell_size, cell_size), 1)
-    # --- Titre centré AU HAUT DU CADRE ---
-    titre = font_title.render(translate("plateau_genere"), True, (0, 102, 68))
-    titre_y = offset_y - titre.get_height() - 18
-    screen.blit(titre, (screen_w//2 - titre.get_width()//2, titre_y))
-    # --- Bouton retour icône à gauche, centré verticalement par rapport au cadre ---
-    icon_img = pygame.image.load(os.path.join("assets", "en-arriere.png")).convert_alpha()
-    icon_size = 48
-    icon_img = pygame.transform.smoothscale(icon_img, (icon_size, icon_size))
-    icon_x = 32
-    icon_y = offset_y + cadre_h//2 - icon_size//2
-    retour_rect = pygame.Rect(icon_x, icon_y, icon_size, icon_size)
-    screen.blit(icon_img, retour_rect)
     # --- Volume et langues (direct) ---
     draw_volume_bar(screen, muted, pygame.mixer.music.get_volume(), bar_rect, icon_rect)
     draw_flags(screen, flag_fr_rect, flag_uk_rect)

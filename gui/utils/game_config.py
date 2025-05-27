@@ -44,27 +44,25 @@ def draw_config_jeu(screen, font, font_small, font_title, mode_id, selected_plat
     label_perso = font_small.render(translate("plateau_perso"), 1, (0,0,0))
     screen.blit(label_perso, (radio_x1+28, radio_y2-label_perso.get_height()//2))
     plateau_radio_rects = [(auto_rect, 'auto'), (perso_rect, 'perso')]
-    # Bouton retour centré en bas + bouton jouer à droite
-    btn_retour = pygame.Rect(cx-130, zone2_rect.y+zone2_rect.height+40, 120, 44)
-    btn_jouer = pygame.Rect(cx+10, zone2_rect.y+zone2_rect.height+40, 120, 44)
+    # Bouton retour icône à gauche, centré verticalement par rapport à la zone config (zone2)
+    icon_img = pygame.image.load(os.path.join("assets", "en-arriere.png")).convert_alpha()
+    icon_size = 48
+    icon_img = pygame.transform.smoothscale(icon_img, (icon_size, icon_size))
+    icon_x = zone2_rect.x - icon_size - 24
+    icon_y = zone2_rect.y + zone2_rect.height//2 - icon_size//2
+    retour_rect = pygame.Rect(icon_x, icon_y, icon_size, icon_size)
+    screen.blit(icon_img, retour_rect)
+    # Bouton jouer centré sous la zone2
+    btn_jouer = pygame.Rect(cx-60, zone2_rect.y+zone2_rect.height+40, 120, 44)
     mouse_pos = pygame.mouse.get_pos()
-    retour_hovered = btn_retour.collidepoint(mouse_pos)
     jouer_hovered = btn_jouer.collidepoint(mouse_pos)
-    color_retour = (66,155,70) if retour_hovered else (76,175,80)
     color_jouer = (66,155,70) if jouer_hovered else (76,175,80)
-    btn_retour_draw = btn_retour.copy(); btn_retour_draw.y -= 2 if retour_hovered else 0
     btn_jouer_draw = btn_jouer.copy(); btn_jouer_draw.y -= 2 if jouer_hovered else 0
-    if retour_hovered:
-        draw_hover_shadow(screen, btn_retour, color=(76,175,80,38), offset=6, border_radius=14)
     if jouer_hovered:
         draw_hover_shadow(screen, btn_jouer, color=(76,175,80,38), offset=6, border_radius=14)
-    pygame.draw.rect(screen, color_retour, btn_retour_draw, border_radius=14)
-    pygame.draw.rect(screen, (0,0,0), btn_retour_draw, 2, border_radius=14)
     pygame.draw.rect(screen, color_jouer, btn_jouer_draw, border_radius=14)
     pygame.draw.rect(screen, (0,0,0), btn_jouer_draw, 2, border_radius=14)
-    btn_label_retour = font_small.render(translate("retour"), 1, (255,255,255))
     btn_label_jouer = font_small.render(translate("lancer_ce_mode"), 1, (255,255,255))
-    screen.blit(btn_label_retour, btn_label_retour.get_rect(center=btn_retour_draw.center))
     screen.blit(btn_label_jouer, btn_label_jouer.get_rect(center=btn_jouer_draw.center))
     # Volume et langues
     draw_flags(screen, flag_fr_rect, flag_uk_rect)
@@ -104,10 +102,10 @@ def draw_config_jeu(screen, font, font_small, font_title, mode_id, selected_plat
         close_rect = pygame.Rect(popup_x+popup_w-38, popup_y+10, 28, 28)
         pygame.draw.circle(screen, (220,60,60), close_rect.center, 14)
         pygame.draw.line(screen, (255,255,255), (close_rect.left+7, close_rect.top+7), (close_rect.right-7, close_rect.bottom-7), 3)
-        pygame.draw.line(screen, (255,255,255), (close_rect.right-7, close_rect.top+7), (close_rect.left+7, close_rect.bottom-7), 3)
+        pygame.draw.line(screen, (255,255,255), (close_rect.right-7, popup_y+10+7), (close_rect.left+7, popup_y+10+28-7), 3)
         help_close_rect_out = close_rect
     return {
-        'btn_retour_rect': btn_retour,
+        'btn_retour_rect': retour_rect,
         'btn_jouer_rect': btn_jouer,
         'plateau_radio_rects': plateau_radio_rects,
         'help_icon_rect': help_icon_rect,

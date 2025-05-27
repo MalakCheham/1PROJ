@@ -3,7 +3,7 @@ import math
 import random
 from core.parametres import set_language
 from core.langues import translate, draw_flags, draw_hover_shadow
-from core.musique import jouer_musique, init_audio, draw_volume_bar
+from core.musique import init_audio, draw_volume_bar
 from core.quadrants import generer_plateau_automatique
 from gui.utils.plateau_preview import draw_plateau_preview
 from gui.utils.game_config import draw_config_jeu
@@ -35,22 +35,6 @@ MODES_JEU = [
         "desc": "Un mode duel tactique pour isoler l'adversaire.",
     },
 ]
-
-def wrap_text(text, font, max_width):
-    words = text.split()
-    lines = []
-    current = ""
-    for word in words:
-        test = current + (" " if current else "") + word
-        if font.size(test)[0] <= max_width:
-            current = test
-        else:
-            if current:
-                lines.append(current)
-            current = word
-    if current:
-        lines.append(current)
-    return lines
 
 class PortailGame:
     """

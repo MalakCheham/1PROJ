@@ -1,6 +1,7 @@
 import pygame
-from core.langues import translate, draw_flags, draw_hover_shadow
+from core.langues import translate, draw_flags
 from core.musique import draw_volume_bar
+from gui.utils.ui_common import wrap_text
 
 def draw_choice_game(screen, font, font_small, font_title, MODES_JEU, muted, bar_rect, icon_rect, flag_fr_rect, flag_uk_rect, header_func=None):
     screen.fill((249,246,227))
@@ -10,10 +11,17 @@ def draw_choice_game(screen, font, font_small, font_title, MODES_JEU, muted, bar
     # Titre principal et sous-titre (depuis traductions)
     titre_modes = translate("sous_titre_modes")
     sous_titre = translate("choisissez_mode_jeu")
-    titre_font = pygame.font.SysFont("Helvetica", 28, bold=True)
+    # Adapter dynamiquement la taille de la police du titre principal selon la largeur de la fenêtre
+    titre_font_size = max(24, min(48, screen.get_width() // 28))
+    titre_font = pygame.font.SysFont("Helvetica", titre_font_size, bold=True)
+    # Si le texte est trop large, on réduit la taille jusqu'à ce qu'il tienne
     titre_render = titre_font.render(titre_modes, 1, (0,77,64))
-    sous_titre_render = font_small.render(sous_titre, 1, (0,0,0))
+    while titre_render.get_width() > screen.get_width() - 80 and titre_font_size > 18:
+        titre_font_size -= 2
+        titre_font = pygame.font.SysFont("Helvetica", titre_font_size, bold=True)
+        titre_render = titre_font.render(titre_modes, 1, (0,77,64))
     screen.blit(titre_render, titre_render.get_rect(center=(cx, 150)))
+    sous_titre_render = font_small.render(sous_titre, 1, (0,0,0))
     screen.blit(sous_titre_render, sous_titre_render.get_rect(center=(cx, 190)))
     # Modes de jeu
     card_w, card_h = 300, 340
@@ -49,6 +57,7 @@ def draw_choice_game(screen, font, font_small, font_title, MODES_JEU, muted, bar
         color = (66,155,70) if btn_hovered else (76,175,80)
         btn_draw_rect = btn_rect.copy(); btn_draw_rect.y -= 2 if btn_hovered else 0
         if btn_hovered:
+            from core.langues import draw_hover_shadow
             draw_hover_shadow(screen, btn_rect, color=(76,175,80,38), offset=6, border_radius=14)
         pygame.draw.rect(screen, color, btn_draw_rect, border_radius=14)
         pygame.draw.rect(screen, (0,0,0), btn_draw_rect, 2, border_radius=14)
@@ -58,19 +67,3 @@ def draw_choice_game(screen, font, font_small, font_title, MODES_JEU, muted, bar
     draw_flags(screen, flag_fr_rect, flag_uk_rect)
     draw_volume_bar(screen, muted, pygame.mixer.music.get_volume(), bar_rect, icon_rect)
     return mode_btn_rects
-
-def wrap_text(text, font, max_width):
-    words = text.split()
-    lines = []
-    current = ""
-    for word in words:
-        test = current + (" " if current else "") + word
-        if font.size(test)[0] <= max_width:
-            current = test
-        else:
-            if current:
-                lines.append(current)
-            current = word
-    if current:
-        lines.append(current)
-    return lines
