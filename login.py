@@ -74,14 +74,14 @@ class LoginScreen(tk.Frame):
         entry.focus_set()
 
         btn = tk.Button(center_frame, text=traduire("entrez_portail"),
-                        font=("Arial", 13, "bold"), bg="#43a047", fg="white",
-                        activebackground="#388e3c", activeforeground="white",
+                        font=("Arial", 13, "bold"), bg="#219150", fg="white",
+                        activebackground="#19713c", activeforeground="white",
                         width=20, height=2, bd=0, relief="flat",  # 'flat' pour compatibilité Mac
-                        highlightthickness=1, highlightbackground="#388e3c",
+                        highlightthickness=1, highlightbackground="#19713c",
                         cursor="hand2", command=self.enter_portal)
         btn.pack(pady=30, ipadx=2, ipady=2)
-        btn.bind("<Enter>", lambda e: btn.configure(bg="#388e3c"))
-        btn.bind("<Leave>", lambda e: btn.configure(bg="#43a047"))
+        btn.bind("<Enter>", lambda e: btn.configure(bg="#19713c"))
+        btn.bind("<Leave>", lambda e: btn.configure(bg="#219150"))
 
         self.build_sound_controls()
         self.build_language_selector()
