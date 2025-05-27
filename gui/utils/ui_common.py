@@ -125,6 +125,15 @@ def draw_custom_board(screen, font, font_small, font_title, muted, bar_rect, ico
         if editor_state and editor_state.get("current_color") == c:
             pygame.draw.rect(screen, (0,0,0), rect, 3)
         palette_rects.append((px, palette_y, 44, palette_h, c))
+    # Gestion du clic rapide sur une couleur : remplir tout le quadrant si 4 clics consécutifs
+    if editor_state is not None:
+        if not hasattr(editor_state, '_color_clicks'):
+            editor_state['_color_clicks'] = {k: 0 for k in COULEURS}
+        # Reset if color changes
+        if editor_state.get('_last_color') != editor_state.get('current_color'):
+            for k in COULEURS:
+                editor_state['_color_clicks'][k] = 0
+            editor_state['_last_color'] = editor_state.get('current_color')
     # Info Quadrant X/4 entre palette et boutons
     info_text = editor_state.get("info_text") if editor_state else "Quadrant 1/4"
     info_render = font_small.render(info_text, True, (0,0,0))

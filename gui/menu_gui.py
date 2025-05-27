@@ -463,7 +463,15 @@ class PortailGame:
                 for x, y, w, h, c in getattr(self, 'custom_palette_rects', []):
                     rect = pygame.Rect(x, y, w, h)
                     if rect.collidepoint(event.pos):
-                        self.custom_board_state["current_color"] = c
+                        if event.button == 3:  # Clic droit
+                            self.custom_board_state['grille'] = [[c for _ in range(4)] for _ in range(4)]
+                            # Met à jour info_text si besoin
+                            if any(None in row for row in self.custom_board_state['grille']):
+                                self.custom_board_state["info_text"] = "Toutes les cases doivent être colorées."
+                            else:
+                                self.custom_board_state["info_text"] = f"Quadrant {len(self.custom_board_state['quadrants'])+1}/4"
+                        else:  # Clic gauche
+                            self.custom_board_state["current_color"] = c
                         return
                 # Grille 4x4
                 grid_x, grid_y, cell_size = self.custom_grid_rect
