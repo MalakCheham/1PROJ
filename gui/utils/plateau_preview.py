@@ -81,4 +81,27 @@ def draw_plateau_preview(screen, font_title, font_small, preview_plateau, muted,
     # --- Volume et langues (direct) ---
     draw_volume_bar(screen, muted, pygame.mixer.music.get_volume(), bar_rect, icon_rect)
     draw_flags(screen, flag_fr_rect, flag_uk_rect)
-    return retour_rect
+    # --- Bouton Jouer en bas ---
+    play_w, play_h = 180, 64
+    play_x = screen_w//2 - play_w//2
+    play_y = screen_h - 60 - play_h//2
+    play_rect = pygame.Rect(play_x, play_y, play_w, play_h)
+    mouse_pos = pygame.mouse.get_pos()
+    play_hovered = play_rect.collidepoint(mouse_pos)
+    play_color = (66,155,70) if play_hovered else (76,175,80)
+    pygame.draw.rect(screen, play_color, play_rect, border_radius=22)
+    pygame.draw.rect(screen, (0,0,0), play_rect, 2, border_radius=22)
+    # Icon (optionnel)
+    play_icon_path = os.path.join("assets", "play-button.png")
+    label_x = play_x+30
+    if os.path.exists(play_icon_path):
+        try:
+            play_icon = pygame.image.load(play_icon_path).convert_alpha()
+            play_icon = pygame.transform.smoothscale(play_icon, (38, 38))
+            screen.blit(play_icon, (play_x+18, play_y+play_h//2-19))
+            label_x = play_x+70
+        except Exception:
+            label_x = play_x+30
+    play_label = font_title.render(translate("jouer") if hasattr(translate, '__call__') else "Jouer", True, (255,255,255))
+    screen.blit(play_label, (label_x, play_y+play_h//2-play_label.get_height()//2))
+    return {"retour_rect": retour_rect, "play_rect": play_rect}

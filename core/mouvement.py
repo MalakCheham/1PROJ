@@ -94,3 +94,18 @@ def est_mouvement_tour(depart, arrivee, plateau, pions):
         l += sl
         c += sc
     return True
+
+def generer_coups_possibles(self, depart, couleur, symbole):
+    coups = set()
+    for i in range(8):
+        for j in range(8):
+            arrivee = (i, j)
+            piece_arrivee = next((s for s in ['X', 'O'] if arrivee in self.pions[s]), None)
+            if piece_arrivee is None or piece_arrivee != symbole:
+                mouvement_valide = (couleur == 'B' and self.est_mouvement_roi(depart, arrivee)) or \
+                                    (couleur == 'V' and self.est_mouvement_cavalier(depart, arrivee)) or \
+                                    (couleur == 'J' and self.est_mouvement_fou(depart, arrivee)) or \
+                                    (couleur == 'R' and self.est_mouvement_tour(depart, arrivee))
+                if mouvement_valide:
+                    coups.add(arrivee)
+    return coups

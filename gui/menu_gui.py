@@ -220,7 +220,7 @@ class PortailGame:
     """
     def draw_preview_game(self):
         self.screen.fill((249,246,227))
-        self.preview_btn_retour_rect = draw_plateau_preview(
+        rects = draw_plateau_preview(
             self.screen,
             self.font_title,
             self.font_small,
@@ -229,6 +229,8 @@ class PortailGame:
             None, None, None, None,
             header_func=self.draw_header
         )
+        self.preview_btn_retour_rect = rects["retour_rect"]
+        self.preview_btn_play_rect = rects["play_rect"]
     
     """
     Affiche l'éditeur de quadrants personnalisés
@@ -423,9 +425,33 @@ class PortailGame:
                     self.show_logout_menu = False
                     return
                 # Bouton retour
-                if hasattr(self, 'preview_btn_retour_rect') and self.preview_btn_retour_rect.collidepoint(event.pos):
-                    self.page = PAGE_CONFIG_GAME
-                    return
+                if hasattr(self, 'preview_btn_retour_rect'):
+                    rect = self.preview_btn_retour_rect
+                    if isinstance(rect, dict):
+                        rect = rect.get("retour_rect", rect)
+                    if hasattr(rect, "collidepoint") and rect.collidepoint(event.pos):
+                        self.page = PAGE_CONFIG_GAME
+                        return
+                # Bouton Play/Jouer : lance le jeu choisi
+                if hasattr(self, 'preview_btn_play_rect'):
+                    rect = self.preview_btn_play_rect
+                    if isinstance(rect, dict):
+                        rect = rect.get("play_rect", rect)
+                    if hasattr(rect, "collidepoint") and rect.collidepoint(event.pos):
+                        mode = getattr(self, 'selected_mode', 'katarenga')
+                        if mode == 'katarenga':
+                            from game_modes.katarenga import KatarengaGame
+                            self.katarenga_game = KatarengaGame(self.preview_plateau, external_screen=self.screen)
+                            self.page = "katarenga_game"
+                        elif mode == 'congress':
+                            from game_modes.congress import CongressGame
+                            self.congress_game = CongressGame(self.preview_plateau, external_screen=self.screen)
+                            self.page = "congress_game"
+                        elif mode == 'isolation':
+                            from game_modes.isolation import IsolationGame
+                            self.isolation_game = IsolationGame(self.preview_plateau, external_screen=self.screen)
+                            self.page = "isolation_game"
+                        return
                 # Volume et langues
                 if self.flag_fr_rect.collidepoint(event.pos): set_language("fr"); pygame.time.wait(120)
                 if self.flag_uk_rect.collidepoint(event.pos): set_language("en"); pygame.time.wait(120)
@@ -558,6 +584,15 @@ class PortailGame:
                 self.draw_preview_game()
             elif self.page == PAGE_CUSTOM_BOARD:
                 self.draw_custom_board()
+            elif self.page == "katarenga_game":
+                if hasattr(self, "katarenga_game"):
+                    self.katarenga_game.draw()
+            elif self.page == "congress_game":
+                if hasattr(self, "congress_game"):
+                    self.congress_game.draw()
+            elif self.page == "isolation_game":
+                if hasattr(self, "isolation_game"):
+                    self.isolation_game.draw()
             pygame.display.flip(); self.clock.tick(30)
 
 
