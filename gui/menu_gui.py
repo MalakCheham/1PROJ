@@ -238,7 +238,8 @@ class PortailGame:
         self.draw_header()
         cx = screen.get_width()//2
         # Titre de la page
-        titre = self.font_title.render(translate(f"config_{mode_id}") if translate(f"config_{mode_id}") != f"config_{mode_id}" else translate("configuration_du_jeu"), 1, (0,77,64))
+        mode_label = translate(f"mode_{mode_id}") if mode_id else ""
+        titre = self.font_title.render(f"{translate('configuration_du_jeu')} : {mode_label}", 1, (0,77,64))
         screen.blit(titre, titre.get_rect(center=(cx, 140)))
         # 1ère ZONE : Mode de jeu
         zone1_rect = pygame.Rect(cx-320, 210, 640, 120)
@@ -250,21 +251,32 @@ class PortailGame:
         zone2_rect = pygame.Rect(cx-320, 360, 640, 220)
         pygame.draw.rect(screen, (255,255,255), zone2_rect, border_radius=18)
         pygame.draw.rect(screen, (0,77,64), zone2_rect, 2, border_radius=18)
-        label2 = self.font.render(translate("configuration_plateau"), 1, (0,51,102))
+        label2 = self.font.render(translate("plateau"), 1, (0,51,102))
         screen.blit(label2, (zone2_rect.x+30, zone2_rect.y+30))
-        # Bouton retour centré en bas
-        btn_retour = pygame.Rect(cx-60, zone2_rect.y+zone2_rect.height+40, 120, 44)
+        # Bouton retour centré en bas + bouton jouer à droite
+        btn_retour = pygame.Rect(cx-130, zone2_rect.y+zone2_rect.height+40, 120, 44)
+        btn_jouer = pygame.Rect(cx+10, zone2_rect.y+zone2_rect.height+40, 120, 44)
         mouse_pos = pygame.mouse.get_pos()
         retour_hovered = btn_retour.collidepoint(mouse_pos)
-        color = (66,155,70) if retour_hovered else (76,175,80)
-        btn_draw_rect = btn_retour.copy(); btn_draw_rect.y -= 2 if retour_hovered else 0
+        jouer_hovered = btn_jouer.collidepoint(mouse_pos)
+        color_retour = (66,155,70) if retour_hovered else (76,175,80)
+        color_jouer = (66,155,70) if jouer_hovered else (76,175,80)
+        btn_retour_draw = btn_retour.copy(); btn_retour_draw.y -= 2 if retour_hovered else 0
+        btn_jouer_draw = btn_jouer.copy(); btn_jouer_draw.y -= 2 if jouer_hovered else 0
         if retour_hovered:
             draw_hover_shadow(screen, btn_retour, color=(76,175,80,38), offset=6, border_radius=14)
-        pygame.draw.rect(screen, color, btn_draw_rect, border_radius=14)
-        pygame.draw.rect(screen, (0,0,0), btn_draw_rect, 2, border_radius=14)
-        btn_label = self.font_small.render(translate("retour"), 1, (255,255,255))
-        screen.blit(btn_label, btn_label.get_rect(center=btn_draw_rect.center))
+        if jouer_hovered:
+            draw_hover_shadow(screen, btn_jouer, color=(76,175,80,38), offset=6, border_radius=14)
+        pygame.draw.rect(screen, color_retour, btn_retour_draw, border_radius=14)
+        pygame.draw.rect(screen, (0,0,0), btn_retour_draw, 2, border_radius=14)
+        pygame.draw.rect(screen, color_jouer, btn_jouer_draw, border_radius=14)
+        pygame.draw.rect(screen, (0,0,0), btn_jouer_draw, 2, border_radius=14)
+        btn_label_retour = self.font_small.render(translate("retour"), 1, (255,255,255))
+        btn_label_jouer = self.font_small.render(translate("lancer_ce_mode"), 1, (255,255,255))
+        screen.blit(btn_label_retour, btn_label_retour.get_rect(center=btn_retour_draw.center))
+        screen.blit(btn_label_jouer, btn_label_jouer.get_rect(center=btn_jouer_draw.center))
         self.btn_retour_rect = btn_retour
+        self.btn_jouer_rect = btn_jouer
         # Volume et langues
         self.bar_rect = pygame.Rect(40, screen.get_height()-60, 180, 18)
         self.icon_rect = pygame.Rect(4, screen.get_height()-65, 28, 28)
@@ -363,6 +375,10 @@ class PortailGame:
                 # Bouton retour
                 if hasattr(self, 'btn_retour_rect') and self.btn_retour_rect.collidepoint(event.pos):
                     self.page = PAGE_CHOIX_JEU
+                    return
+                # Bouton jouer
+                if hasattr(self, 'btn_jouer_rect') and self.btn_jouer_rect.collidepoint(event.pos):
+                    self.page = "PAGE_JEU"  # À remplacer par la page de jeu réelle
                     return
                 if self.flag_fr_rect.collidepoint(event.pos): set_language("fr"); pygame.time.wait(120)
                 if self.flag_uk_rect.collidepoint(event.pos): set_language("en"); pygame.time.wait(120)

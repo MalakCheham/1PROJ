@@ -29,7 +29,7 @@ TRADUCTIONS = {
     "client_connected_from": {"fr": "Client connecté depuis {addr}", "en": "Client connected from {addr}"},
     "received_from": {"fr": "Reçu de {addr} : {msg}", "en": "Received from {addr}: {msg}"},
     "client_disconnected": {"fr": "Client {addr} déconnecté", "en": "Client {addr} disconnected"},
-    "plateau": {"fr": "Plateau :", "en": "Board:"},
+    "plateau": {"fr": "Configuration du plateau :", "en": "Configuration of the board:"},
     "plateau_auto": {"fr": "Généré automatiquement", "en": "Automatically generated"},
     "plateau_perso": {"fr": "Quadrants personnalisés", "en": "Custom quadrants"},
     "waiting_for_client": {"fr": "En attente qu'un joueur rejoigne la partie...", "en": "Waiting for a player to join the game..."},
@@ -67,4 +67,5 @@ TRADUCTIONS = {
     "desc_congress": {"fr": "Un mode de réflexion où chaque coup compte.", "en": "A thinking mode where every move counts."},
     "desc_isolation": {"fr": "Un mode duel tactique pour isoler l'adversaire.", "en": "A tactical duel mode to isolate your opponent."},
     "se_deconnecter": {"fr": "Se déconnecter", "en": "Logout"},
+    "configuration_du_jeu": {"fr": "Configuration du jeu", "en": "Game configuration"}
 }
