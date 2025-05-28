@@ -1,43 +1,44 @@
 def get_regles(jeu: str) -> str:
+    from core.langues import traduire
     jeu = jeu.lower()
 
     if jeu == "katarenga":
         return (
-            "🎯 Objectif :\n"
-            "- Atteindre les deux camps adverses après avoir franchi sa ligne.\n"
-            "- Capturer les pions adverses pour l'empêcher.\n\n"
-            "🟦 Déplacement selon la couleur :\n"
-            "- Bleu : Roi (1 case toutes directions)\n"
-            "- Vert : Cavalier (en L)\n"
-            "- Jaune : Fou (diagonale, arrêt sur première case jaune)\n"
-            "- Rouge : Tour (ligne/colonne, arrêt sur première case rouge)\n\n"
-            "⚠️ Captures :\n"
-            "- Possibles à partir du 2e tour.\n"
-            "- Les pions capturés sont retirés du jeu."
+            f"{traduire('objectif')}\n"
+            f"- {traduire('objectif_katarenga_1')}\n"
+            f"- {traduire('objectif_katarenga_2')}\n\n"
+            f"{traduire('deplacement_selon_couleur')}\n"
+            f"- {traduire('bleu_roi')}\n"
+            f"- {traduire('vert_cavalier')}\n"
+            f"- {traduire('jaune_fou')}\n"
+            f"- {traduire('rouge_tour')}\n\n"
+            f"{traduire('captures')}\n"
+            f"- {traduire('captures_2e_tour')}\n"
+            f"- {traduire('pions_captures_retires')}"
         )
 
     elif jeu == "congress":
         return (
-            "🎯 Objectif :\n"
-            "- Rassembler tous vos pions en un seul bloc connexe (orthogonal).\n\n"
-            "🟦 Déplacement :\n"
-            "- Identique à Katarenga, selon la couleur de la case.\n\n"
-            "❌ Pas de capture autorisée.\n"
-            "- Les pions ne peuvent pas se superposer.\n"
-            "- Le premier joueur à connecter tous ses pions gagne."
+            f"{traduire('objectif')}\n"
+            f"- {traduire('objectif_congress_1')}\n\n"
+            f"{traduire('deplacement')}\n"
+            f"- {traduire('deplacement_congress')}\n\n"
+            f"{traduire('pas_capture_autorisee')}\n"
+            f"- {traduire('pions_pas_superposer')}\n"
+            f"- {traduire('premier_connexe_gagne')}"
         )
 
     elif jeu == "isolation":
         return (
-            "🎯 Objectif :\n"
-            "- Être le dernier à pouvoir poser un pion.\n\n"
-            "🕹️ Déroulement :\n"
-            "- Chaque joueur place un pion à tour de rôle.\n"
-            "- Un pion ne peut pas être placé sur une case en prise.\n\n"
-            "⚠️ En prise :\n"
-            "- Une case est en prise si un pion adverse pourrait y aller selon sa couleur.\n"
-            "- Pas de capture, pas de déplacement : uniquement la pose de pions."
+            f"{traduire('objectif')}\n"
+            f"- {traduire('objectif_isolation_1')}\n\n"
+            f"{traduire('deroulement')}\n"
+            f"- {traduire('deroulement_isolation_1')}\n"
+            f"- {traduire('deroulement_isolation_2')}\n\n"
+            f"{traduire('en_prise')}\n"
+            f"- {traduire('en_prise_def')}\n"
+            f"- {traduire('pas_capture_pas_deplacement')}"
         )
 
     else:
-        return "Aucune règle disponible pour ce jeu."
+        return traduire('aucune_regle')

@@ -97,8 +97,9 @@ def est_mouvement_tour(depart, arrivee, plateau, pions):
 
 def generer_coups_possibles(depart, couleur, symbole, plateau, pions, capture=True):
     coups = set()
-    for i in range(8):
-        for j in range(8):
+    n = len(plateau.cases)
+    for i in range(n):
+        for j in range(n):
             arrivee = (i, j)
             piece_arrivee = next((s for s in ['X', 'O'] if arrivee in pions[s]), None)
             if capture:
@@ -124,3 +125,16 @@ def generer_coups_possibles(depart, couleur, symbole, plateau, pions, capture=Tr
                 if mouvement_valide:
                     coups.add(arrivee)
     return coups
+
+def peut_entrer_camp(symbole, position, depart=None):
+    """
+    Retourne True si le pion peut entrer dans le camp adverse (coin du plateau) selon la couleur et la position.
+    - Blanc (X) ne peut entrer que dans les coins du bas (8,0) ou (8,8) s'il est sur la ligne 7.
+    - Noir (O) ne peut entrer que dans les coins du haut (0,0) ou (0,8) s'il est sur la ligne 1.
+    Si depart est fourni, vérifie aussi la ligne de départ.
+    """
+    if symbole == 'X' and position in [(8,0), (8,8)] and (depart is None or depart[0] == 7):
+        return True
+    if symbole == 'O' and position in [(0,0), (0,8)] and (depart is None or depart[0] == 1):
+        return True
+    return False
