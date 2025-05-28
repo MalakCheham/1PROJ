@@ -70,23 +70,24 @@ def show_menu(root=None, username=None, volume=None):
 
     """Choix des modes de jeu"""
     modes = [
-        ("Kataranga", "#e0e0e0", traduire("desc_katarenga")),
-        ("Congress", "#e0e0e0", traduire("desc_congress")),
-        ("Isolation", "#e0e0e0", traduire("desc_isolation"))
+        ("Kataranga", "#e0e0e0", traduire("desc_katarenga"), "katarenga.png"),
+        ("Congress", "#e0e0e0", traduire("desc_congress"), "congress.png"),
+        ("Isolation", "#e0e0e0", traduire("desc_isolation"), "isolation.png")
     ]
     frames = []
-    for i, (mode, color, desc) in enumerate(modes):
+    for i, (mode, color, desc, img_file) in enumerate(modes):
         frame = tk.Frame(center_frame, bg=color, bd=0, relief="ridge", height=290, width=260)
         frame.grid(row=0, column=i, padx=24, pady=0, sticky="nsew")
         frames.append(frame)
         label = tk.Label(frame, text=mode, font=("Arial", 16, "bold"), bg=color, fg="#5b7fce", anchor="center")
         label.pack(pady=(8, 0), fill="x")
 
-        star_img = Image.open(os.path.join(ASSETS_DIR, "etoile.png")).convert("RGBA").resize((120, 120))
-        star_icon = ImageTk.PhotoImage(star_img)
-        star_lbl = tk.Label(frame, image=star_icon, bg=color)
-        star_lbl.image = star_icon
-        star_lbl.pack(pady=(2, 0))
+        img_path = os.path.join(ASSETS_DIR, img_file)
+        game_img = Image.open(img_path).convert("RGBA").resize((150, 150))
+        game_icon = ImageTk.PhotoImage(game_img)
+        img_lbl = tk.Label(frame, image=game_icon, bg=color)
+        img_lbl.image = game_icon
+        img_lbl.pack(pady=(2, 0))
         
         desc_lbl = tk.Label(frame, text=desc, font=("Arial", 10), bg=color, fg="#444", wraplength=180, anchor="center")
         desc_lbl.pack(pady=(2, 0), fill="x")

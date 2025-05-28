@@ -78,6 +78,31 @@ class JeuKatarenga:
         btn_icon.image = self.icon
         btn_icon.pack(side="right", padx=28, pady=12)
 
+        def show_logout_menu(event):
+            from tkinter import messagebox
+            menu = tk.Menu(self.root, tearoff=0)
+            from core.langues import traduire
+            menu.add_command(label=traduire("a_propos"), command=lambda: messagebox.showinfo(traduire("a_propos"), traduire("a_propos_texte")))
+            menu.add_command(label=traduire("credits"), command=lambda: messagebox.showinfo(traduire("credits"), traduire("credits_texte")))
+            menu.add_separator()
+            def go_to_login():
+                import login
+                try:
+                    current_volume = self.root.volume_var.get()
+                except AttributeError:
+                    try:
+                        from core.musique import SoundBar
+                        current_volume = SoundBar.last_volume
+                    except Exception:
+                        current_volume = None
+                for w in self.root.winfo_children():
+                    w.destroy()
+                login.show_login(self.root, volume=current_volume)
+            menu.add_command(label=traduire("se_deconnecter"), command=go_to_login)
+            menu.add_command(label=traduire("fermer"), command=self.root.quit)
+            menu.tk_popup(event.x_root, event.y_root)
+        btn_icon.bind("<Button-1>", show_logout_menu)
+
         from core.musique import SoundBar, regler_volume
         from core.parametres import LanguageSelector
         volume_transmis = getattr(self.root, 'VOLUME', None)
@@ -112,7 +137,7 @@ class JeuKatarenga:
         lang_selector.place(relx=1.0, rely=1.0, anchor="se", x=-18, y=-18)
 
         main_frame = tk.Frame(self.root, bg="#f0f4f0")
-        main_frame.pack(pady=10)
+        main_frame.pack(pady=10, expand=True, fill="both")
 
         self.tour_label = tk.Label(main_frame, text="", font=("Helvetica", 13, "bold"), bg="#f0f4f0", fg="#003366")
         self.tour_label.pack(pady=(0,2))
@@ -121,8 +146,11 @@ class JeuKatarenga:
         self.timer_label = tk.Label(main_frame, text="00:00", font=("Helvetica", 13, "bold"), bg="#f0f4f0", fg="#003366")
         self.timer_label.pack(pady=(0,2))
 
-        self.canvas = tk.Canvas(main_frame, width=400, height=400, bg="#f0f4f0", highlightthickness=0)
-        self.canvas.pack()
+        self.TAILLE_CASE = 52
+        self.PLATEAU_DIM = 9
+        canvas_size = self.TAILLE_CASE * self.PLATEAU_DIM
+        self.canvas = tk.Canvas(main_frame, width=canvas_size, height=canvas_size, bg="#f0f4f0", highlightthickness=0)
+        self.canvas.place(relx=0.5, rely=0.55, anchor="center")
 
         def retour_config():
             import config_gui
@@ -145,10 +173,9 @@ class JeuKatarenga:
             icon_retour = ImageTk.PhotoImage(img_retour)
         self.icon_retour = icon_retour
         btn_retour = tk.Button(self.root, image=self.icon_retour, command=retour_config, bg="#f0f4f0", bd=0, relief="flat", cursor="hand2", activebackground="#e0e0e0")
-        btn_retour.image = self.icon_retour
+        btn_retour.image = self.icon_retour  # Correction : on assigne bien l'attribut image, pas icon_retour
         btn_retour.place(relx=0.0, rely=0.5, anchor="w", x=18)
 
-        
         self.load_and_pack_button("point-dinterrogation.png", "?", self.root, self.aide_popup, "bottom", pady=10)
         self.load_and_pack_button("fleche-pivotante-vers-la-gauche.png", "Rejouer", self.root, self.rejouer, "bottom", pady=10)
 
@@ -259,23 +286,35 @@ class JeuKatarenga:
         self.pions_restants_label.config(text=f"{traduire('pions_restants')} - {traduire('blanc')}: {pions_x_restants}, {traduire('noir')}: {pions_o_restants}")
 
     def afficher_plateau(self):
-        taille = 40
         self.canvas.delete("all")
-        colors = {'R': '#ff9999', 'J': '#ffffb3', 'B': '#99ccff', 'V': '#b3ffb3', '#': '#888888', 'CAMP': 'white'}
+        taille = self.TAILLE_CASE
+        dim = self.PLATEAU_DIM
+        canvas_size = taille * dim
+
+        w = int(self.canvas.winfo_width())
+        h = int(self.canvas.winfo_height())
+        offset_x = (w - canvas_size) // 2 if w > canvas_size else 0
+        offset_y = (h - canvas_size) // 2 if h > canvas_size else 0
+
+        colors = {'R': '#ff9999', 'J': '#ffffb3', 'B': '#99ccff', 'V': '#b3ffb3'}
         camps = CAMPS_X + CAMPS_O
-        for i in range(9):
-            for j in range(9):
+        for i in range(dim):
+            for j in range(dim):
                 if (i in [0,8] or j in [0,8]) and (i,j) not in camps:
                     continue
+                x1 = offset_x + j * taille
+                y1 = offset_y + i * taille
+                x2 = x1 + taille
+                y2 = y1 + taille
                 fill = colors.get(self.plateau.cases[i][j], 'white')
-                self.canvas.create_rectangle(j * taille, i * taille, (j + 1) * taille, (i + 1) * taille, fill=fill)
+                self.canvas.create_rectangle(x1, y1, x2, y2, fill=fill)
                 for symbol, color in [('X', 'black'), ('O', 'white')]:
                     if (i, j) in self.pions[symbol]:
-                        self.canvas.create_oval(j * taille + 8, i * taille + 8, (j + 1) * taille - 8, (i + 1) * taille - 8, fill=color)
+                        self.canvas.create_oval(x1 + 8, y1 + 8, x2 - 8, y2 - 8, fill=color)
                 if self.selection == (i, j):
-                    self.canvas.create_rectangle(j * taille, i * taille, (j + 1) * taille, (i + 1) * taille, outline='blue', width=3)
-                if (i, j) in self.coups_possibles:
-                    self.canvas.create_oval(j * taille + 16, i * taille + 16, (j + 1) * taille - 16, (i + 1) * taille - 16, fill='lightgreen')
+                    self.canvas.create_rectangle(x1, y1, x2, y2, outline='blue', width=3)
+                if hasattr(self, 'coups_possibles') and (i, j) in getattr(self, 'coups_possibles', set()):
+                    self.canvas.create_oval(x1 + 16, y1 + 16, x2 - 16, y2 - 16, fill='lightgreen')
         for (i, j) in camps:
             self.canvas.create_rectangle(j * taille, i * taille, (j + 1) * taille, (i + 1) * taille, outline='black', width=3)
 
