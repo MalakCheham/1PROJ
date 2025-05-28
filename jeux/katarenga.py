@@ -329,8 +329,6 @@ class JeuKatarenga:
             self.canvas.create_rectangle(j * taille, i * taille, (j + 1) * taille, (i + 1) * taille, outline='black', width=3)
 
     def generer_coups_possibles(self, depart, couleur, symbole):
-        if depart in CAMPS_X + CAMPS_O:
-            return set()
         coups = generer_coups_possibles(depart, couleur, symbole, self.plateau, self.pions, capture=True)
         coups_filtrés = set()
 
