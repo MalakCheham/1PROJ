@@ -334,7 +334,6 @@ def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, 
         data = sock.recv(4096)
         player_name_noir = data.decode()[4:]
         if plateau is None or pions is None:
-            from plateau_builder import creer_plateau_congress
             plateau, pions = creer_plateau_congress()
         plateau_str = plateau_to_str(plateau)
         pions_x_str = pions_to_str(pions['X'])
