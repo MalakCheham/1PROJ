@@ -97,7 +97,7 @@ class JeuKatarenga:
             menu.add_command(label=traduire("a_propos"), command=lambda: messagebox.showinfo(traduire("a_propos"), traduire("a_propos_texte")))
             menu.add_command(label=traduire("credits"), command=lambda: messagebox.showinfo(traduire("credits"), traduire("credits_texte")))
             menu.add_separator()
-            def go_to_login():
+            def go_to_login:
                 import login
                 try:
                     current_volume = self.root.volume_var.get()
@@ -544,9 +544,15 @@ def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, 
                             raise ConnectionError("Connexion interrompue lors de la réception des données réseau.")
                         data += part
                     return data.decode().replace(end_marker, '').strip()
+                print('[DEBUG] before plateau_str recv_until')
                 plateau_str = recv_until(sock, '\nENDPLATEAU\n')
+                print('[DEBUG] after plateau_str recv_until')
+                print('[DEBUG] before pions_x_str recv_until')
                 pions_x_str = recv_until(sock, '\nENDPIONSX\n')
+                print('[DEBUG] after pions_x_str recv_until')
+                print('[DEBUG] before pions_o_str recv_until')
                 pions_o_str = recv_until(sock, '\nENDPIONSO\n')
+                print('[DEBUG] after pions_o_str recv_until')
                 plateau_local = str_to_plateau(plateau_str)
                 pions_local = {
                     'X': str_to_pions(pions_x_str),
