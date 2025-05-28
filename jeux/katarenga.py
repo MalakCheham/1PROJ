@@ -533,8 +533,8 @@ def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, 
             'O': {(8, j) for j in range(1, 9)}
         }
         plateau_str = plateau_to_str(plateau)
-        pions_x_str = pions_to_str(pions['X'])
-        pions_o_str = pions_to_str(pions['O'])
+        pions_x_str = pions_to_str({'X': pions['X']})
+        pions_o_str = pions_to_str({'O': pions['O']})
         sock.sendall((plateau_str + '\nENDPLATEAU\n').encode())
         sock.sendall((pions_x_str + '\nENDPIONSX\n').encode())
         sock.sendall((pions_o_str + '\nENDPIONSO\n').encode())
