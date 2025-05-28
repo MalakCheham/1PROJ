@@ -1,7 +1,6 @@
 import tkinter as tk
 import sys
 import subprocess
-import pygame
 import socket
 import os
 

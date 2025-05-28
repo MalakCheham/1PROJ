@@ -323,3 +323,11 @@ class JeuCongress:
 
     def generer_coups_possibles(self, depart, couleur, symbole):
         return generer_coups_possibles(depart, couleur, symbole, self.plateau, self.pions, capture=False)
+
+def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, plateau=None, pions=None, wait_win=None):
+    joueurs = [Joueur(player_name_blanc, 'X'), Joueur(player_name_noir, 'O')]
+    jeu = JeuCongress(plateau, joueurs, mode="reseau", sock=sock, is_host=is_host, noms_joueurs=[player_name_blanc, player_name_noir], root=root)
+    if pions is not None:
+        jeu.pions = pions
+    jeu.afficher_plateau()
+    jeu.jouer()
