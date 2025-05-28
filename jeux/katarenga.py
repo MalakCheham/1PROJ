@@ -225,8 +225,7 @@ class JeuKatarenga:
                     arrivee = tuple(map(int, coords[1].split(',')))
 
                     self.root.after(0, lambda: self.apply_network_move(depart, arrivee))
-            except Exception as e:
-                print(f"Network error: {e}")
+            except Exception:
                 break
 
     def lock_ui_if_needed(self):
@@ -244,8 +243,7 @@ class JeuKatarenga:
             try:
                 msg = f"move:{depart[0]},{depart[1]}->{arrivee[0]},{arrivee[1]}".encode()
                 self.sock.sendall(msg)
-            except Exception as e:
-                print(f"Error sending move: {e}")
+            except Exception:
                 messagebox.showerror(traduire("erreur"), traduire("erreur_envoi_coup"))
 
     def apply_network_move(self, depart, arrivee):
@@ -520,14 +518,10 @@ def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, 
                 'O': {(8, j) for j in range(1, 9)}
             }
         plateau_str = plateau_to_str(plateau)
-        pions_x_str = pions_to_str({'X': pions['X']})
-        pions_o_str = pions_to_str({'O': pions['O']})
-        print('[DEBUG][HOST] plateau_str:', repr(plateau_str + '\nENDPLATEAU\n'))
-        print('[DEBUG][HOST] pions_x_str:', repr(pions_x_str + '\nENDPIONSX\n'))
-        print('[DEBUG][HOST] pions_o_str:', repr(pions_o_str + '\nENDPIONSO\n'))
+        pions_str = pions_to_str(pions)
+        # Envoi harmonisé : un seul pions_str
         sock.sendall((plateau_str + '\nENDPLATEAU\n').encode())
-        sock.sendall((pions_x_str + '\nENDPIONSX\n').encode())
-        sock.sendall((pions_o_str + '\nENDPIONSO\n').encode())
+        sock.sendall((pions_str + '\nENDPIONS\n').encode())
         joueurs = [Joueur(player_name_blanc, 'X'), Joueur(player_name_noir, 'O')]
         jeu = JeuKatarenga(plateau, joueurs, mode="reseau", sock=sock, is_host=is_host, noms_joueurs=[player_name_blanc, player_name_noir], root=root)
         jeu.pions = pions
@@ -543,29 +537,16 @@ def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, 
                     data = leftover
                     while end_marker.encode() not in data:
                         part = sock.recv(1024)
-                        print('[DEBUG][CLIENT] received part:', repr(part))
                         if not part:
                             raise ConnectionError("Connexion interrompue lors de la réception des données réseau.")
                         data += part
                     idx = data.index(end_marker.encode()) + len(end_marker)
                     return data[:idx - len(end_marker)].decode().strip(), data[idx:]
-                print('[DEBUG] before plateau_str recv_until')
                 plateau_str, leftover = recv_until(sock, '\nENDPLATEAU\n')
-                print('[DEBUG] after plateau_str recv_until')
-                print('[DEBUG] before pions_x_str recv_until')
-                pions_x_str, leftover = recv_until(sock, '\nENDPIONSX\n', leftover)
-                print('[DEBUG] after pions_x_str recv_until')
-                print('[DEBUG] before pions_o_str recv_until')
-                pions_o_str, leftover = recv_until(sock, '\nENDPIONSO\n', leftover)
-                print('[DEBUG] after pions_o_str recv_until')
+                pions_str, leftover = recv_until(sock, '\nENDPIONS\n', leftover)
                 plateau_local = str_to_plateau(plateau_str)
-                pions_local = {}
-                pions_local.update(str_to_pions(pions_x_str))
-                pions_local.update(str_to_pions(pions_o_str))
+                pions_local = str_to_pions(pions_str.strip())
                 def start_game():
-                    print('[DEBUG] start_game called')
-                    print('[DEBUG] plateau_local:', plateau_local.cases)
-                    print('[DEBUG] pions_local:', pions_local)
                     if wait_win is not None:
                         wait_win.destroy()
                     joueurs = [Joueur(player_name_blanc_local, 'X'), Joueur(player_name_noir, 'O')]
@@ -575,9 +556,6 @@ def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, 
                     jeu.jouer()
                 root.after(0, start_game)
             except Exception as e:
-                import traceback
-                print("[ERREUR réseau client]", e)
-                traceback.print_exc()
                 from tkinter import messagebox
                 messagebox.showerror("Erreur réseau", f"Erreur lors de la connexion réseau côté client :\n{e}")
         threading.Thread(target=client_receive_and_start, daemon=True).start()
