@@ -539,23 +539,24 @@ def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, 
                 data = sock.recv(4096)
                 player_name_blanc_local = data.decode()[4:]
                 sock.sendall(f"nom:{player_name_noir}".encode())
-                def recv_until(sock, end_marker):
-                    data = b''
-                    while not data.decode(errors='ignore').endswith(end_marker):
+                def recv_until(sock, end_marker, leftover=b''):
+                    data = leftover
+                    while end_marker.encode() not in data:
                         part = sock.recv(1024)
                         print('[DEBUG][CLIENT] received part:', repr(part))
                         if not part:
                             raise ConnectionError("Connexion interrompue lors de la réception des données réseau.")
                         data += part
-                    return data.decode().replace(end_marker, '').strip()
+                    idx = data.index(end_marker.encode()) + len(end_marker)
+                    return data[:idx - len(end_marker)].decode().strip(), data[idx:]
                 print('[DEBUG] before plateau_str recv_until')
-                plateau_str = recv_until(sock, '\nENDPLATEAU\n')
+                plateau_str, leftover = recv_until(sock, '\nENDPLATEAU\n')
                 print('[DEBUG] after plateau_str recv_until')
                 print('[DEBUG] before pions_x_str recv_until')
-                pions_x_str = recv_until(sock, '\nENDPIONSX\n')
+                pions_x_str, leftover = recv_until(sock, '\nENDPIONSX\n', leftover)
                 print('[DEBUG] after pions_x_str recv_until')
                 print('[DEBUG] before pions_o_str recv_until')
-                pions_o_str = recv_until(sock, '\nENDPIONSO\n')
+                pions_o_str, leftover = recv_until(sock, '\nENDPIONSO\n', leftover)
                 print('[DEBUG] after pions_o_str recv_until')
                 plateau_local = str_to_plateau(plateau_str)
                 pions_local = {
