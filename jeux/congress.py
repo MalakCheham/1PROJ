@@ -33,23 +33,8 @@ class JeuCongress:
             'O': set()
         }
         
-        self.pions['X'].update([(0,1), (0,4)])
-        self.pions['O'].update([(0,3), (0,6)])
-
-        self.pions['O'].add((1,0))
-        self.pions['X'].add((1,7))
-
-        self.pions['X'].add((3,0))
-        self.pions['O'].add((3,7))
-
-        self.pions['O'].add((4,0))
-        self.pions['X'].add((4,7))
-
-        self.pions['X'].add((6,0))
-        self.pions['O'].add((6,7))
-
-        self.pions['O'].update([(7,1), (7,4)])
-        self.pions['X'].update([(7,3), (7,6)])
+        self.pions['X'].update([(0,1), (0,4), (1,7), (3,0), (4,7), (6,0), (7,3), (7,6)])
+        self.pions['O'].update([(0,3), (0,6), (1,0), (3,7), (4,0), (6,7), (7,1), (7,4)])
         
         self.tour = 0
         self.timer_seconds = 0
