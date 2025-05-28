@@ -94,3 +94,33 @@ def est_mouvement_tour(depart, arrivee, plateau, pions):
         l += sl
         c += sc
     return True
+
+def generer_coups_possibles(depart, couleur, symbole, plateau, pions, capture=True):
+    coups = set()
+    for i in range(8):
+        for j in range(8):
+            arrivee = (i, j)
+            piece_arrivee = next((s for s in ['X', 'O'] if arrivee in pions[s]), None)
+            if capture:
+                if piece_arrivee is None or piece_arrivee != symbole:
+                    mouvement_valide = (
+                        (couleur == 'B' and est_mouvement_roi(depart, arrivee)) or
+                        (couleur == 'V' and est_mouvement_cavalier(depart, arrivee)) or
+                        (couleur == 'J' and est_mouvement_fou(depart, arrivee, plateau, pions)) or
+                        (couleur == 'R' and est_mouvement_tour(depart, arrivee, plateau, pions))
+                    )
+                    if mouvement_valide:
+                        coups.add(arrivee)
+            else:
+                # Pas de capture : on ne peut pas aller sur une case occupée (congress, isolation)
+                if (arrivee in pions['X']) or (arrivee in pions['O']):
+                    continue
+                mouvement_valide = (
+                    (couleur == 'B' and est_mouvement_roi(depart, arrivee)) or
+                    (couleur == 'V' and est_mouvement_cavalier(depart, arrivee)) or
+                    (couleur == 'J' and est_mouvement_fou(depart, arrivee, plateau, pions)) or
+                    (couleur == 'R' and est_mouvement_tour(depart, arrivee, plateau, pions))
+                )
+                if mouvement_valide:
+                    coups.add(arrivee)
+    return coups

@@ -4,7 +4,7 @@ import os
 import subprocess
 import sys
 
-from core.mouvement import est_mouvement_roi, est_mouvement_cavalier, est_mouvement_fou, est_mouvement_tour
+from core.mouvement import est_mouvement_roi, est_mouvement_cavalier, est_mouvement_fou, est_mouvement_tour, generer_coups_possibles
 from core.plateau import Plateau
 from core.joueur import Joueur
 from core.aide import get_regles
@@ -181,19 +181,7 @@ class JeuIsolation:
         return True
 
     def generer_coups_possibles(self, depart, couleur, symbole):
-        coups = set()
-        for i in range(8):
-            for j in range(8):
-                arrivee = (i, j)
-                piece_arrivee = next((s for s in ['X', 'O'] if arrivee in self.pions[s]), None)
-                if piece_arrivee is None or piece_arrivee != symbole:
-                    mouvement_valide = (couleur == 'B' and est_mouvement_roi(depart, arrivee)) or \
-                                       (couleur == 'V' and est_mouvement_cavalier(depart, arrivee)) or \
-                                       (couleur == 'J' and est_mouvement_fou(depart, arrivee, self.plateau, self.pions)) or \
-                                       (couleur == 'R' and est_mouvement_tour(depart, arrivee, self.plateau, self.pions))
-                    if mouvement_valide:
-                        coups.add(arrivee)
-        return coups
+        return generer_coups_possibles(depart, couleur, symbole, self.plateau, self.pions, capture=False)
 
     def position_valide(self, symbole, pos):
         x, y = self.positions[symbole]
@@ -282,48 +270,6 @@ class JeuIsolation:
         self.root.destroy()
         from plateau_builder import lancer_plateau_builder
         lancer_plateau_builder("isolation", self.mode)
-
-    def est_mouvement_roi(self, depart, arrivee):
-        dl, dc = abs(arrivee[0] - depart[0]), abs(arrivee[1] - depart[1])
-        return dl <= 1 and dc <= 1 and (dl != 0 or dc != 0)
-
-    def est_mouvement_cavalier(self, depart, arrivee):
-        dl, dc = abs(arrivee[0] - depart[0]), abs(arrivee[1] - depart[1])
-        return (dl == 2 and dc == 1) or (dl == 1 and dc == 2)
-
-    def est_mouvement_fou(self, depart, arrivee):
-        if abs(arrivee[0] - depart[0]) != abs(arrivee[1] - depart[1]):
-            return False
-        sl = 1 if arrivee[0] > depart[0] else -1
-        sc = 1 if arrivee[1] > depart[1] else -1
-        l, c = depart[0] + sl, depart[1] + sc
-        while (l, c) != arrivee:
-            if not (0 <= l < 8 and 0 <= c < 8):
-                return False
-            if (l, c) in self.pions['X'] or (l, c) in self.pions['O']:
-                return False
-            if self.plateau.cases[l][c] == 'J':
-                return (l, c) == arrivee
-            l += sl
-            c += sc
-        return True
-
-    def est_mouvement_tour(self, depart, arrivee):
-        if depart[0] != arrivee[0] and depart[1] != arrivee[1]:
-            return False
-        sl = 0 if depart[0] == arrivee[0] else (1 if arrivee[0] > depart[0] else -1)
-        sc = 0 if depart[1] == arrivee[1] else (1 if arrivee[1] > depart[1] else -1)
-        l, c = depart[0] + sl, depart[1] + sc
-        while (l, c) != arrivee:
-            if not (0 <= l < 8 and 0 <= c < 8):
-                return False
-            if (l, c) in self.pions['X'] or (l, c) in self.pions['O']:
-                return False
-            if self.plateau.cases[l][c] == 'R':
-                return (l, c) == arrivee
-            l += sl
-            c += sc
-        return True
 
 def plateau_to_str(plateau):
     return '\n'.join(''.join(row) for row in plateau.cases)

@@ -8,7 +8,7 @@ import random
 from core.plateau import Plateau
 from core.joueur import Joueur
 from core.aide import get_regles
-from core.mouvement import est_mouvement_roi, est_mouvement_cavalier, est_mouvement_fou, est_mouvement_tour
+from core.mouvement import generer_coups_possibles
 from tkinter import messagebox
 from PIL import Image, ImageTk
 from core.musique import jouer_musique
@@ -322,23 +322,4 @@ class JeuCongress:
         lancer_plateau_builder("congress", self.mode)
 
     def generer_coups_possibles(self, depart, couleur, symbole):
-        coups = set()
-        for i in range(8):
-            for j in range(8):
-                arrivee = (i, j)
-                # Interdit les captures : on ne peut pas aller sur une case occupée par un pion (adverse ou allié)
-                if (arrivee in self.pions['X']) or (arrivee in self.pions['O']):
-                    continue
-                mouvement_valide = (couleur == 'B' and est_mouvement_roi(depart, arrivee)) or \
-                                   (couleur == 'V' and est_mouvement_cavalier(depart, arrivee)) or \
-                                   (couleur == 'J' and est_mouvement_fou(depart, arrivee, self.plateau, self.pions)) or \
-                                   (couleur == 'R' and est_mouvement_tour(depart, arrivee, self.plateau, self.pions))
-                if mouvement_valide:
-                    coups.add(arrivee)
-        return coups
-# Pour test indépendant
-if __name__ == '__main__':
-    plateau = Plateau()
-    joueurs = [Joueur("Joueur 1", 'O'), Joueur("Joueur 2", 'X')]
-    jeu = JeuCongress(plateau, joueurs)
-    jeu.jouer()
+        return generer_coups_possibles(depart, couleur, symbole, self.plateau, self.pions, capture=False)
