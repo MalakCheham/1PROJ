@@ -553,11 +553,15 @@ def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, 
                     'O': str_to_pions(pions_o_str)
                 }
                 def start_game():
+                    print('[DEBUG] start_game called')
+                    print('[DEBUG] plateau_local:', plateau_local.cases)
+                    print('[DEBUG] pions_local:', pions_local)
                     if wait_win is not None:
                         wait_win.destroy()
                     joueurs = [Joueur(player_name_blanc_local, 'X'), Joueur(player_name_noir, 'O')]
                     jeu = JeuKatarenga(plateau_local, joueurs, pions=pions_local, mode="reseau", sock=sock, is_host=is_host, noms_joueurs=[player_name_blanc_local, player_name_noir], root=root)
                     jeu.afficher_plateau()
+                    jeu.update_info_joueur()
                     jeu.jouer()
                 root.after(0, start_game)
             except Exception as e:
