@@ -66,7 +66,7 @@ class QuadrantEditorLive:
             menu.tk_popup(event.x_root, event.y_root)
         btn_icon.bind("<Button-1>", show_logout_menu)
 
-        # --- SoundBar & LanguageSelector ---
+        """barre de son et gestion langue"""
         from core.musique import SoundBar, regler_volume
         from core.parametres import LanguageSelector
         volume_transmis = getattr(root, 'VOLUME', None)
@@ -110,17 +110,18 @@ class QuadrantEditorLive:
         self.choix_couleurs = tk.Frame(main_frame, bg="#f0f4f8")
         self.choix_couleurs.pack(pady=10)
 
+        self.color_buttons = {}
         for c in COULEURS:
-            tk.Button(self.choix_couleurs, bg=COULEURS_HEX[c], width=4, height=2,
-                      command=lambda col=c: self.choisir_couleur(col)).pack(side="left", padx=10)
+            btn = tk.Button(self.choix_couleurs, bg=COULEURS_HEX[c], width=4, height=2, command=lambda col=c: self.choisir_couleur(col))
+            btn.pack(side="left", padx=10)
+            self.color_buttons[c] = btn
+        self.update_color_highlight()
 
         self.controls = tk.Frame(main_frame, bg="#f0f4f8")
         self.controls.pack(pady=10)
 
-        btn_save = tk.Button(self.controls, text=traduire("sauvegarder_quadrant"), command=self.valider_quadrant,
-                  font=("Helvetica", 10), bg="#4CAF50", fg="white", padx=10, pady=5)
-        btn_new = tk.Button(self.controls, text=traduire("nouveau_quadrant"), command=self.reset,
-                  font=("Helvetica", 10), padx=10, pady=5)
+        btn_save = tk.Button(self.controls, text=traduire("sauvegarder_quadrant"), command=self.valider_quadrant, font=("Helvetica", 10), bg="#4CAF50", fg="white", padx=10, pady=5)
+        btn_new = tk.Button(self.controls, text=traduire("nouveau_quadrant"), command=self.reset, font=("Helvetica", 10), padx=10, pady=5)
         btn_save.pack(side="left", padx=8)
         btn_new.pack(side="left", padx=8)
 
@@ -131,22 +132,30 @@ class QuadrantEditorLive:
         self.play_button.pack(pady=10)
         self.play_button.config(state="disabled")
 
-        # Bouton retour icône (comme config_gui)
+
         img_retour = Image.open(os.path.join("assets", "en-arriere.png")).resize((48, 48))
         if hasattr(root, 'tk'):
             icon_retour = ImageTk.PhotoImage(img_retour, master=root)
         else:
             icon_retour = ImageTk.PhotoImage(img_retour)
-        self.icon_retour = icon_retour  # Prevent garbage collection
+        self.icon_retour = icon_retour
         btn_retour = tk.Button(root, image=self.icon_retour, command=self.retour_callback, bg="#f0f4f8", bd=0, relief="flat", cursor="hand2", activebackground="#e0e0e0")
         btn_retour.image = self.icon_retour
         btn_retour.place(relx=0.0, rely=0.5, anchor="w", x=18)
 
     def choisir_couleur(self, couleur):
         self.current_color = couleur
+        self.update_color_highlight()
+
+    def update_color_highlight(self):
+        for c, btn in self.color_buttons.items():
+            if c == self.current_color:
+                btn.config(relief="solid", bd=4, highlightbackground="#333", highlightcolor="#333")
+            else:
+                btn.config(relief="flat", bd=2, highlightbackground="#f0f4f8", highlightcolor="#f0f4f8")
 
     def peindre_case(self, i, j, event=None):
-        if event is not None and event.num == 3:  # Clic droit
+        if event is not None and event.num == 3:
             for x in range(4):
                 for y in range(4):
                     self.boutons[x][y].config(bg=COULEURS_HEX[self.current_color])
