@@ -272,6 +272,56 @@ class JeuIsolation:
         from plateau_builder import lancer_plateau_builder
         lancer_plateau_builder("isolation", self.mode)
 
+def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, plateau=None, pions=None, wait_win=None):
+    import threading
+    from core.joueur import Joueur
+    from core.network.utils import plateau_to_str, pions_to_str, str_to_plateau, str_to_pions
+    if is_host:
+        sock.sendall(f"nom:{player_name_blanc}".encode())
+        data = sock.recv(4096)
+        player_name_noir = data.decode()[4:]
+        if plateau is None:
+            from plateau_builder import creer_plateau
+            plateau = creer_plateau()
+        # Initialisation des pions vides pour Isolation
+        pions = {'X': set(), 'O': set()}
+        plateau_str = plateau_to_str(plateau)
+        pions_str = pions_to_str(pions)
+        sock.sendall((plateau_str + '\nENDPLATEAU\n').encode())
+        sock.sendall((pions_str + '\nENDPIONS\n').encode())
+        joueurs = [Joueur(player_name_blanc, 'X'), Joueur(player_name_noir, 'O')]
+        jeu = JeuIsolation(plateau, joueurs, mode="reseau", sock=sock, is_host=is_host, noms_joueurs=[player_name_blanc, player_name_noir], root=root)
+        jeu.pions = pions
+        jeu.afficher_plateau()
+        jeu.jouer()
+    else:
+        def client_receive_and_start():
+            data = sock.recv(4096)
+            player_name_blanc_local = data.decode()[4:]
+            sock.sendall(f"nom:{player_name_noir}".encode())
+            def recv_until(sock, end_marker):
+                data = b''
+                while not data.decode(errors='ignore').endswith(end_marker):
+                    part = sock.recv(1024)
+                    if not part:
+                        raise ConnectionError("Connexion interrompue lors de la réception des données réseau.")
+                    data += part
+                return data.decode().replace(end_marker, '').strip()
+            plateau_str = recv_until(sock, '\nENDPLATEAU\n')
+            pions_str = recv_until(sock, '\nENDPIONS\n')
+            plateau_local = str_to_plateau(plateau_str)
+            pions_local = str_to_pions(pions_str)
+            def start_game():
+                if wait_win is not None:
+                    wait_win.destroy()
+                joueurs = [Joueur(player_name_blanc_local, 'X'), Joueur(player_name_noir, 'O')]
+                jeu = JeuIsolation(plateau_local, joueurs, mode="reseau", sock=sock, is_host=is_host, noms_joueurs=[player_name_blanc_local, player_name_noir], root=root)
+                jeu.pions = pions_local
+                jeu.afficher_plateau()
+                jeu.jouer()
+            root.after(0, start_game)
+        threading.Thread(target=client_receive_and_start, daemon=True).start()
+
 # Test indépendant
 if __name__ == '__main__':
     plateau = Plateau()
