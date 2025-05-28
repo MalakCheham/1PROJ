@@ -559,10 +559,9 @@ def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, 
                 pions_o_str, leftover = recv_until(sock, '\nENDPIONSO\n', leftover)
                 print('[DEBUG] after pions_o_str recv_until')
                 plateau_local = str_to_plateau(plateau_str)
-                pions_local = {
-                    'X': str_to_pions(pions_x_str),
-                    'O': str_to_pions(pions_o_str)
-                }
+                pions_local = {}
+                pions_local.update(str_to_pions(pions_x_str))
+                pions_local.update(str_to_pions(pions_o_str))
                 def start_game():
                     print('[DEBUG] start_game called')
                     print('[DEBUG] plateau_local:', plateau_local.cases)
