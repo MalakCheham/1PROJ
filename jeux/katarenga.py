@@ -11,6 +11,7 @@ from core.aide import get_regles
 from core.musique import jouer_musique
 from tkinter import messagebox
 from core.mouvement import generer_coups_possibles, peut_entrer_camp
+from core.network.utils import plateau_to_str, pions_to_str, str_to_plateau, str_to_pions
 jouer_musique()
 
 CAMPS_X = [(0,0), (0,9)]
@@ -184,7 +185,7 @@ class JeuKatarenga:
             icon_retour = ImageTk.PhotoImage(img_retour)
         self.icon_retour = icon_retour
         btn_retour = tk.Button(self.root, image=self.icon_retour, command=retour_config, bg="#f0f4f0", bd=0, relief="flat", cursor="hand2", activebackground="#e0e0e0")
-        btn_retour.image = self.icon_retour  # Correction : on assigne bien l'attribut image, pas icon_retour
+        btn_retour.image = icon_retour  # Correction : on assigne bien l'attribut image, pas icon_retour
         btn_retour.place(relx=0.0, rely=0.5, anchor="w", x=18)
 
         self.load_and_pack_button("point-dinterrogation.png", "?", self.root, self.aide_popup, "bottom", pady=10)
@@ -503,22 +504,6 @@ class JeuKatarenga:
                     couleur_depart = self.plateau.cases[self.selection[0]][self.selection[1]]
                     self.coups_possibles = self.generer_coups_possibles(self.selection, couleur_depart, symbole)
                     self.afficher_plateau()
-
-def plateau_to_str(plateau):
-    return '\n'.join(''.join(row) for row in plateau.cases)
-def pions_to_str(pions):
-    return ';'.join(f"{i},{j}" for (i,j) in pions)
-def str_to_plateau(s):
-    lines = s.strip().split('\n')
-    cases = [list(line) for line in lines]
-    from core.plateau import Plateau
-    plateau = Plateau()
-    plateau.cases = cases
-    return plateau
-def str_to_pions(s):
-    if not s:
-        return set()
-    return set(tuple(map(int, pos.split(','))) for pos in s.split(';'))
 
 def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, plateau=None, pions=None, wait_win=None):
     import threading
