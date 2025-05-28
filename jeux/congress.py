@@ -334,8 +334,8 @@ def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, 
         data = sock.recv(4096)
         player_name_noir = data.decode()[4:]
         if plateau is None or pions is None:
-            from plateau_builder import creer_plateau
-            plateau, pions = creer_plateau()
+            from plateau_builder import creer_plateau_congress
+            plateau, pions = creer_plateau_congress()
         plateau_str = plateau_to_str(plateau)
         pions_x_str = pions_to_str(pions['X'])
         pions_o_str = pions_to_str(pions['O'])
@@ -385,3 +385,30 @@ def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, 
                 from tkinter import messagebox
                 messagebox.showerror("Erreur réseau", f"Erreur lors de la connexion réseau côté client :\n{e}")
         threading.Thread(target=client_receive_and_start, daemon=True).start()
+
+def creer_plateau_congress():
+    from core.plateau import Plateau
+    plateau = Plateau()
+    pions = {
+        'X': set(),
+        'O': set()
+    }
+    
+    pions['X'].update([(0,1), (0,4)])
+    pions['O'].update([(0,3), (0,6)])
+
+    pions['O'].add((1,0))
+    pions['X'].add((1,7))
+
+    pions['X'].add((3,0))
+    pions['O'].add((3,7))
+
+    pions['O'].add((4,0))
+    pions['X'].add((4,7))
+
+    pions['X'].add((6,0))
+    pions['O'].add((6,7))
+
+    pions['O'].update([(7,1), (7,4)])
+    pions['X'].update([(7,3), (7,6)])
+    return plateau, pions
