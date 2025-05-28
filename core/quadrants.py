@@ -38,7 +38,6 @@ class Plateau:
 
 def charger_quadrants_personnalises(dossier):
     if not os.path.exists(dossier):
-        print(f"[AVERTISSEMENT] Dossier introuvable : {dossier}")
         return []
 
     quadrants = []

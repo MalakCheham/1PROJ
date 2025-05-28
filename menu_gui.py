@@ -1,128 +1,160 @@
 import tkinter as tk
-from tkinter import messagebox
 from PIL import Image, ImageTk
-import subprocess
-import sys
 import os
+from functools import partial
 
-from core.langues import traduire
-from core import parametres
-from core.musique import jouer_musique, regler_volume, pause, reprendre
+ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")
+USERNAME = None
 
-# === Lancer musique une seule fois ===
-jouer_musique()
+def set_username(username):
+    global USERNAME
+    USERNAME = username
 
-def open_settings():
-    fen = tk.Toplevel()
-    fen.title(traduire("parametres"))
-    fen.geometry("360x420")
-    fen.configure(bg="#f0f4f8")
+def show_menu(root=None, username=None, volume=None):
+    if username:
+        set_username(username)
+    root = root or tk.Tk()
+    root.geometry("900x800")
+    root.configure(bg="#f0f0f0")
+    for w in root.winfo_children():
+        w.destroy()
 
+    header_bg = "#e0e0e0" 
+    header = tk.Frame(root, bg=header_bg, height=80)
+    header.pack(side="top", fill="x")
+
+    from core.langues import traduire
+    bienvenue = tk.Label(header, text=f"{traduire('bienvenue')} {USERNAME}", font=("Arial", 22, "bold"), bg=header_bg, fg="#5b7fce")
+    bienvenue.pack(side="left", padx=32, pady=18)
+
+    """Icone sous menu"""
+    img = Image.open(os.path.join(ASSETS_DIR, "lyrique.png")).convert("RGBA").resize((40, 40))
+    icon = ImageTk.PhotoImage(img)
+    btn_icon = tk.Button(header, image=icon, bg=header_bg, bd=0, relief="flat", cursor="hand2", activebackground=header_bg, highlightthickness=0)
+    btn_icon.image = icon
+    btn_icon.pack(side="right", padx=28, pady=12)
+
+    from tkinter import messagebox
+    def import_login_and_show(root):
+        import login
+        try:
+            current_volume = root.volume_var.get()
+        except AttributeError:
+            try:
+                from core.musique import SoundBar
+                current_volume = SoundBar.last_volume
+            except Exception:
+                current_volume = None
+        for w in root.winfo_children():
+            w.destroy()
+        login.show_login(root, volume=current_volume)
+
+    """Sous menu"""
+    def show_logout_menu(event):
+        menu = tk.Menu(root, tearoff=0)
+        menu.add_command(label=traduire("a_propos"), command=lambda: messagebox.showinfo(traduire("a_propos"), traduire("a_propos_texte")))
+        menu.add_command(label=traduire("credits"), command=lambda: messagebox.showinfo(traduire("credits"), traduire("credits_texte")))
+        menu.add_separator()
+        menu.add_command(label=traduire("se_deconnecter"), command=lambda: import_login_and_show(root))
+        menu.add_command(label=traduire("fermer"), command=root.quit)
+        menu.tk_popup(event.x_root, event.y_root)
+    btn_icon.bind("<Button-1>", show_logout_menu)
+
+    body = tk.Frame(root, bg="#f0f0f0")
+    body.pack(expand=True, fill="both")
+    body.grid_rowconfigure(0, weight=1)
+    body.grid_columnconfigure((0,1,2), weight=1)
+
+    center_frame = tk.Frame(body, bg="#f0f0f0")
+    center_frame.place(relx=0.5, rely=0.5, anchor="center")
+
+    """Choix des modes de jeu"""
+    modes = [
+        ("Katarenga", "#e0e0e0", traduire("desc_katarenga"), "katarenga.png"),
+        ("Congress", "#e0e0e0", traduire("desc_congress"), "congress.png"),
+        ("Isolation", "#e0e0e0", traduire("desc_isolation"), "isolation.png")
+    ]
+    frames = []
+    for i, (mode, color, desc, img_file) in enumerate(modes):
+        frame = tk.Frame(center_frame, bg=color, bd=0, relief="ridge", height=330, width=260)
+        frame.grid(row=0, column=i, padx=24, pady=0, sticky="nsew")
+        frames.append(frame)
+        label = tk.Label(frame, text=mode, font=("Arial", 16, "bold"), bg=color, fg="#5b7fce", anchor="center")
+        label.pack(pady=(8, 0), fill="x")
+
+        img_path = os.path.join(ASSETS_DIR, img_file)
+        game_img = Image.open(img_path).convert("RGBA").resize((150, 150))
+        game_icon = ImageTk.PhotoImage(game_img)
+        img_lbl = tk.Label(frame, image=game_icon, bg=color)
+        img_lbl.image = game_icon
+        img_lbl.pack(pady=(2, 0))
+        
+        desc_lbl = tk.Label(frame, text=desc, font=("Arial", 10), bg=color, fg="#444", wraplength=180, anchor="center")
+        desc_lbl.pack(pady=(2, 0), fill="x")
+        
+        spacer = tk.Label(frame, bg=color)
+        spacer.pack(expand=True, fill="both")
+        
+        def jouer_depuis_menu(mode):
+            from config_gui import main as config_main
+            jeu_demande = mode.lower()
+            for w in root.winfo_children():
+                w.destroy()
+            config_main(root, jeu_demande, username=USERNAME, volume=volume)
+        
+        play_btn = tk.Button(frame, text=traduire("jouer"), font=("Arial", 11, "bold"), bg="#219150", fg="white",
+                             relief="flat", cursor="hand2", bd=0,
+                             highlightthickness=1, highlightbackground="#19713c",
+                             activebackground="#19713c", activeforeground="white",
+                             command=lambda m=mode: jouer_depuis_menu(m))
+        play_btn.pack(pady=(6, 12), fill="x", side="bottom")
+        frame.pack_propagate(False)
+
+    center_frame.grid_rowconfigure(0, weight=1)
+    for i in range(len(modes)):
+        center_frame.grid_columnconfigure(i, weight=1)
+
+    """Barre de son"""
+    from core.musique import SoundBar, regler_volume
+    from core.parametres import LanguageSelector
+    if hasattr(root, 'volume_var'):
+        root.volume_var.set(volume if volume is not None else root.volume_var.get())
+        soundbar = SoundBar(root, volume_var=root.volume_var)
+    else:
+        root.volume_var = tk.IntVar(value=volume if volume is not None else 50)
+        soundbar = SoundBar(root, volume_var=root.volume_var)
+    regler_volume(root.volume_var.get())
+    soundbar.place(relx=0.0, rely=1.0, anchor="sw", x=10, y=-10)
+
+    """Langues"""
+    def on_language_changed(new_lang):
+        try:
+            current_volume = soundbar.volume_var.get()
+        except Exception:
+            current_volume = volume
+        import importlib
+        import core.langues
+        importlib.reload(core.langues)
+        show_menu(root, username=USERNAME, volume=current_volume)
+    lang_selector = LanguageSelector(root, assets_dir=ASSETS_DIR, callback=on_language_changed)
+    lang_selector.place(relx=1.0, rely=1.0, anchor="se", x=-18, y=-18)
+
+    root.title(traduire("titre"))
+    if not getattr(root, 'initialized', False):
+        root.initialized = True
+        root.mainloop()
+
+def logout(root):
+    import login
+    from core.musique import regler_volume
     try:
-        icon_img = ImageTk.PhotoImage(file=os.path.join("assets", "logo.png"))
-        fen.iconphoto(False, icon_img)
-        fen.icon_img = icon_img
-    except Exception as e:
-        print("Erreur chargement icône : ", e)
-
-    frame_effets = tk.Frame(fen, bg="#f0f4f8")
-    frame_effets.pack(pady=10, padx=15, fill="x")
-    tk.Label(frame_effets, text="🔊", bg="#f0f4f8").pack(side="left")
-    tk.Label(frame_effets, text=traduire("volume_effets"), bg="#f0f4f8", font=("Helvetica", 11)).pack(side="left", padx=10)
-    tk.Scale(frame_effets, from_=0, to=100, orient="horizontal", bg="#f0f4f8", length=120).pack(side="right")
-
-    frame_musique = tk.Frame(fen, bg="#f0f4f8")
-    frame_musique.pack(pady=10, padx=15, fill="x")
-    tk.Label(frame_musique, text="🎵", bg="#f0f4f8").pack(side="left")
-    tk.Label(frame_musique, text=traduire("volume_musique"), bg="#f0f4f8", font=("Helvetica", 11)).pack(side="left", padx=10)
-    scale = tk.Scale(frame_musique, from_=0, to=100, orient="horizontal", bg="#f0f4f8", length=120, command=regler_volume)
-    scale.set(50)
-    scale.pack(side="right")
-
-    frame_ctrl = tk.Frame(fen, bg="#f0f4f8")
-    frame_ctrl.pack(pady=10)
-    tk.Button(frame_ctrl, text="⏸ Pause", command=pause).pack(side="left", padx=10)
-    tk.Button(frame_ctrl, text="▶ Reprendre", command=reprendre).pack(side="left", padx=10)
-
-    frame_langue = tk.Frame(fen, bg="#f0f4f8")
-    frame_langue.pack(pady=15, padx=15, fill="x")
-    tk.Label(frame_langue, text="🌐", bg="#f0f4f8").pack(side="left")
-    tk.Label(frame_langue, text=traduire("langue"), bg="#f0f4f8", font=("Helvetica", 11)).pack(side="left", padx=10)
-    tk.Button(frame_langue, text="FR", width=5, command=lambda: change_language("fr")).pack(side="right", padx=5)
-    tk.Button(frame_langue, text="EN", width=5, command=lambda: change_language("en")).pack(side="right", padx=5)
-
-    frame_retour = tk.Frame(fen, bg="#f0f4f8")
-    frame_retour.pack(pady=15)
-    try:
-        retour_img = Image.open(os.path.join("assets", "en-arriere.png")).resize((32, 32))
-        retour_icon = ImageTk.PhotoImage(retour_img)
-        tk.Button(frame_retour, image=retour_icon, command=fen.destroy, bg="#f0f4f8", bd=0).pack()
-        frame_retour.image = retour_icon
-    except:
-        tk.Button(frame_retour, text="Retour", command=fen.destroy).pack()
-
-def change_language(code):
-    chemin_langue = os.path.join("assets", "langue.txt")
-    with open(chemin_langue, "w", encoding="utf-8") as f:
-        f.write(code)
-    parametres.LANGUE_ACTUELLE = code
-    for widget in root.winfo_children():
-        widget.destroy()
-    build_interface()
-
-def launch_game(jeu_type):
-    try:
-        subprocess.Popen([sys.executable, "menu_gui2.py", jeu_type])
-        root.destroy()
-    except Exception as e:
-        messagebox.showerror("Erreur", f"Impossible de lancer le jeu : {e}")
-
-def build_interface():
-    frame_top = tk.Frame(root, bg="#e6f2ff")
-    frame_top.pack(side="top", fill="x", pady=10, padx=10)
-    tk.Label(frame_top, text=traduire("titre"), font=("Helvetica", 16, "bold"), fg="#004d99", bg="#e6f2ff").pack(side="left")
-
-    try:
-        icone_image = Image.open(os.path.join("assets", "lyrique.png")).resize((24, 24))
-        icone = ImageTk.PhotoImage(icone_image)
-        bouton_options = tk.Button(frame_top, image=icone, bg="#e6f2ff", bd=0, command=open_settings)
-        bouton_options.image = icone
-        bouton_options.pack(side="right")
-    except:
-        tk.Button(frame_top, text="⚙", command=open_settings).pack(side="right")
-
-    frame = tk.Frame(root, bg="#e6f2ff")
-    frame.pack(expand=True)
-
-    style_btn = {
-        "font": ("Helvetica", 12, "bold"),
-        "bg": "#cce6ff",
-        "fg": "#003366",
-        "activebackground": "#b3d9ff",
-        "activeforeground": "#003366",
-        "width": 20,
-        "height": 2,
-        "bd": 2,
-        "relief": "ridge",
-        "highlightthickness": 0,
-        "cursor": "hand2"
-    }
-
-    tk.Button(frame, text=traduire("jouer_katarenga"), command=lambda: launch_game("katarenga"), **style_btn).pack(pady=10)
-    tk.Button(frame, text=traduire("jouer_congress"), command=lambda: launch_game("congress"), **style_btn).pack(pady=10)
-    tk.Button(frame, text=traduire("jouer_isolation"), command=lambda: launch_game("isolation"), **style_btn).pack(pady=10)
-
-# === Fenêtre principale ===
-root = tk.Tk()
-root.title("KATARENGA&CO.")
-root.geometry("340x460")
-root.configure(bg="#e6f2ff")
-
-try:
-    icon_img = ImageTk.PhotoImage(file=os.path.join("assets", "logo.png"))
-    root.iconphoto(False, icon_img)
-except:
-    pass
-
-build_interface()
-root.mainloop()
+        current_volume = root.volume_var.get()
+    except AttributeError:
+        try:
+            from core.musique import SoundBar
+            current_volume = SoundBar.last_volume
+        except Exception:
+            current_volume = None
+    for w in root.winfo_children():
+        w.destroy()
+    login.show_login(root, volume=current_volume)

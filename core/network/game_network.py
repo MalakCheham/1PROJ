@@ -3,8 +3,8 @@ from core.network.server import wait_for_first_client
 from core.network.client import start_client
 from core.network.discovery import ServerBroadcaster, ServerDiscovery
 
-_broadcaster = None
-_discovery = None
+broadcaster = None
+discovery = None
 
 # === Server Side ===
 def host_server(server_name, port=5555, on_client_connect=None, on_stop=None, root=None, tk=None, traduire=None, center_window=None):
@@ -14,10 +14,10 @@ def host_server(server_name, port=5555, on_client_connect=None, on_stop=None, ro
     Calls on_stop() if the server is stopped (e.g. window closed).
     Returns a tuple (attente_win, stop_callback)
     """
-    global _broadcaster
+    global broadcaster
     ip = _get_local_ip()
-    _broadcaster = ServerBroadcaster(server_name, port)
-    _broadcaster.start()
+    broadcaster = ServerBroadcaster(server_name, port)
+    broadcaster.start()
     print(f"Serveur créé: {server_name} ({ip}:{port})")
     attente_win = tk.Toplevel(root)
     attente_win.title(traduire("heberger"))
@@ -29,8 +29,8 @@ def host_server(server_name, port=5555, on_client_connect=None, on_stop=None, ro
     label.pack(pady=30)
     def server_thread():
         client_socket, addr = wait_for_first_client(port=port)
-        if _broadcaster:
-            _broadcaster.stop()
+        if broadcaster:
+            broadcaster.stop()
         if on_client_connect:
             on_client_connect(attente_win, client_socket, addr)
     threading.Thread(target=server_thread, daemon=True).start()
@@ -42,10 +42,10 @@ def host_server(server_name, port=5555, on_client_connect=None, on_stop=None, ro
     return attente_win, stop_callback
 
 def stop_server():
-    global _broadcaster
-    if _broadcaster:
-        _broadcaster.stop()
-        _broadcaster = None
+    global broadcaster
+    if broadcaster:
+        broadcaster.stop()
+        broadcaster = None
         print("Serveur arrêté par l'utilisateur.")
 
 # === Client Side ===
@@ -58,16 +58,16 @@ def start_discovery(on_server_found):
     Start network discovery. Calls on_server_found(server_dict) for each found server.
     Returns the discovery object (call .stop() to end).
     """
-    global _discovery
-    _discovery = ServerDiscovery(on_server_found)
-    _discovery.start()
-    return _discovery
+    global discovery
+    discovery = ServerDiscovery(on_server_found)
+    discovery.start()
+    return discovery
 
 def stop_discovery():
-    global _discovery
-    if _discovery:
-        _discovery.stop()
-        _discovery = None
+    global discovery
+    if discovery:
+        discovery.stop()
+        discovery = None
 
 # === Utility ===
 def _get_local_ip():

@@ -8,7 +8,7 @@ import random
 from core.plateau import Plateau
 from core.joueur import Joueur
 from core.aide import get_regles
-from core.mouvement import est_mouvement_roi, est_mouvement_cavalier, est_mouvement_fou, est_mouvement_tour
+from core.mouvement import generer_coups_possibles
 from tkinter import messagebox
 from PIL import Image, ImageTk
 from core.musique import jouer_musique
@@ -16,7 +16,7 @@ jouer_musique()
 
 class JeuCongress:
     def __init__(self, plateau, joueurs, mode="1v1", sock=None, is_host=False, noms_joueurs=None, root=None):
-        # Nettoyer le root si fourni
+
         if root:
             for widget in root.winfo_children():
                 widget.destroy()
@@ -27,56 +27,17 @@ class JeuCongress:
         self.is_host = is_host
         self.noms_joueurs = noms_joueurs or ["Joueur Blanc", "Joueur Noir"]
         self.reseau = sock is not None
-        # Placement initial demandé par l'utilisateur
-        self.pions = {
-            'X': set(),
-            'O': set()
-        }
-        
-        self.pions['X'].update([(0,1), (0,4)])
-        self.pions['O'].update([(0,3), (0,6)])
-
-        self.pions['O'].add((1,0))
-        self.pions['X'].add((1,7))
-
-        self.pions['X'].add((3,0))
-        self.pions['O'].add((3,7))
-
-        self.pions['O'].add((4,0))
-        self.pions['X'].add((4,7))
-
-        self.pions['X'].add((6,0))
-        self.pions['O'].add((6,7))
-
-        self.pions['O'].update([(7,1), (7,4)])
-        self.pions['X'].update([(7,3), (7,6)])
-        
+        self.pions = {'X': set(), 'O': set()}
+        self.pions['X'].update([(0,1), (0,4), (1,7), (3,0), (4,7), (6,0), (7,3), (7,6)])
+        self.pions['O'].update([(0,3), (0,6), (1,0), (3,7), (4,0), (6,7), (7,1), (7,4)])
         self.tour = 0
         self.timer_seconds = 0
         self.timer_running = True
         self.selection = None
         self.root = root if root else tk.Tk()
         self.root.title("Congress")
-        self.root.configure(bg="#e6f2ff")
-
-        self.top_frame = tk.Frame(self.root, bg="#e6f2ff")
-        self.top_frame.pack(fill="x", pady=5, padx=5)
-
-        self.tour_label = tk.Label(self.top_frame, text="", font=("Helvetica", 12, "bold"), bg="#e6f2ff", fg="#003366")
-        self.tour_label.pack(side="top")
-
-        self.timer_label = tk.Label(self.top_frame, text="00:00", font=("Helvetica", 12, "bold"), bg="#e6f2ff", fg="#003366")
-        self.timer_label.pack(side="top")
-
-        self.canvas = tk.Canvas(self.root, width=400, height=400)
-        self.canvas.pack()
-        self.canvas.bind("<Button-1>", self.on_click)
-
-        self.load_and_pack_button("en-arriere.png", "<", self.top_frame, self.retour_menu, "left")
-        self.load_and_pack_button("point-dinterrogation.png", "?", self.top_frame, self.aide_popup, "right")
-        self.load_and_pack_button("fleche-pivotante-vers-la-gauche.png", "Rejouer", self.root, self.rejouer, "bottom", pady=10)
-
-        self.afficher_plateau()
+        self.root.configure(bg="#f0f4f0")
+        self.setup_ui()
         self.update_info_joueur()
         self.start_timer()
         if self.reseau:
@@ -84,6 +45,116 @@ class JeuCongress:
             threading.Thread(target=self.network_listener, daemon=True).start()
         else:
             self.canvas.bind("<Button-1>", self.on_click)
+
+    def setup_ui(self):
+        from core.langues import traduire
+        header_bg = "#e0e0e0"
+        header = tk.Frame(self.root, bg=header_bg, height=80)
+        header.pack(side="top", fill="x")
+
+        bienvenue = tk.Label(header, text="Congress", font=("Arial", 22, "bold"), bg=header_bg, fg="#5b7fce")
+        bienvenue.pack(side="left", padx=32, pady=18)
+
+        img = Image.open(os.path.join("assets", "lyrique.png")).convert("RGBA").resize((40, 40))
+        icon = ImageTk.PhotoImage(img, master=self.root)
+        self.icon = icon
+        btn_icon = tk.Button(header, image=self.icon, bg=header_bg, bd=0, relief="flat", cursor="hand2", activebackground=header_bg, highlightthickness=0)
+        btn_icon.image = self.icon
+        btn_icon.pack(side="right", padx=28, pady=12)
+        def show_logout_menu(event):
+            menu = tk.Menu(self.root, tearoff=0)
+            menu.add_command(label=traduire("a_propos"), command=lambda: messagebox.showinfo(traduire("a_propos"), traduire("a_propos_texte")))
+            menu.add_command(label=traduire("credits"), command=lambda: messagebox.showinfo(traduire("credits"), traduire("credits_texte")))
+            menu.add_separator()
+            def go_to_login():
+                import login
+                try:
+                    current_volume = self.root.volume_var.get()
+                except AttributeError:
+                    try:
+                        from core.musique import SoundBar
+                        current_volume = SoundBar.last_volume
+                    except Exception:
+                        current_volume = None
+                for w in self.root.winfo_children():
+                    w.destroy()
+                login.show_login(self.root, volume=current_volume)
+            menu.add_command(label=traduire("se_deconnecter"), command=go_to_login)
+            menu.add_command(label=traduire("fermer"), command=self.root.quit)
+            menu.tk_popup(event.x_root, event.y_root)
+        btn_icon.bind("<Button-1>", show_logout_menu)
+        # Barre de son
+        from core.musique import SoundBar, regler_volume
+        from core.parametres import LanguageSelector
+        initial_volume = 50
+        if hasattr(self.root, 'volume_var'):
+            try:
+                initial_volume = self.root.volume_var.get()
+            except Exception:
+                pass
+        else:
+            self.root.volume_var = tk.IntVar(value=initial_volume)
+        soundbar = SoundBar(self.root, volume_var=self.root.volume_var)
+        regler_volume(self.root.volume_var.get())
+        soundbar.place(relx=0.0, rely=1.0, anchor="sw", x=10, y=-10)
+
+        def on_language_changed(new_lang):
+            import importlib
+            import core.langues
+            importlib.reload(core.langues)
+            self.redraw_ui_only()
+        lang_selector = LanguageSelector(self.root, assets_dir="assets", callback=on_language_changed)
+        lang_selector.place(relx=1.0, rely=1.0, anchor="se", x=-18, y=-18)
+
+        # Zone centrale
+        main_frame = tk.Frame(self.root, bg="#f0f0f0")
+        main_frame.pack(pady=10, expand=True, fill="both")
+        # Frame latéral pour centrer le bouton retour verticalement
+        left_frame = tk.Frame(main_frame, bg="#f0f0f0")
+        left_frame.pack(side="left", fill="y", padx=(18, 0), pady=0)
+        img_retour = Image.open(os.path.join("assets", "en-arriere.png")).resize((48, 48))
+        if hasattr(self.root, 'tk'):
+            icon_retour = ImageTk.PhotoImage(img_retour, master=self.root)
+        else:
+            icon_retour = ImageTk.PhotoImage(img_retour)
+        self.icon_retour = icon_retour
+        def retour_config():
+            import config_gui
+            try:
+                current_volume = self.root.volume_var.get()
+            except Exception:
+                current_volume = None
+            for w in self.root.winfo_children():
+                w.destroy()
+            # Transmet le volume si la fonction l'accepte, sinon fallback
+            try:
+                config_gui.afficher_interface_choix(self.root, volume=current_volume)
+            except TypeError:
+                config_gui.afficher_interface_choix(self.root)
+        btn_retour = tk.Button(left_frame, image=self.icon_retour, command=retour_config, bg="#f0f0f0", bd=0, relief="flat", cursor="hand2", activebackground="#f0f0f0", highlightthickness=0)
+        btn_retour.image = icon_retour
+        btn_retour.pack(side="top", expand=True, anchor="center", pady=0)
+
+        self.tour_label = tk.Label(main_frame, text="", font=("Helvetica", 13, "bold"), bg="#f0f0f0", fg="#003366")
+        self.tour_label.place(relx=0.50, rely=0.08, anchor="center")
+        self.timer_label = tk.Label(main_frame, text="00:00", font=("Helvetica", 13, "bold"), bg="#f0f0f0", fg="#003366")
+        self.timer_label.place(relx=0.50, rely=0.15, anchor="center")
+        self.canvas = tk.Canvas(main_frame, width=400, height=400, bg="#f0f0f0", highlightthickness=0)
+        self.canvas.place(relx=0.5, rely=0.55, anchor="center")
+        self.load_and_pack_button("point-dinterrogation.png", "?", self.root, self.aide_popup, "bottom", pady=10)
+        self.load_and_pack_button("fleche-pivotante-vers-la-gauche.png", "Rejouer", self.root, self.rejouer, "bottom", pady=10)
+        self.update_info_joueur()
+        self.afficher_plateau()
+        self.canvas.bind("<Button-1>", self.on_click)
+        self.root.update_idletasks()
+        self.root.update()
+
+    def redraw_ui_only(self):
+        for widget in self.root.winfo_children():
+            widget.destroy()
+        self.setup_ui()
+        self.update_info_joueur()
+        self.afficher_plateau()
 
     def lock_ui_if_needed(self):
         if not self.reseau:
@@ -158,22 +229,16 @@ class JeuCongress:
         return self.joueurs[self.tour % 2]
 
     def update_info_joueur(self):
+        from core.langues import traduire
         if self.mode == "ia":
             if self.tour % 2 == 0:
-                self.tour_label.config(text="Tour du Joueur Noir (Humain)")
+                self.tour_label.config(text=f"{traduire('tour_de')} ({traduire('noir')})")
             else:
-                self.tour_label.config(text="Tour du Joueur Blanc (IA)")
+                self.tour_label.config(text=f"{traduire('tour_de')} ({traduire('blanc')})")
         else:
-            joueur = self.joueur_actuel()
-            # Affiche toujours 'Noir' au premier tour, puis alterne
-            if self.tour % 2 == 0:
-                couleur = 'Noir'
-            else:
-                couleur = 'Blanc'
-            if self.reseau and self.noms_joueurs:
-                self.tour_label.config(text=f"Tour de {self.noms_joueurs[self.tour % 2]} ({couleur})")
-            else:
-                self.tour_label.config(text=f"Tour du Joueur {couleur}")
+            couleur = 'noir' if self.tour % 2 == 0 else 'blanc'
+            nom = self.noms_joueurs[self.tour % 2] if self.noms_joueurs else f"Joueur {traduire(couleur)}"
+            self.tour_label.config(text=f"{traduire('tour_de')} ({traduire(couleur)})")
 
     def afficher_plateau(self):
         self.canvas.delete("all")
@@ -240,13 +305,11 @@ class JeuCongress:
             self.lock_ui_if_needed()
 
     def verifier_victoire(self):
-        # Le but : tous les pions d'un joueur forment un bloc connexe orthogonalement
         joueur = self.joueur_actuel()
         symbole = joueur.symbole
         positions = self.pions[symbole]
         if not positions:
             return
-        # Parcours en largeur pour vérifier la connexité
         from collections import deque
         visited = set()
         queue = deque([next(iter(positions))])
@@ -262,8 +325,8 @@ class JeuCongress:
         if len(visited) == len(positions):
             self.pause_timer()
             couleur = 'Blanc' if joueur.symbole == 'X' else 'Noir'
-            nom = getattr(joueur, 'nom', str(joueur))
-            messagebox.showinfo("Victoire", f"Joueur {nom} ({couleur}) a gagné !")
+            from core.langues import traduire
+            messagebox.showinfo(traduire("victoire"), f"{traduire('joueur')} ({traduire(couleur.lower())}) {traduire('a_gagne')} !")
             self.reprendre_timer()
             self.rejouer()
 
@@ -288,13 +351,14 @@ class JeuCongress:
             self.update_timer()
 
     def aide_popup(self):
+        from core.langues import traduire
         self.pause_timer()
         aide = tk.Toplevel(self.root)
-        aide.title("Règles du jeu")
+        aide.title(traduire("regles_du_jeu"))
         aide.geometry("400x400")
         aide.configure(bg="#f0f4f8")
 
-        tk.Label(aide, text="Règles de Congress", font=("Helvetica", 14, "bold"), bg="#f0f4f8", fg="#003366").pack(pady=10)
+        tk.Label(aide, text=traduire("regles_congress"), font=("Helvetica", 14, "bold"), bg="#f0f4f8", fg="#003366").pack(pady=10)
         text_widget = tk.Text(aide, wrap="word", bg="#f0f4f8", fg="#000000", font=("Helvetica", 10), bd=0)
         text_widget.pack(expand=True, fill="both", padx=10, pady=10)
         text_widget.insert("1.0", get_regles("congress"))
@@ -310,35 +374,99 @@ class JeuCongress:
         self.timer_running = False
         if hasattr(self, "timer_id"):
             self.root.after_cancel(self.timer_id)
-        self.root.destroy()
-        subprocess.Popen([sys.executable, "menu_gui.py"])
+        for w in self.root.winfo_children():
+            w.destroy()
+        import config_gui
+        config_gui.afficher_interface_choix(self.root)
 
     def rejouer(self):
         self.timer_running = False
         if hasattr(self, "timer_id"):
             self.root.after_cancel(self.timer_id)
-        self.root.destroy()
-        from plateau_builder import lancer_plateau_builder
-        lancer_plateau_builder("congress", self.mode)
+        # Réinitialise uniquement les pions
+        self.pions = {
+            'X': set([(0,1), (0,4), (1,7), (3,0), (4,7), (6,0), (7,3), (7,6)]),
+            'O': set([(0,3), (0,6), (1,0), (3,7), (4,0), (6,7), (7,1), (7,4)])
+        }
+        self.tour = 0
+        self.timer_seconds = 0
+        self.selection = None
+        self.coups_possibles = set()
+        self.redraw_ui_only()
+        self.start_timer()
 
     def generer_coups_possibles(self, depart, couleur, symbole):
-        coups = set()
-        for i in range(8):
-            for j in range(8):
-                arrivee = (i, j)
-                # Interdit les captures : on ne peut pas aller sur une case occupée par un pion (adverse ou allié)
-                if (arrivee in self.pions['X']) or (arrivee in self.pions['O']):
-                    continue
-                mouvement_valide = (couleur == 'B' and est_mouvement_roi(depart, arrivee)) or \
-                                   (couleur == 'V' and est_mouvement_cavalier(depart, arrivee)) or \
-                                   (couleur == 'J' and est_mouvement_fou(depart, arrivee, self.plateau, self.pions)) or \
-                                   (couleur == 'R' and est_mouvement_tour(depart, arrivee, self.plateau, self.pions))
-                if mouvement_valide:
-                    coups.add(arrivee)
-        return coups
-# Pour test indépendant
-if __name__ == '__main__':
+        return generer_coups_possibles(depart, couleur, symbole, self.plateau, self.pions, capture=False)
+
+def plateau_to_str(plateau):
+    return '\n'.join([''.join(row) for row in plateau.cases])
+
+def pions_to_str(pions):
+    # pions: dict {'X': set(), 'O': set()}
+    return '|'.join([f"{symb}:{';'.join([f'{i},{j}' for (i,j) in positions])}" for symb, positions in pions.items()])
+
+def str_to_plateau(s):
+    from core.plateau import Plateau
+    lines = s.strip().split('\n')
     plateau = Plateau()
-    joueurs = [Joueur("Joueur 1", 'O'), Joueur("Joueur 2", 'X')]
-    jeu = JeuCongress(plateau, joueurs)
-    jeu.jouer()
+    plateau.cases = [list(line) for line in lines]
+    return plateau
+
+def str_to_pions(s):
+    pions = {'X': set(), 'O': set()}
+    for part in s.split('|'):
+        if not part: continue
+        symb, positions = part.split(':')
+        if positions:
+            pions[symb] = set(tuple(map(int, pos.split(','))) for pos in positions.split(';') if pos)
+    return pions
+
+def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, plateau=None, pions=None, wait_win=None):
+    import threading
+    if is_host:
+        sock.sendall(f"nom:{player_name_blanc}".encode())
+        data = sock.recv(4096)
+        player_name_noir = data.decode()[4:]
+        if plateau is None or pions is None:
+            from plateau_builder import creer_plateau
+            plateau = creer_plateau()
+            # Initialisation correcte des pions pour Congress
+            pions = {'X': set(), 'O': set()}
+            pions['X'].update([(0,1), (0,4), (1,7), (3,0), (4,7), (6,0), (7,3), (7,6)])
+            pions['O'].update([(0,3), (0,6), (1,0), (3,7), (4,0), (6,7), (7,1), (7,4)])
+        plateau_str = plateau_to_str(plateau)
+        pions_str = pions_to_str(pions)
+        sock.sendall((plateau_str + '\nENDPLATEAU\n').encode())
+        sock.sendall((pions_str + '\nENDPIONS\n').encode())
+        joueurs = [Joueur(player_name_blanc, 'X'), Joueur(player_name_noir, 'O')]
+        jeu = JeuCongress(plateau, joueurs, mode="reseau", sock=sock, is_host=is_host, noms_joueurs=[player_name_blanc, player_name_noir], root=root)
+        jeu.pions = pions
+        jeu.afficher_plateau()
+        jeu.jouer()
+    else:
+        def client_receive_and_start():
+            data = sock.recv(4096)
+            player_name_blanc_local = data.decode()[4:]
+            sock.sendall(f"nom:{player_name_noir}".encode())
+            def recv_until(sock, end_marker):
+                data = b''
+                while not data.decode(errors='ignore').endswith(end_marker):
+                    part = sock.recv(1024)
+                    if not part:
+                        raise ConnectionError("Connexion interrompue lors de la réception des données réseau.")
+                    data += part
+                return data.decode().replace(end_marker, '').strip()
+            plateau_str = recv_until(sock, '\nENDPLATEAU\n')
+            pions_str = recv_until(sock, '\nENDPIONS\n')
+            plateau_local = str_to_plateau(plateau_str)
+            pions_local = str_to_pions(pions_str)
+            def start_game():
+                if wait_win is not None:
+                    wait_win.destroy()
+                joueurs = [Joueur(player_name_blanc_local, 'X'), Joueur(player_name_noir, 'O')]
+                jeu = JeuCongress(plateau_local, joueurs, mode="reseau", sock=sock, is_host=is_host, noms_joueurs=[player_name_blanc_local, player_name_noir], root=root)
+                jeu.pions = pions_local
+                jeu.afficher_plateau()
+                jeu.jouer()
+            root.after(0, start_game)
+        threading.Thread(target=client_receive_and_start, daemon=True).start()

@@ -18,7 +18,7 @@ class Mouvement:
         if case_type in ["B", "V"]:
             for dr, dc in MOVES[case_type]:
                 nr, nc = r + dr, c + dc
-                if 0 <= nr < 8 and 0 <= nc < 8 and (nr, nc) not in pieces[symbole]:
+                if 0 <= nr < 10 and 0 <= nc < 10 and (nr, nc) not in pieces[symbole]:
                     moves.append((nr, nc))
 
         elif case_type == "J":
@@ -26,7 +26,7 @@ class Mouvement:
                 nr, nc = r, c
                 while True:
                     nr, nc = nr + dr, nc + dc
-                    if not (0 <= nr < 8 and 0 <= nc < 8):
+                    if not (0 <= nr < 10 and 0 <= nc < 10):
                         break
                     if (nr, nc) in pieces[symbole]:
                         break
@@ -39,7 +39,7 @@ class Mouvement:
                 nr, nc = r, c
                 while True:
                     nr, nc = nr + dr, nc + dc
-                    if not (0 <= nr < 8 and 0 <= nc < 8):
+                    if not (0 <= nr < 10 and 0 <= nc < 10):
                         break
                     if (nr, nc) in pieces[symbole]:
                         break
@@ -67,8 +67,9 @@ def est_mouvement_fou(depart, arrivee, plateau, pions):
     sl = 1 if arrivee[0] > depart[0] else -1
     sc = 1 if arrivee[1] > depart[1] else -1
     l, c = depart[0] + sl, depart[1] + sc
+    n = len(plateau.cases)
     while (l, c) != arrivee:
-        if not (0 <= l < 8 and 0 <= c < 8):
+        if not (0 <= l < n and 0 <= c < n):
             return False
         if (l, c) in pions['X'] or (l, c) in pions['O']:
             return False
@@ -84,8 +85,9 @@ def est_mouvement_tour(depart, arrivee, plateau, pions):
     sl = 0 if depart[0] == arrivee[0] else (1 if arrivee[0] > depart[0] else -1)
     sc = 0 if depart[1] == arrivee[1] else (1 if arrivee[1] > depart[1] else -1)
     l, c = depart[0] + sl, depart[1] + sc
+    n = len(plateau.cases)
     while (l, c) != arrivee:
-        if not (0 <= l < 8 and 0 <= c < 8):
+        if not (0 <= l < n and 0 <= c < n):
             return False
         if (l, c) in pions['X'] or (l, c) in pions['O']:
             return False
@@ -94,3 +96,41 @@ def est_mouvement_tour(depart, arrivee, plateau, pions):
         l += sl
         c += sc
     return True
+
+def generer_coups_possibles(depart, couleur, symbole, plateau, pions, capture=True):
+    coups = set()
+    n = len(plateau.cases)
+    for i in range(n):
+        for j in range(n):
+            arrivee = (i, j)
+            piece_arrivee = next((s for s in ['X', 'O'] if arrivee in pions[s]), None)
+            if capture:
+                if piece_arrivee is None or piece_arrivee != symbole:
+                    mouvement_valide = (
+                        (couleur == 'B' and est_mouvement_roi(depart, arrivee)) or
+                        (couleur == 'V' and est_mouvement_cavalier(depart, arrivee)) or
+                        (couleur == 'J' and est_mouvement_fou(depart, arrivee, plateau, pions)) or
+                        (couleur == 'R' and est_mouvement_tour(depart, arrivee, plateau, pions))
+                    )
+                    if mouvement_valide:
+                        coups.add(arrivee)
+            else:
+                # Pas de capture : on ne peut pas aller sur une case occupée (congress, isolation)
+                if (arrivee in pions['X']) or (arrivee in pions['O']):
+                    continue
+                mouvement_valide = (
+                    (couleur == 'B' and est_mouvement_roi(depart, arrivee)) or
+                    (couleur == 'V' and est_mouvement_cavalier(depart, arrivee)) or
+                    (couleur == 'J' and est_mouvement_fou(depart, arrivee, plateau, pions)) or
+                    (couleur == 'R' and est_mouvement_tour(depart, arrivee, plateau, pions))
+                )
+                if mouvement_valide:
+                    coups.add(arrivee)
+    return coups
+
+def peut_entrer_camp(symbole, position, depart=None):
+    if symbole == 'X' and position in [(9,0), (9,9)] and (depart is None or depart[0] == 8):
+        return True
+    if symbole == 'O' and position in [(0,0), (0,9)] and (depart is None or depart[0] == 1):
+        return True
+    return False
