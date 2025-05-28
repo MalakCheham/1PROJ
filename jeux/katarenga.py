@@ -330,26 +330,26 @@ class JeuKatarenga:
 
     def generer_coups_possibles(self, depart, couleur, symbole):
         coups = generer_coups_possibles(depart, couleur, symbole, self.plateau, self.pions, capture=True)
-        coups_filtrés = set()
+        move_filtred = set()
 
-        if symbole == 'X' and depart[0] == 7:
+        if symbole == 'X' and depart[0] == 8:
             for coin in CAMPS_O:
                 if coin not in self.pions['X'] and coin not in self.pions['O']:
-                    coups_filtrés.add(coin)
+                    move_filtred.add(coin)
         if symbole == 'O' and depart[0] == 1:
             for coin in CAMPS_X:
                 if coin not in self.pions['X'] and coin not in self.pions['O']:
-                    coups_filtrés.add(coin)
+                    move_filtred.add(coin)
 
         for arrivee in coups:
-            if arrivee in CAMPS_O and symbole == 'X' and depart[0] == 7:
+            if arrivee in CAMPS_O and symbole == 'X' and depart[0] == 8:
                 continue
             if arrivee in CAMPS_X and symbole == 'O' and depart[0] == 1:
                 continue
             if arrivee not in CAMPS_X + CAMPS_O:
                 if self.plateau.cases[arrivee[0]][arrivee[1]] != '#':
-                    coups_filtrés.add(arrivee)
-        return coups_filtrés
+                    move_filtred.add(arrivee)
+        return move_filtred
 
     def verifier_victoire(self):
         from core.langues import traduire
