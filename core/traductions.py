@@ -83,8 +83,8 @@ TRADUCTIONS = {
         "en": "Smart Games.\nProject B1"
     },
     "credits_texte": {
-        "fr": "Développé par:\n Ibtihel BOUGUERN\n Malak CHEHAM\n Yassmine",
-        "en": "Developed by:\n Ibtihel BOUGUERN\n Malak CHEHAM\n Yassmine"
+        "fr": "Développé par:\n Ibtihel BOUGUERN\n Malak CHEHAM\n Yasmine BENAMIR",
+        "en": "Developed by:\n Ibtihel BOUGUERN\n Malak CHEHAM\n Yasmine BENAMIR"
     },
     "mode_reseau_hote": {"fr": "Réseau (Hôte)", "en": "Network (Host)"},
     "mode_reseau_client": {"fr": "Réseau (Client)", "en": "Network (Client)"},
