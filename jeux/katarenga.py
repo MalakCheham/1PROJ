@@ -12,6 +12,7 @@ from core.musique import jouer_musique
 from tkinter import messagebox
 from core.mouvement import generer_coups_possibles, peut_entrer_camp
 from core.network.utils import plateau_to_str, pions_to_str, str_to_plateau, str_to_pions
+from plateau_utils import creer_plateau
 jouer_musique()
 
 CAMPS_X = [(0,0), (0,9)]
@@ -512,7 +513,7 @@ def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, 
         data = sock.recv(4096)
         player_name_noir = data.decode()[4:]
         if plateau is None or pions is None:
-            from plateau_builder import creer_plateau
+            from plateau_utils import creer_plateau
             plateau, pions = creer_plateau()
         plateau_str = plateau_to_str(plateau)
         pions_x_str = pions_to_str(pions['X'])

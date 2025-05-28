@@ -2,10 +2,10 @@ import tkinter as tk
 import random
 from PIL import Image, ImageTk
 import os
+from plateau_utils import creer_plateau
 
 from core.plateau import Plateau
 from core.joueur import Joueur
-from jeux.katarenga import JeuKatarenga
 from jeux.congress import JeuCongress
 from jeux.isolation import JeuIsolation
 
@@ -13,12 +13,6 @@ try:
     from core.quadrants import charger_quadrants_personnalises
 except ImportError:
     charger_quadrants_personnalises = None
-
-def creer_plateau():
-    couleurs = ['R', 'J', 'B', 'V']
-    plateau = Plateau()
-    plateau.cases = [[random.choice(couleurs) for _ in range(8)] for _ in range(8)]
-    return plateau
 
 def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto", network_callback=None, root=None):
     if root is None:
@@ -190,6 +184,7 @@ def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto", network
             else:
                 joueurs = [Joueur(0, 'X'), Joueur(1, 'O')]
                 if type_jeu == "katarenga":
+                    from jeux.katarenga import JeuKatarenga  # Import JeuKatarenga only inside the function where it is used to avoid circular import
                     JeuKatarenga(plateau, joueurs, root=root).jouer()
                 elif type_jeu == "congress":
                     JeuCongress(plateau, joueurs, root=root).jouer()
