@@ -11,27 +11,25 @@ from core.aide import get_regles
 from core.musique import jouer_musique
 from tkinter import messagebox
 from core.mouvement import generer_coups_possibles, peut_entrer_camp
+from core.network.utils import plateau_to_str, pions_to_str, str_to_plateau, str_to_pions
 jouer_musique()
 
 CAMPS_X = [(0,0), (0,9)]
 CAMPS_O = [(9,0), (9,9)]
 
 class JeuKatarenga:
-    def __init__(self, plateau, joueurs, mode="1v1", root=None, sock=None, is_host=False, noms_joueurs=None):
+    def __init__(self, plateau, joueurs, mode="1v1", root=None, sock=None, is_host=False, noms_joueurs=None, pions=None):
         if root:
             for widget in root.winfo_children():
                 widget.destroy()
 
         self.plateau = Plateau()
         self.plateau.cases = [['#' for _ in range(10)] for _ in range(10)]
-
         for i in range(8):
             for j in range(8):
                 self.plateau.cases[i+1][j+1] = plateau.cases[i][j]
-
         for (i, j) in CAMPS_X + CAMPS_O:
             self.plateau.cases[i][j] = 'CAMP'
-
         """ Masquer le tour du tableau sauf les camps """
         for i in [0,9]:
             for j in range(10):
@@ -49,10 +47,13 @@ class JeuKatarenga:
         self.noms_joueurs = noms_joueurs or ["Joueur Blanc", "Joueur Noir"]
         self.root = root if root else tk.Tk()
 
-        self.pions = {
-            'X': {(1, j) for j in range(1, 9)},
-            'O': {(8, j) for j in range(1, 9)}
-        }
+        if pions is not None:
+            self.pions = pions
+        else:
+            self.pions = {
+                'X': {(1, j) for j in range(1, 9)},
+                'O': {(8, j) for j in range(1, 9)}
+            }
         
         self.tour = 0
         self.timer_seconds = 0
@@ -184,7 +185,7 @@ class JeuKatarenga:
             icon_retour = ImageTk.PhotoImage(img_retour)
         self.icon_retour = icon_retour
         btn_retour = tk.Button(self.root, image=self.icon_retour, command=retour_config, bg="#f0f4f0", bd=0, relief="flat", cursor="hand2", activebackground="#e0e0e0")
-        btn_retour.image = self.icon_retour  # Correction : on assigne bien l'attribut image, pas icon_retour
+        btn_retour.image = icon_retour  # Correction : on assigne bien l'attribut image, pas icon_retour
         btn_retour.place(relx=0.0, rely=0.5, anchor="w", x=18)
 
         self.load_and_pack_button("point-dinterrogation.png", "?", self.root, self.aide_popup, "bottom", pady=10)
@@ -224,8 +225,7 @@ class JeuKatarenga:
                     arrivee = tuple(map(int, coords[1].split(',')))
 
                     self.root.after(0, lambda: self.apply_network_move(depart, arrivee))
-            except Exception as e:
-                print(f"Network error: {e}")
+            except Exception:
                 break
 
     def lock_ui_if_needed(self):
@@ -243,8 +243,7 @@ class JeuKatarenga:
             try:
                 msg = f"move:{depart[0]},{depart[1]}->{arrivee[0]},{arrivee[1]}".encode()
                 self.sock.sendall(msg)
-            except Exception as e:
-                print(f"Error sending move: {e}")
+            except Exception:
                 messagebox.showerror(traduire("erreur"), traduire("erreur_envoi_coup"))
 
     def apply_network_move(self, depart, arrivee):
@@ -330,29 +329,27 @@ class JeuKatarenga:
             self.canvas.create_rectangle(j * taille, i * taille, (j + 1) * taille, (i + 1) * taille, outline='black', width=3)
 
     def generer_coups_possibles(self, depart, couleur, symbole):
-        if depart in CAMPS_X + CAMPS_O:
-            return set()
         coups = generer_coups_possibles(depart, couleur, symbole, self.plateau, self.pions, capture=True)
-        coups_filtrés = set()
+        move_filtred = set()
 
-        if symbole == 'X' and depart[0] == 7:
+        if symbole == 'X' and depart[0] == 8:
             for coin in CAMPS_O:
                 if coin not in self.pions['X'] and coin not in self.pions['O']:
-                    coups_filtrés.add(coin)
+                    move_filtred.add(coin)
         if symbole == 'O' and depart[0] == 1:
             for coin in CAMPS_X:
                 if coin not in self.pions['X'] and coin not in self.pions['O']:
-                    coups_filtrés.add(coin)
+                    move_filtred.add(coin)
 
         for arrivee in coups:
-            if arrivee in CAMPS_O and symbole == 'X' and depart[0] == 7:
+            if arrivee in CAMPS_O and symbole == 'X' and depart[0] == 8:
                 continue
             if arrivee in CAMPS_X and symbole == 'O' and depart[0] == 1:
                 continue
             if arrivee not in CAMPS_X + CAMPS_O:
                 if self.plateau.cases[arrivee[0]][arrivee[1]] != '#':
-                    coups_filtrés.add(arrivee)
-        return coups_filtrés
+                    move_filtred.add(arrivee)
+        return move_filtred
 
     def verifier_victoire(self):
         from core.langues import traduire
@@ -504,37 +501,25 @@ class JeuKatarenga:
                     self.coups_possibles = self.generer_coups_possibles(self.selection, couleur_depart, symbole)
                     self.afficher_plateau()
 
-def plateau_to_str(plateau):
-    return '\n'.join(''.join(row) for row in plateau.cases)
-def pions_to_str(pions):
-    return ';'.join(f"{i},{j}" for (i,j) in pions)
-def str_to_plateau(s):
-    lines = s.strip().split('\n')
-    cases = [list(line) for line in lines]
-    from core.plateau import Plateau
-    plateau = Plateau()
-    plateau.cases = cases
-    return plateau
-def str_to_pions(s):
-    if not s:
-        return set()
-    return set(tuple(map(int, pos.split(','))) for pos in s.split(';'))
-
 def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, plateau=None, pions=None, wait_win=None):
     import threading
     if is_host:
         sock.sendall(f"nom:{player_name_blanc}".encode())
         data = sock.recv(4096)
         player_name_noir = data.decode()[4:]
-        if plateau is None or pions is None:
+        if plateau is None:
             from plateau_builder import creer_plateau
-            plateau, pions = creer_plateau()
+            plateau = creer_plateau()
+        if pions is None:
+            pions = {
+                'X': {(1, j) for j in range(1, 9)},
+                'O': {(8, j) for j in range(1, 9)}
+            }
         plateau_str = plateau_to_str(plateau)
-        pions_x_str = pions_to_str(pions['X'])
-        pions_o_str = pions_to_str(pions['O'])
+        pions_str = pions_to_str(pions)
+        # Envoi harmonisé : un seul pions_str
         sock.sendall((plateau_str + '\nENDPLATEAU\n').encode())
-        sock.sendall((pions_x_str + '\nENDPIONSX\n').encode())
-        sock.sendall((pions_o_str + '\nENDPIONSO\n').encode())
+        sock.sendall((pions_str + '\nENDPIONS\n').encode())
         joueurs = [Joueur(player_name_blanc, 'X'), Joueur(player_name_noir, 'O')]
         jeu = JeuKatarenga(plateau, joueurs, mode="reseau", sock=sock, is_host=is_host, noms_joueurs=[player_name_blanc, player_name_noir], root=root)
         jeu.pions = pions
@@ -546,34 +531,29 @@ def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, 
                 data = sock.recv(4096)
                 player_name_blanc_local = data.decode()[4:]
                 sock.sendall(f"nom:{player_name_noir}".encode())
-                def recv_until(sock, end_marker):
-                    data = b''
-                    while not data.decode(errors='ignore').endswith(end_marker):
+                def recv_until(sock, end_marker, leftover=b''):
+                    data = leftover
+                    while end_marker.encode() not in data:
                         part = sock.recv(1024)
                         if not part:
                             raise ConnectionError("Connexion interrompue lors de la réception des données réseau.")
                         data += part
-                    return data.decode().replace(end_marker, '').strip()
-                plateau_str = recv_until(sock, '\nENDPLATEAU\n')
-                pions_x_str = recv_until(sock, '\nENDPIONSX\n')
-                pions_o_str = recv_until(sock, '\nENDPIONSO\n')
+                    idx = data.index(end_marker.encode()) + len(end_marker)
+                    return data[:idx - len(end_marker)].decode().strip(), data[idx:]
+                plateau_str, leftover = recv_until(sock, '\nENDPLATEAU\n')
+                pions_str, leftover = recv_until(sock, '\nENDPIONS\n', leftover)
                 plateau_local = str_to_plateau(plateau_str)
-                pions_local = {
-                    'X': str_to_pions(pions_x_str),
-                    'O': str_to_pions(pions_o_str)
-                }
+                pions_local = str_to_pions(pions_str.strip())
                 def start_game():
                     if wait_win is not None:
                         wait_win.destroy()
                     joueurs = [Joueur(player_name_blanc_local, 'X'), Joueur(player_name_noir, 'O')]
                     jeu = JeuKatarenga(plateau_local, joueurs, pions=pions_local, mode="reseau", sock=sock, is_host=is_host, noms_joueurs=[player_name_blanc_local, player_name_noir], root=root)
                     jeu.afficher_plateau()
+                    jeu.update_info_joueur()
                     jeu.jouer()
                 root.after(0, start_game)
             except Exception as e:
-                import traceback
-                print("[ERREUR réseau client]", e)
-                traceback.print_exc()
                 from tkinter import messagebox
                 messagebox.showerror("Erreur réseau", f"Erreur lors de la connexion réseau côté client :\n{e}")
         threading.Thread(target=client_receive_and_start, daemon=True).start()

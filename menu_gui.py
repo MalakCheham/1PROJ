@@ -70,7 +70,7 @@ def show_menu(root=None, username=None, volume=None):
 
     """Choix des modes de jeu"""
     modes = [
-        ("Kataranga", "#e0e0e0", traduire("desc_katarenga"), "katarenga.png"),
+        ("Katarenga", "#e0e0e0", traduire("desc_katarenga"), "katarenga.png"),
         ("Congress", "#e0e0e0", traduire("desc_congress"), "congress.png"),
         ("Isolation", "#e0e0e0", traduire("desc_isolation"), "isolation.png")
     ]

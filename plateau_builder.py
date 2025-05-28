@@ -189,7 +189,7 @@ def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto", network
                 network_callback(plateau, None)
             else:
                 joueurs = [Joueur(0, 'X'), Joueur(1, 'O')]
-                if type_jeu in ("katarenga", "kataranga"):
+                if type_jeu == "katarenga":
                     JeuKatarenga(plateau, joueurs, root=root).jouer()
                 elif type_jeu == "congress":
                     JeuCongress(plateau, joueurs, root=root).jouer()
