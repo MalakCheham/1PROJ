@@ -356,7 +356,10 @@ def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, 
         if plateau is None or pions is None:
             from plateau_builder import creer_plateau
             plateau = creer_plateau()
+            # Initialisation correcte des pions pour Congress
             pions = {'X': set(), 'O': set()}
+            pions['X'].update([(0,1), (0,4), (1,7), (3,0), (4,7), (6,0), (7,3), (7,6)])
+            pions['O'].update([(0,3), (0,6), (1,0), (3,7), (4,0), (6,7), (7,1), (7,4)])
         plateau_str = plateau_to_str(plateau)
         pions_str = pions_to_str(pions)
         sock.sendall((plateau_str + '\nENDPLATEAU\n').encode())
