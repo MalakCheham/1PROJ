@@ -101,6 +101,7 @@ TRADUCTIONS = {
     "victoire_noir_plus_pions": {"fr": "{nom} a gagné : Noir n'a plus assez de pions.", "en": "{nom} won: Black does not have enough pawns."},
     "regles_du_jeu": {"fr": "Règles du jeu", "en": "Game rules"},
     "regles_katarenga": {"fr": "Règles de Katarenga", "en": "Katarenga rules"},
+    "regles_congress": {"fr": "Règles de Congress", "en": "Congress rules"},
     "objectif": {"fr": "Objectif :", "en": "Objective:"},
     "objectif_katarenga_1": {"fr": "Atteindre les deux camps adverses après avoir franchi sa ligne.", "en": "Reach both opponent's camps after crossing your line."},
     "objectif_katarenga_2": {"fr": "Capturer les pions adverses pour l'empêcher.", "en": "Capture opponent's pawns to prevent them."},

@@ -27,41 +27,17 @@ class JeuCongress:
         self.is_host = is_host
         self.noms_joueurs = noms_joueurs or ["Joueur Blanc", "Joueur Noir"]
         self.reseau = sock is not None
-
-        self.pions = {
-            'X': set(),
-            'O': set()
-        }
-        
+        self.pions = {'X': set(), 'O': set()}
         self.pions['X'].update([(0,1), (0,4), (1,7), (3,0), (4,7), (6,0), (7,3), (7,6)])
         self.pions['O'].update([(0,3), (0,6), (1,0), (3,7), (4,0), (6,7), (7,1), (7,4)])
-        
         self.tour = 0
         self.timer_seconds = 0
         self.timer_running = True
         self.selection = None
         self.root = root if root else tk.Tk()
         self.root.title("Congress")
-        self.root.configure(bg="#e6f2ff")
-
-        self.top_frame = tk.Frame(self.root, bg="#e6f2ff")
-        self.top_frame.pack(fill="x", pady=5, padx=5)
-
-        self.tour_label = tk.Label(self.top_frame, text="", font=("Helvetica", 12, "bold"), bg="#e6f2ff", fg="#003366")
-        self.tour_label.pack(side="top")
-
-        self.timer_label = tk.Label(self.top_frame, text="00:00", font=("Helvetica", 12, "bold"), bg="#e6f2ff", fg="#003366")
-        self.timer_label.pack(side="top")
-
-        self.canvas = tk.Canvas(self.root, width=400, height=400)
-        self.canvas.pack()
-        self.canvas.bind("<Button-1>", self.on_click)
-
-        self.load_and_pack_button("en-arriere.png", "<", self.top_frame, self.retour_menu, "left")
-        self.load_and_pack_button("point-dinterrogation.png", "?", self.top_frame, self.aide_popup, "right")
-        self.load_and_pack_button("fleche-pivotante-vers-la-gauche.png", "Rejouer", self.root, self.rejouer, "bottom", pady=10)
-
-        self.afficher_plateau()
+        self.root.configure(bg="#f0f4f0")
+        self.setup_ui()
         self.update_info_joueur()
         self.start_timer()
         if self.reseau:
@@ -69,6 +45,116 @@ class JeuCongress:
             threading.Thread(target=self.network_listener, daemon=True).start()
         else:
             self.canvas.bind("<Button-1>", self.on_click)
+
+    def setup_ui(self):
+        from core.langues import traduire
+        header_bg = "#e0e0e0"
+        header = tk.Frame(self.root, bg=header_bg, height=80)
+        header.pack(side="top", fill="x")
+
+        bienvenue = tk.Label(header, text="Congress", font=("Arial", 22, "bold"), bg=header_bg, fg="#5b7fce")
+        bienvenue.pack(side="left", padx=32, pady=18)
+
+        img = Image.open(os.path.join("assets", "lyrique.png")).convert("RGBA").resize((40, 40))
+        icon = ImageTk.PhotoImage(img, master=self.root)
+        self.icon = icon
+        btn_icon = tk.Button(header, image=self.icon, bg=header_bg, bd=0, relief="flat", cursor="hand2", activebackground=header_bg, highlightthickness=0)
+        btn_icon.image = self.icon
+        btn_icon.pack(side="right", padx=28, pady=12)
+        def show_logout_menu(event):
+            menu = tk.Menu(self.root, tearoff=0)
+            menu.add_command(label=traduire("a_propos"), command=lambda: messagebox.showinfo(traduire("a_propos"), traduire("a_propos_texte")))
+            menu.add_command(label=traduire("credits"), command=lambda: messagebox.showinfo(traduire("credits"), traduire("credits_texte")))
+            menu.add_separator()
+            def go_to_login():
+                import login
+                try:
+                    current_volume = self.root.volume_var.get()
+                except AttributeError:
+                    try:
+                        from core.musique import SoundBar
+                        current_volume = SoundBar.last_volume
+                    except Exception:
+                        current_volume = None
+                for w in self.root.winfo_children():
+                    w.destroy()
+                login.show_login(self.root, volume=current_volume)
+            menu.add_command(label=traduire("se_deconnecter"), command=go_to_login)
+            menu.add_command(label=traduire("fermer"), command=self.root.quit)
+            menu.tk_popup(event.x_root, event.y_root)
+        btn_icon.bind("<Button-1>", show_logout_menu)
+        # Barre de son
+        from core.musique import SoundBar, regler_volume
+        from core.parametres import LanguageSelector
+        initial_volume = 50
+        if hasattr(self.root, 'volume_var'):
+            try:
+                initial_volume = self.root.volume_var.get()
+            except Exception:
+                pass
+        else:
+            self.root.volume_var = tk.IntVar(value=initial_volume)
+        soundbar = SoundBar(self.root, volume_var=self.root.volume_var)
+        regler_volume(self.root.volume_var.get())
+        soundbar.place(relx=0.0, rely=1.0, anchor="sw", x=10, y=-10)
+
+        def on_language_changed(new_lang):
+            import importlib
+            import core.langues
+            importlib.reload(core.langues)
+            self.redraw_ui_only()
+        lang_selector = LanguageSelector(self.root, assets_dir="assets", callback=on_language_changed)
+        lang_selector.place(relx=1.0, rely=1.0, anchor="se", x=-18, y=-18)
+
+        # Zone centrale
+        main_frame = tk.Frame(self.root, bg="#f0f0f0")
+        main_frame.pack(pady=10, expand=True, fill="both")
+        # Frame latéral pour centrer le bouton retour verticalement
+        left_frame = tk.Frame(main_frame, bg="#f0f0f0")
+        left_frame.pack(side="left", fill="y", padx=(18, 0), pady=0)
+        img_retour = Image.open(os.path.join("assets", "en-arriere.png")).resize((48, 48))
+        if hasattr(self.root, 'tk'):
+            icon_retour = ImageTk.PhotoImage(img_retour, master=self.root)
+        else:
+            icon_retour = ImageTk.PhotoImage(img_retour)
+        self.icon_retour = icon_retour
+        def retour_config():
+            import config_gui
+            try:
+                current_volume = self.root.volume_var.get()
+            except Exception:
+                current_volume = None
+            for w in self.root.winfo_children():
+                w.destroy()
+            # Transmet le volume si la fonction l'accepte, sinon fallback
+            try:
+                config_gui.afficher_interface_choix(self.root, volume=current_volume)
+            except TypeError:
+                config_gui.afficher_interface_choix(self.root)
+        btn_retour = tk.Button(left_frame, image=self.icon_retour, command=retour_config, bg="#f0f0f0", bd=0, relief="flat", cursor="hand2", activebackground="#f0f0f0", highlightthickness=0)
+        btn_retour.image = icon_retour
+        btn_retour.pack(side="top", expand=True, anchor="center", pady=0)
+
+        self.tour_label = tk.Label(main_frame, text="", font=("Helvetica", 13, "bold"), bg="#f0f0f0", fg="#003366")
+        self.tour_label.place(relx=0.50, rely=0.08, anchor="center")
+        self.timer_label = tk.Label(main_frame, text="00:00", font=("Helvetica", 13, "bold"), bg="#f0f0f0", fg="#003366")
+        self.timer_label.place(relx=0.50, rely=0.15, anchor="center")
+        self.canvas = tk.Canvas(main_frame, width=400, height=400, bg="#f0f0f0", highlightthickness=0)
+        self.canvas.place(relx=0.5, rely=0.55, anchor="center")
+        self.load_and_pack_button("point-dinterrogation.png", "?", self.root, self.aide_popup, "bottom", pady=10)
+        self.load_and_pack_button("fleche-pivotante-vers-la-gauche.png", "Rejouer", self.root, self.rejouer, "bottom", pady=10)
+        self.update_info_joueur()
+        self.afficher_plateau()
+        self.canvas.bind("<Button-1>", self.on_click)
+        self.root.update_idletasks()
+        self.root.update()
+
+    def redraw_ui_only(self):
+        for widget in self.root.winfo_children():
+            widget.destroy()
+        self.setup_ui()
+        self.update_info_joueur()
+        self.afficher_plateau()
 
     def lock_ui_if_needed(self):
         if not self.reseau:
@@ -143,22 +229,16 @@ class JeuCongress:
         return self.joueurs[self.tour % 2]
 
     def update_info_joueur(self):
+        from core.langues import traduire
         if self.mode == "ia":
             if self.tour % 2 == 0:
-                self.tour_label.config(text="Tour du Joueur Noir (Humain)")
+                self.tour_label.config(text=f"{traduire('tour_de')} ({traduire('noir')})")
             else:
-                self.tour_label.config(text="Tour du Joueur Blanc (IA)")
+                self.tour_label.config(text=f"{traduire('tour_de')} ({traduire('blanc')})")
         else:
-            joueur = self.joueur_actuel()
-            # Affiche toujours 'Noir' au premier tour, puis alterne
-            if self.tour % 2 == 0:
-                couleur = 'Noir'
-            else:
-                couleur = 'Blanc'
-            if self.reseau and self.noms_joueurs:
-                self.tour_label.config(text=f"Tour de {self.noms_joueurs[self.tour % 2]} ({couleur})")
-            else:
-                self.tour_label.config(text=f"Tour du Joueur {couleur}")
+            couleur = 'noir' if self.tour % 2 == 0 else 'blanc'
+            nom = self.noms_joueurs[self.tour % 2] if self.noms_joueurs else f"Joueur {traduire(couleur)}"
+            self.tour_label.config(text=f"{traduire('tour_de')} ({traduire(couleur)})")
 
     def afficher_plateau(self):
         self.canvas.delete("all")
@@ -273,13 +353,14 @@ class JeuCongress:
             self.update_timer()
 
     def aide_popup(self):
+        from core.langues import traduire
         self.pause_timer()
         aide = tk.Toplevel(self.root)
-        aide.title("Règles du jeu")
+        aide.title(traduire("regles_du_jeu"))
         aide.geometry("400x400")
         aide.configure(bg="#f0f4f8")
 
-        tk.Label(aide, text="Règles de Congress", font=("Helvetica", 14, "bold"), bg="#f0f4f8", fg="#003366").pack(pady=10)
+        tk.Label(aide, text=traduire("regles_congress"), font=("Helvetica", 14, "bold"), bg="#f0f4f8", fg="#003366").pack(pady=10)
         text_widget = tk.Text(aide, wrap="word", bg="#f0f4f8", fg="#000000", font=("Helvetica", 10), bd=0)
         text_widget.pack(expand=True, fill="both", padx=10, pady=10)
         text_widget.insert("1.0", get_regles("congress"))
@@ -295,16 +376,26 @@ class JeuCongress:
         self.timer_running = False
         if hasattr(self, "timer_id"):
             self.root.after_cancel(self.timer_id)
-        self.root.destroy()
-        subprocess.Popen([sys.executable, "menu_gui.py"])
+        for w in self.root.winfo_children():
+            w.destroy()
+        import config_gui
+        config_gui.afficher_interface_choix(self.root)
 
     def rejouer(self):
         self.timer_running = False
         if hasattr(self, "timer_id"):
             self.root.after_cancel(self.timer_id)
-        self.root.destroy()
-        from plateau_builder import lancer_plateau_builder
-        lancer_plateau_builder("congress", self.mode)
+        # Réinitialise uniquement les pions
+        self.pions = {
+            'X': set([(0,1), (0,4), (1,7), (3,0), (4,7), (6,0), (7,3), (7,6)]),
+            'O': set([(0,3), (0,6), (1,0), (3,7), (4,0), (6,7), (7,1), (7,4)])
+        }
+        self.tour = 0
+        self.timer_seconds = 0
+        self.selection = None
+        self.coups_possibles = set()
+        self.redraw_ui_only()
+        self.start_timer()
 
     def generer_coups_possibles(self, depart, couleur, symbole):
         return generer_coups_possibles(depart, couleur, symbole, self.plateau, self.pions, capture=False)
