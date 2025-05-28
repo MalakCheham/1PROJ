@@ -14,18 +14,11 @@ try:
 except ImportError:
     charger_quadrants_personnalises = None
 
-def creer_plateau(type_jeu="katarenga"):
+def creer_plateau():
     couleurs = ['R', 'J', 'B', 'V']
     plateau = Plateau()
     plateau.cases = [[random.choice(couleurs) for _ in range(8)] for _ in range(8)]
-    if type_jeu == "katarenga":
-        pions = {
-            'X': {(0, j) for j in range(8)},
-            'O': {(7, j) for j in range(8)}
-        }
-    else:
-        pions = {}
-    return plateau, pions
+    return plateau
 
 def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto", network_callback=None, root=None):
     if root is None:
@@ -112,10 +105,10 @@ def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto", network
         import importlib
         import core.langues
         importlib.reload(core.langues)
-        afficher_plateau_ui(root, type_jeu, plateau, pions, mode_ia, plateau_mode, network_callback, current_volume, username)
+        afficher_plateau_ui(root, type_jeu, plateau, mode_ia, plateau_mode, network_callback, current_volume, username)
 
     """Show UI sans génération de plateau"""
-    def afficher_plateau_ui(root, type_jeu, plateau, pions, mode_ia, plateau_mode, network_callback, volume, username):
+    def afficher_plateau_ui(root, type_jeu, plateau, mode_ia, plateau_mode, network_callback, volume, username):
         
         for widget in root.winfo_children():
             widget.destroy()
@@ -174,7 +167,10 @@ def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto", network
         main_frame = tk.Frame(root, bg="#f0f4f0")
         main_frame.place(relx=0.5, rely=0.5, anchor="center")
 
-        tk.Label(main_frame, text=traduire("plateau_genere"), font=("Helvetica", 16, "bold"), bg="#f0f4f0").pack(pady=10)
+        if hasattr(root, 'label_plateau_genere') and root.label_plateau_genere.winfo_exists():
+            root.label_plateau_genere.destroy()
+        root.label_plateau_genere = tk.Label(main_frame, text=traduire("plateau_genere"), font=("Helvetica", 16, "bold"), bg="#f0f4f0")
+        root.label_plateau_genere.pack(pady=10)
 
         canvas = tk.Canvas(main_frame, width=400, height=400, bg="#f0f4f0", highlightthickness=0)
         canvas.pack()
@@ -183,35 +179,26 @@ def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto", network
         for i in range(8):
             for j in range(8):
                 couleur = plateau.cases[i][j] if hasattr(plateau, 'cases') else plateau.lire(i, j)
-                fill = {
-                    'R': '#ff9999', 'J': '#ffffb3',
-                    'B': '#99ccff', 'V': '#b3ffb3'
-                }.get(couleur, 'white')
+                fill = {'R': '#ff9999', 'J': '#ffffb3', 'B': '#99ccff', 'V': '#b3ffb3'}.get(couleur, 'white')
                 canvas.create_rectangle(j*taille, i*taille, (j+1)*taille, i*taille + taille, fill=fill, outline="black")
 
-        def lancer_partie(pions=pions):
+        def lancer_partie():
             for widget in root.winfo_children():
                 widget.destroy()
             if network_callback:
-                network_callback(plateau, pions)
+                network_callback(plateau)
             else:
                 joueurs = [Joueur(0, 'X'), Joueur(1, 'O')]
                 if type_jeu in ("katarenga", "kataranga"):
-                    if not pions or not ('X' in pions and 'O' in pions):
-                        pions = {
-                            'X': {(0, j) for j in range(8)},
-                            'O': {(7, j) for j in range(8)}
-                        }
-                    JeuKatarenga(plateau, joueurs, pions=pions, root=root).jouer()
+                    JeuKatarenga(plateau, joueurs, root=root).jouer()
                 elif type_jeu == "congress":
-                    JeuCongress(plateau, joueurs, pions, root=root).jouer()
+                    JeuCongress(plateau, joueurs, root=root).jouer()
                 elif type_jeu == "isolation":
                     JeuIsolation(plateau, joueurs, root=root).jouer()
 
         btns_frame = tk.Frame(main_frame, bg="#f0f4f0")
         btns_frame.pack(pady=15)
-        btn = tk.Button(btns_frame, text=traduire("play"), command=lancer_partie,
-                        bg="#4CAF50", fg="white", font=("Helvetica", 12, "bold"), width=15, relief="flat")
+        btn = tk.Button(btns_frame, text=traduire("play"), command=lancer_partie, bg="#4CAF50", fg="white", font=("Helvetica", 12, "bold"), width=15, relief="flat")
         btn.pack(side="left", padx=5)
 
         """Bouton retour"""
@@ -227,9 +214,9 @@ def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto", network
         btn_retour.image = icon_retour
         btn_retour.place(relx=0.0, rely=0.5, anchor="w", x=18)
 
-    """Génération du plateau && pions"""
+    """Génération du plateau"""
     if plateau_mode == "auto" or charger_quadrants_personnalises is None:
-        plateau, pions = creer_plateau(type_jeu)
+        plateau = creer_plateau()
     else:
         plateau = Plateau()
         quadrants = charger_quadrants_personnalises(os.path.join("assets", "quadrants_custom"))
@@ -240,16 +227,9 @@ def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto", network
                 for dx in range(4):
                     for dy in range(4):
                         plateau.cases[positions[i][0] + dx][positions[i][1] + dy] = bloc[dx][dy]
-        if type_jeu == "katarenga":
-            pions = {
-                'X': {(0, j) for j in range(8)},
-                'O': {(7, j) for j in range(8)}
-            }
-        else:
-            pions = {}
     
 
-    afficher_plateau_ui(root, type_jeu, plateau, pions, mode_ia, plateau_mode, network_callback, initial_volume, username)
+    afficher_plateau_ui(root, type_jeu, plateau, mode_ia, plateau_mode, network_callback, initial_volume, username)
     
     """Langues"""
     def on_language_changed(new_lang):
@@ -260,7 +240,7 @@ def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto", network
         import importlib
         import core.langues
         importlib.reload(core.langues)
-        afficher_plateau_ui(root, type_jeu, plateau, pions, mode_ia, plateau_mode, network_callback, current_volume, username)
+        afficher_plateau_ui(root, type_jeu, plateau, mode_ia, plateau_mode, network_callback, current_volume, username)
 
 
     if own_root:

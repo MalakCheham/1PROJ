@@ -16,7 +16,7 @@ jouer_musique()
 
 class JeuCongress:
     def __init__(self, plateau, joueurs, mode="1v1", sock=None, is_host=False, noms_joueurs=None, root=None):
-        # Nettoyer le root si fourni
+
         if root:
             for widget in root.winfo_children():
                 widget.destroy()
@@ -27,7 +27,7 @@ class JeuCongress:
         self.is_host = is_host
         self.noms_joueurs = noms_joueurs or ["Joueur Blanc", "Joueur Noir"]
         self.reseau = sock is not None
-        # Placement initial demandé par l'utilisateur
+
         self.pions = {
             'X': set(),
             'O': set()

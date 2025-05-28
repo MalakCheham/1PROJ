@@ -90,4 +90,8 @@ TRADUCTIONS = {
     "mode_reseau_client": {"fr": "Réseau (Client)", "en": "Network (Client)"},
     "tour_de": {"fr": "Tour de", "en": "Turn of"},
     "pions_restants": {"fr": "Pions Restants", "en": "Remaining Pawns"},
+    "incomplet": {"fr": "Incomplet", "en": "Incomplete"},
+    "toutes_cases_colorees": {"fr": "Toutes les cases doivent être colorées.", "en": "All squares must be colored."},
+    "quatre_quadrants_prets": {"fr": "Les 4 quadrants sont prêts. Cliquez sur 'Jouer avec ces quadrants'.", "en": "The 4 quadrants are ready. Click on 'Play with these quadrants'."},
+    "quadrant_num": {"fr": "Quadrant {num}/4", "en": "Quadrant {num}/4"},
 }

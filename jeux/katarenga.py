@@ -13,13 +13,11 @@ from tkinter import messagebox
 jouer_musique()
 
 class JeuKatarenga:
-    def __init__(self, plateau, joueurs, pions=None, mode="1v1", root=None, sock=None, is_host=False, noms_joueurs=None):
-        # Clean up root if provided
+    def __init__(self, plateau, joueurs, mode="1v1", root=None, sock=None, is_host=False, noms_joueurs=None):
         if root:
             for widget in root.winfo_children():
                 widget.destroy()
                
-        # Basic setup
         self.plateau = plateau
         self.joueurs = joueurs
         self.mode = mode
@@ -27,52 +25,42 @@ class JeuKatarenga:
         self.is_host = is_host
         self.noms_joueurs = noms_joueurs or ["Joueur Blanc", "Joueur Noir"]
         self.root = root if root else tk.Tk()
-       
-        # Game state
-        if pions is not None:
-            self.pions = pions
-        else:
-            # Par défaut : ligne 0 = blancs, ligne 7 = noirs
-            self.pions = {'X': {(0, j) for j in range(8)}, 'O': {(7, j) for j in range(8)}}
+        self.pions = {'X': {(0, j) for j in range(8)}, 'O': {(7, j) for j in range(8)}}
         self.tour = 0
         self.timer_seconds = 0
         self.timer_running = True
         self.selection = None
         self.coups_possibles = set()
  
-        # UI Setup
         self.root.title("Katarenga")
-        self.root.configure(bg="#f0f4f8")  # Harmonise le fond avec plateau_builder
+        self.root.configure(bg="#f0f4f8") 
  
         self.setup_ui()
         self.start_timer()
  
-        # Network setup
         if self.sock:
             self.setup_network()
  
     def setup_ui(self):
-        # --- HEADER ---
         header_bg = "#e0e0e0"
         header = tk.Frame(self.root, bg=header_bg, height=80)
         header.pack(side="top", fill="x")
         from core.langues import traduire
         username = getattr(self.root, 'USERNAME', None)
-        # Afficher le nom du jeu dans le header
+
         bienvenue = tk.Label(header, text="Katarenga", font=("Arial", 22, "bold"), bg=header_bg, fg="#5b7fce")
         bienvenue.pack(side="left", padx=32, pady=18)
-        # Utilise le bon master pour les images si root transmis
+
         img = Image.open(os.path.join("assets", "lyrique.png")).convert("RGBA").resize((40, 40))
         if hasattr(self.root, 'tk'):
             icon = ImageTk.PhotoImage(img, master=self.root)
         else:
             icon = ImageTk.PhotoImage(img)
-        self.icon = icon  # Empêche le garbage collection
+        self.icon = icon 
         btn_icon = tk.Button(header, image=self.icon, bg=header_bg, bd=0, relief="flat", cursor="hand2", activebackground=header_bg, highlightthickness=0)
         btn_icon.image = self.icon
         btn_icon.pack(side="right", padx=28, pady=12)
 
-        # Sous-menu (about, credits, logout, close)
         from tkinter import messagebox
         def show_logout_menu(event):
             menu = tk.Menu(self.root, tearoff=0)
@@ -97,7 +85,6 @@ class JeuKatarenga:
             menu.tk_popup(event.x_root, event.y_root)
         btn_icon.bind("<Button-1>", show_logout_menu)
 
-        # --- SoundBar & LanguageSelector ---
         from core.musique import SoundBar, regler_volume
         from core.parametres import LanguageSelector
         volume_transmis = getattr(self.root, 'VOLUME', None)
@@ -126,16 +113,14 @@ class JeuKatarenga:
             import importlib
             import core.langues
             importlib.reload(core.langues)
-            # Re-affiche juste l'UI sans regénérer la partie
+            
             self.redraw_ui_only()
         lang_selector = LanguageSelector(self.root, assets_dir="assets", callback=on_language_changed)
         lang_selector.place(relx=1.0, rely=1.0, anchor="se", x=-18, y=-18)
 
-        # --- Main Frame ---
         main_frame = tk.Frame(self.root, bg="#f0f4f0")
         main_frame.pack(pady=10)
 
-        # Labels harmonisés
         self.tour_label = tk.Label(main_frame, text="", font=("Helvetica", 13, "bold"), bg="#f0f4f0", fg="#003366")
         self.tour_label.pack(pady=(0,2))
         self.pions_restants_label = tk.Label(main_frame, text="", font=("Helvetica", 11), bg="#f0f4f0", fg="#003366")
@@ -143,11 +128,9 @@ class JeuKatarenga:
         self.timer_label = tk.Label(main_frame, text="00:00", font=("Helvetica", 13, "bold"), bg="#f0f4f0", fg="#003366")
         self.timer_label.pack(pady=(0,2))
 
-        # Game canvas
         self.canvas = tk.Canvas(main_frame, width=400, height=400, bg="#f0f4f0", highlightthickness=0)
         self.canvas.pack()
 
-        # Bouton retour (vers config_ui)
         def retour_config():
             import config_gui
             try:
@@ -167,12 +150,12 @@ class JeuKatarenga:
             icon_retour = ImageTk.PhotoImage(img_retour, master=self.root)
         else:
             icon_retour = ImageTk.PhotoImage(img_retour)
-        self.icon_retour = icon_retour  # Empêche le garbage collection
+        self.icon_retour = icon_retour
         btn_retour = tk.Button(self.root, image=self.icon_retour, command=retour_config, bg="#f0f4f0", bd=0, relief="flat", cursor="hand2", activebackground="#e0e0e0")
         btn_retour.image = self.icon_retour
         btn_retour.place(relx=0.0, rely=0.5, anchor="w", x=18)
 
-        # Boutons aide et rejouer (en bas)
+        
         self.load_and_pack_button("point-dinterrogation.png", "?", self.root, self.aide_popup, "bottom", pady=10)
         self.load_and_pack_button("fleche-pivotante-vers-la-gauche.png", "Rejouer", self.root, self.rejouer, "bottom", pady=10)
 
@@ -192,45 +175,39 @@ class JeuKatarenga:
         self.afficher_plateau()
 
     def setup_network(self):
-        # Start network listener thread
         threading.Thread(target=self.network_listener, daemon=True).start()
-       
-        # Set up initial UI state based on player role
         self.lock_ui_if_needed()
- 
+
     def network_listener(self):
         while True:
             try:
                 if not self.sock:
                     break
-                   
+
                 data = self.sock.recv(1024)
                 if not data:
                     break
-                   
+
                 msg = data.decode()
                 if msg.startswith('move:'):
-                    # Parse move data
                     coords = msg[5:].split('->')
                     depart = tuple(map(int, coords[0].split(',')))
                     arrivee = tuple(map(int, coords[1].split(',')))
-                   
-                    # Apply move on UI thread
+
                     self.root.after(0, lambda: self.apply_network_move(depart, arrivee))
             except Exception as e:
                 print(f"Network error: {e}")
                 break
- 
+
     def lock_ui_if_needed(self):
         if not self.sock:
             return
-           
         mon_symbole = 'X' if self.is_host else 'O'
         if (self.tour % 2 == 0 and mon_symbole != 'X') or (self.tour % 2 == 1 and mon_symbole != 'O'):
             self.canvas.unbind("<Button-1>")
         else:
             self.canvas.bind("<Button-1>", self.on_click)
- 
+
     def send_move(self, depart, arrivee):
         if self.sock:
             try:
@@ -239,34 +216,28 @@ class JeuKatarenga:
             except Exception as e:
                 print(f"Error sending move: {e}")
                 messagebox.showerror("Error", "Failed to send move to other player")
- 
+
     def apply_network_move(self, depart, arrivee):
-        # Get current player
         joueur = self.joueur_actuel()
         symbole = joueur.symbole
- 
-        # Check for piece at destination
+
         piece_arrivee = next((s for s in ['X', 'O'] if arrivee in self.pions[s]), None)
-       
-        # Handle capture (after first turn)
+
         if piece_arrivee and self.tour > 0:
             self.pions[piece_arrivee].discard(arrivee)
- 
-        # Move piece
+
         self.pions[symbole].discard(depart)
         self.pions[symbole].add(arrivee)
- 
-        # Update game state
+
         self.tour += 1
         self.selection = None
         self.coups_possibles = set()
- 
-        # Update UI
+
         self.afficher_plateau()
         self.update_info_joueur()
         self.verifier_victoire()
         self.lock_ui_if_needed()
- 
+
     def load_and_pack_button(self, image_path, text, parent, command, side="top", padx=5, pady=5):
         try:
             img = Image.open(os.path.join("assets", image_path)).resize((24, 24) if "arriere" in image_path or "interrogation" in image_path else (32, 32))
@@ -276,14 +247,20 @@ class JeuKatarenga:
         except:
             btn = tk.Button(parent, text=text, command=command, bg="#e6f2ff", bd=0)
         btn.pack(side=side, padx=padx, pady=pady)
- 
+
     def joueur_actuel(self):
         return self.joueurs[self.tour % 2]
- 
+
     def update_info_joueur(self):
         from core.langues import traduire
-        couleur = 'blanc' if self.tour % 2 == 0 else 'noir'
+
+        if self.tour % 2 == 0:
+            couleur = 'noir'
+        else:
+            couleur = 'blanc'
+        
         nom = self.noms_joueurs[self.tour % 2] if self.noms_joueurs else f"Joueur {traduire(couleur)}"
+
         self.tour_label.config(text=f"{traduire('tour_de')} ({traduire(couleur)})")
         pions_x_restants = len(self.pions['X'])
         pions_o_restants = len(self.pions['O'])
@@ -304,12 +281,12 @@ class JeuKatarenga:
                     self.canvas.create_rectangle(j * taille, i * taille, (j + 1) * taille, (i + 1) * taille, outline='blue', width=3)
                 if (i, j) in self.coups_possibles:
                     self.canvas.create_oval(j * taille + 20, i * taille + 20, (j + 1) * taille - 20, (i + 1) * taille - 20, fill='lightgreen')
- 
+
     def on_click(self, event):
         ligne, colonne = event.y // 50, event.x // 50
         joueur, symbole = self.joueur_actuel(), self.joueur_actuel().symbole
         position_cliquee = (ligne, colonne)
- 
+
         if self.selection is None:
             if position_cliquee in self.pions[symbole]:
                 self.selection = position_cliquee
@@ -320,7 +297,7 @@ class JeuKatarenga:
             depart, arrivee = self.selection, position_cliquee
             couleur_depart = self.plateau.cases[depart[0]][depart[1]]
             piece_arrivee = next((s for s in ['X', 'O'] if arrivee in self.pions[s]), None)
- 
+
             if arrivee in self.coups_possibles:
                 if piece_arrivee and self.tour > 0:
                     self.pions[piece_arrivee].discard(arrivee)
@@ -346,7 +323,7 @@ class JeuKatarenga:
                     couleur_depart = self.plateau.cases[self.selection[0]][self.selection[1]]
                     self.coups_possibles = self.generer_coups_possibles(self.selection, couleur_depart, symbole)
                     self.afficher_plateau()
- 
+
     def generer_coups_possibles(self, depart, couleur, symbole):
         coups = set()
         for i in range(8):
@@ -355,21 +332,21 @@ class JeuKatarenga:
                 piece_arrivee = next((s for s in ['X', 'O'] if arrivee in self.pions[s]), None)
                 if piece_arrivee is None or piece_arrivee != symbole:
                     mouvement_valide = (couleur == 'B' and self.est_mouvement_roi(depart, arrivee)) or \
-                                       (couleur == 'V' and self.est_mouvement_cavalier(depart, arrivee)) or \
-                                       (couleur == 'J' and self.est_mouvement_fou(depart, arrivee)) or \
-                                       (couleur == 'R' and self.est_mouvement_tour(depart, arrivee))
+                        (couleur == 'V' and self.est_mouvement_cavalier(depart, arrivee)) or \
+                            (couleur == 'J' and self.est_mouvement_fou(depart, arrivee)) or \
+                                (couleur == 'R' and self.est_mouvement_tour(depart, arrivee))
                     if mouvement_valide:
                         coups.add(arrivee)
         return coups
- 
+
     def est_mouvement_roi(self, depart, arrivee):
         dl, dc = abs(arrivee[0] - depart[0]), abs(arrivee[1] - depart[1])
         return dl <= 1 and dc <= 1 and (dl != 0 or dc != 0)
- 
+
     def est_mouvement_cavalier(self, depart, arrivee):
         dl, dc = abs(arrivee[0] - depart[0]), abs(arrivee[1] - depart[1])
         return (dl == 2 and dc == 1) or (dl == 1 and dc == 2)
- 
+
     def est_mouvement_fou(self, depart, arrivee):
         if abs(arrivee[0] - depart[0]) != abs(arrivee[1] - depart[1]):
             return False
@@ -383,7 +360,7 @@ class JeuKatarenga:
             l += sl
             c += sc
         return self.plateau.cases[arrivee[0]][arrivee[1]] == 'J'
- 
+
     def est_mouvement_tour(self, depart, arrivee):
         if depart[0] != arrivee[0] and depart[1] != arrivee[1]:
             return False
@@ -397,7 +374,7 @@ class JeuKatarenga:
             l += sl
             c += sc
         return self.plateau.cases[arrivee[0]][arrivee[1]] == 'R'
- 
+
     def verifier_victoire(self):
         joueur = self.joueur_actuel()
         ligne_victoire = 7 if joueur.symbole == 'X' else 0
@@ -429,15 +406,14 @@ class JeuKatarenga:
             except Exception:
                 current_volume = None
         login.show_login(self.root, volume=current_volume)
- 
+
     def start_timer(self):
         self.timer_running = True
         self.update_timer()
- 
+
     def update_timer(self):
         if not self.timer_running or not self.root.winfo_exists():
             return
-        # Vérifie que le label existe avant de le mettre à jour
         try:
             minutes, seconds = divmod(self.timer_seconds, 60)
             if self.timer_label.winfo_exists():
@@ -445,55 +421,58 @@ class JeuKatarenga:
             self.timer_seconds += 1
             self.timer_id = self.root.after(1000, self.update_timer)
         except tk.TclError:
-            # Le label ou la fenêtre a été détruit, on arrête le timer
             self.timer_running = False
             return
- 
+
     def pause_timer(self):
         self.timer_running = False
- 
+
     def reprendre_timer(self):
         if not self.timer_running:
             self.timer_running = True
             self.update_timer()
- 
+
     def retour_menu(self):
         self.timer_running = False
         if hasattr(self, "timer_id"):
             self.root.after_cancel(self.timer_id)
         self.root.destroy()
         subprocess.Popen([sys.executable, "menu_gui.py"])
- 
+
     def aide_popup(self):
         self.pause_timer()
         aide = tk.Toplevel(self.root)
         aide.title("Règles du jeu")
         aide.geometry("400x400")
         aide.configure(bg="#f0f4f8")
- 
+
         tk.Label(aide, text="Règles de Katarenga", font=("Helvetica", 14, "bold"), bg="#f0f4f8", fg="#003366").pack(pady=10)
         text_widget = tk.Text(aide, wrap="word", bg="#f0f4f8", fg="#000000", font=("Helvetica", 10), bd=0)
         text_widget.pack(expand=True, fill="both", padx=10, pady=10)
         text_widget.insert("1.0", get_regles("katarenga"))
         text_widget.configure(state="disabled")
- 
+
         def on_close():
             self.reprendre_timer()
             aide.destroy()
- 
+
         aide.protocol("WM_DELETE_WINDOW", on_close)
- 
+
     def rejouer(self):
         self.timer_running = False
         if hasattr(self, "timer_id"):
             self.root.after_cancel(self.timer_id)
-        self.root.destroy()
-        from plateau_builder import lancer_plateau_builder
-        lancer_plateau_builder("katarenga", self.mode)
- 
+        self.pions = {'X': {(0, j) for j in range(8)}, 'O': {(7, j) for j in range(8)}}
+        self.tour = 0
+        self.timer_seconds = 0
+        self.selection = None
+        self.coups_possibles = set()
+        self.redraw_ui_only()
+        self.start_timer()
+
     def jouer(self):
         self.root.mainloop()
- 
+
 def plateau_to_str(plateau):
     return '\n'.join(''.join(row) for row in plateau.cases)
 def pions_to_str(pions):
@@ -509,18 +488,16 @@ def str_to_pions(s):
     if not s:
         return set()
     return set(tuple(map(int, pos.split(','))) for pos in s.split(';'))
- 
+
 def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, plateau=None, pions=None, wait_win=None):
     import threading
     if is_host:
         sock.sendall(f"nom:{player_name_blanc}".encode())
         data = sock.recv(4096)
         player_name_noir = data.decode()[4:]
-        # Générer ou utiliser le plateau/pions
         if plateau is None or pions is None:
             from plateau_builder import creer_plateau
             plateau, pions = creer_plateau()
-        # Envoyer le plateau et les pions sous forme texte
         plateau_str = plateau_to_str(plateau)
         pions_x_str = pions_to_str(pions['X'])
         pions_o_str = pions_to_str(pions['O'])
@@ -569,7 +546,7 @@ def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, 
                 from tkinter import messagebox
                 messagebox.showerror("Erreur réseau", f"Erreur lors de la connexion réseau côté client :\n{e}")
         threading.Thread(target=client_receive_and_start, daemon=True).start()
- 
+
 if __name__ == '__main__':
     plateau = Plateau()
     joueurs = [Joueur("Joueur 1", 'O'), Joueur("Joueur 2", 'X')]

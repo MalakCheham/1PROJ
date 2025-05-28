@@ -52,16 +52,14 @@ class LoginScreen(tk.Frame):
         logo_frame = tk.Frame(center_frame, bg="#f0f0f0")
         logo_frame.pack(pady=(30, 10))
         
-        img = Image.open(os.path.join(ASSETS_DIR, "logo.png")).resize((180, 180))
-        logo_img = ImageTk.PhotoImage(img)
-        lbl = tk.Label(logo_frame, image=logo_img, bg="#f0f0f0")
-        lbl.image = logo_img
-        lbl.pack()
+        image = Image.open(os.path.join(ASSETS_DIR, "logo.png")).resize((180, 180))
+        logo_img = ImageTk.PhotoImage(image)
+        label = tk.Label(logo_frame, image=logo_img, bg="#f0f0f0")
+        label.image = logo_img
+        label.pack()
 
-        tk.Label(center_frame, text=traduire("bienvenue_portail"),
-                 font=("Arial", 18, "bold"), bg="#f0f0f0", fg="#004d99").pack(pady=10)
-        tk.Label(center_frame, text=traduire("entrez_nom_utilisateur"),
-                 font=("Arial", 13), bg="#f0f0f0").pack(pady=10)
+        tk.Label(center_frame, text=traduire("bienvenue_portail"), font=("Arial", 18, "bold"), bg="#f0f0f0", fg="#004d99").pack(pady=10)
+        tk.Label(center_frame, text=traduire("entrez_nom_utilisateur"), font=("Arial", 13), bg="#f0f0f0").pack(pady=10)
 
         self.username_var = tk.StringVar()
         entry = tk.Entry(center_frame, textvariable=self.username_var,
@@ -72,15 +70,15 @@ class LoginScreen(tk.Frame):
         entry.pack(ipady=6, ipadx=2)
         entry.focus_set()
 
-        btn = tk.Button(center_frame, text=traduire("entrez_portail"),
+        button = tk.Button(center_frame, text=traduire("entrez_portail"),
                         font=("Arial", 13, "bold"), bg="#219150", fg="white",
                         activebackground="#19713c", activeforeground="white",
                         width=20, height=2, bd=0, relief="flat",  # 'flat' pour compatibilité Mac
                         highlightthickness=1, highlightbackground="#19713c",
                         cursor="hand2", command=self.enter_portal)
-        btn.pack(pady=30, ipadx=2, ipady=2)
-        btn.bind("<Enter>", lambda e: btn.configure(bg="#19713c"))
-        btn.bind("<Leave>", lambda e: btn.configure(bg="#219150"))
+        button.pack(pady=30, ipadx=2, ipady=2)
+        button.bind("<Enter>", lambda e: button.configure(bg="#19713c"))
+        button.bind("<Leave>", lambda e: button.configure(bg="#219150"))
 
         self.build_sound_controls()
         self.build_language_selector()
@@ -126,8 +124,8 @@ class LoginScreen(tk.Frame):
 
 def show_login(root=None, volume=None):
     if root:
-        for w in root.winfo_children():
-            w.destroy()
+        for widget in root.winfo_children():
+            widget.destroy()
         screen = LoginScreen(master=root, volume=volume)
     else:
         screen = LoginScreen(volume=volume)

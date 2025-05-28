@@ -25,7 +25,7 @@ class JeuIsolation:
         self.tour = 0
         self.timer_seconds = 0
         self.timer_running = True
-        self.pions = {'X': set(), 'O': set()}  # Ajout pour gestion des pions posés
+        self.pions = {'X': set(), 'O': set()}
         self.sock = sock
         self.is_host = is_host
         self.noms_joueurs = noms_joueurs or ["Joueur Blanc", "Joueur Noir"]
