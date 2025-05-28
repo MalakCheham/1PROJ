@@ -8,7 +8,7 @@ TRADUCTIONS = {
     "langue": {"fr": "Langue", "en": "Language"},
     "langue_fr": {"fr": "FR", "en": "FR"},
     "langue_en": {"fr": "EN", "en": "EN"},
-    "jouer_katarenga": {"fr": "KATARANGA", "en": "KATARANGA"},
+    "jouer_katarenga": {"fr": "KATARENGA", "en": "KATARENGA"},
     "jouer_congress": {"fr": "CONGRESS", "en": "CONGRESS"},
     "jouer_isolation": {"fr": "ISOLATION", "en": "ISOLATION"},
     "mode_1v1": {"fr": "1 VS 1", "en": "1 VS 1"},
