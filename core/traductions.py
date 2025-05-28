@@ -102,6 +102,7 @@ TRADUCTIONS = {
     "regles_du_jeu": {"fr": "Règles du jeu", "en": "Game rules"},
     "regles_katarenga": {"fr": "Règles de Katarenga", "en": "Katarenga rules"},
     "regles_congress": {"fr": "Règles de Congress", "en": "Congress rules"},
+    "regles_isolation": {"fr": "Règles d'Isolation", "en": "Isolation rules"},
     "objectif": {"fr": "Objectif :", "en": "Objective:"},
     "objectif_katarenga_1": {"fr": "Atteindre les deux camps adverses après avoir franchi sa ligne.", "en": "Reach both opponent's camps after crossing your line."},
     "objectif_katarenga_2": {"fr": "Capturer les pions adverses pour l'empêcher.", "en": "Capture opponent's pawns to prevent them."},
@@ -127,4 +128,8 @@ TRADUCTIONS = {
     "en_prise_def": {"fr": "Une case est en prise si un pion adverse pourrait y aller selon sa couleur.", "en": "A square is threatened if an opponent's pawn could reach it according to its color."},
     "pas_capture_pas_deplacement": {"fr": "Pas de capture, pas de déplacement : uniquement la pose de pions.", "en": "No capture, no movement: only pawn placement."},
     "aucune_regle": {"fr": "Aucune règle disponible pour ce jeu.", "en": "No rules available for this game."},
+    "case_occupee": {"fr": "Cette case est déjà occupée.", "en": "This square is already occupied."},
+    "case_bloquee": {"fr": "La case est bloquée par un pion déjà posé.", "en": "The square is blocked by an already placed pawn."},
+    "joueur": {"fr": "Joueur", "en": "Player"},
+    "a_gagne": {"fr": "a gagné", "en": "won"},
 }

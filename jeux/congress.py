@@ -305,13 +305,11 @@ class JeuCongress:
             self.lock_ui_if_needed()
 
     def verifier_victoire(self):
-        # Le but : tous les pions d'un joueur forment un bloc connexe orthogonalement
         joueur = self.joueur_actuel()
         symbole = joueur.symbole
         positions = self.pions[symbole]
         if not positions:
             return
-        # Parcours en largeur pour vérifier la connexité
         from collections import deque
         visited = set()
         queue = deque([next(iter(positions))])
@@ -327,8 +325,8 @@ class JeuCongress:
         if len(visited) == len(positions):
             self.pause_timer()
             couleur = 'Blanc' if joueur.symbole == 'X' else 'Noir'
-            nom = getattr(joueur, 'nom', str(joueur))
-            messagebox.showinfo("Victoire", f"Joueur {nom} ({couleur}) a gagné !")
+            from core.langues import traduire
+            messagebox.showinfo(traduire("victoire"), f"{traduire('joueur')} ({traduire(couleur.lower())}) {traduire('a_gagne')} !")
             self.reprendre_timer()
             self.rejouer()
 

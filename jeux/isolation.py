@@ -16,7 +16,6 @@ jouer_musique()
 
 class JeuIsolation:
     def __init__(self, plateau, joueurs, mode="1v1", sock=None, is_host=False, noms_joueurs=None, root=None):
-        # Nettoyer le root si fourni
         if root:
             for widget in root.winfo_children():
                 widget.destroy()
@@ -33,26 +32,8 @@ class JeuIsolation:
         self.reseau = sock is not None
         self.root = root if root else tk.Tk()
         self.root.title("Isolation")
-        self.root.configure(bg="#e6f2ff")
-
-        self.top_frame = tk.Frame(self.root, bg="#e6f2ff")
-        self.top_frame.pack(fill="x", pady=5, padx=5)
-
-        self.tour_label = tk.Label(self.top_frame, text="", font=("Helvetica", 12, "bold"), bg="#e6f2ff", fg="#003366")
-        self.tour_label.pack(side="top")
-
-        self.timer_label = tk.Label(self.top_frame, text="00:00", font=("Helvetica", 12, "bold"), bg="#e6f2ff", fg="#003366")
-        self.timer_label.pack(side="top")
-
-        self.canvas = tk.Canvas(self.root, width=400, height=400)
-        self.canvas.pack()
-        self.canvas.bind("<Button-1>", self.on_click)
-
-        self.load_and_pack_button("en-arriere.png", "<", self.top_frame, self.retour_menu, "left")
-        self.load_and_pack_button("point-dinterrogation.png", "?", self.top_frame, self.aide_popup, "right")
-        self.load_and_pack_button("fleche-pivotante-vers-la-gauche.png", "Rejouer", self.root, self.rejouer, "bottom", pady=10)
-
-        self.afficher_plateau()
+        self.root.configure(bg="#f0f0f0")
+        self.setup_ui()
         self.update_info_joueur()
         self.start_timer()
         if self.reseau:
@@ -60,6 +41,111 @@ class JeuIsolation:
             threading.Thread(target=self.network_listener, daemon=True).start()
         else:
             self.canvas.bind("<Button-1>", self.on_click)
+
+    def setup_ui(self):
+        from core.langues import traduire
+        header_bg = "#e0e0e0"
+        self.root.configure(bg="#f0f0f0")
+        header = tk.Frame(self.root, bg=header_bg, height=80)
+        header.pack(side="top", fill="x")
+        bienvenue = tk.Label(header, text="Isolation", font=("Arial", 22, "bold"), bg=header_bg, fg="#5b7fce")
+        bienvenue.pack(side="left", padx=32, pady=18)
+        img = Image.open(os.path.join("assets", "lyrique.png")).convert("RGBA").resize((40, 40))
+        icon = ImageTk.PhotoImage(img, master=self.root)
+        self.icon = icon
+        btn_icon = tk.Button(header, image=self.icon, bg=header_bg, bd=0, relief="flat", cursor="hand2", activebackground=header_bg, highlightthickness=0)
+        btn_icon.image = self.icon
+        btn_icon.pack(side="right", padx=28, pady=12)
+        def show_logout_menu(event):
+            menu = tk.Menu(self.root, tearoff=0)
+            menu.add_command(label=traduire("a_propos"), command=lambda: messagebox.showinfo(traduire("a_propos"), traduire("a_propos_texte")))
+            menu.add_command(label=traduire("credits"), command=lambda: messagebox.showinfo(traduire("credits"), traduire("credits_texte")))
+            menu.add_separator()
+            def go_to_login():
+                import login
+                try:
+                    current_volume = self.root.volume_var.get()
+                except AttributeError:
+                    try:
+                        from core.musique import SoundBar
+                        current_volume = SoundBar.last_volume
+                    except Exception:
+                        current_volume = None
+                for w in self.root.winfo_children():
+                    w.destroy()
+                login.show_login(self.root, volume=current_volume)
+            menu.add_command(label=traduire("se_deconnecter"), command=go_to_login)
+            menu.add_command(label=traduire("fermer"), command=self.root.quit)
+            menu.tk_popup(event.x_root, event.y_root)
+        btn_icon.bind("<Button-1>", show_logout_menu)
+        """barre de soon"""
+        from core.musique import SoundBar, regler_volume
+        from core.parametres import LanguageSelector
+        initial_volume = 50
+        if hasattr(self.root, 'volume_var'):
+            try:
+                initial_volume = self.root.volume_var.get()
+            except Exception:
+                pass
+        else:
+            self.root.volume_var = tk.IntVar(value=initial_volume)
+        soundbar = SoundBar(self.root, volume_var=self.root.volume_var)
+        regler_volume(self.root.volume_var.get())
+        soundbar.place(relx=0.0, rely=1.0, anchor="sw", x=10, y=-10)
+        def on_language_changed(new_lang):
+            import importlib
+            import core.langues
+            importlib.reload(core.langues)
+            self.redraw_ui_only()
+        lang_selector = LanguageSelector(self.root, assets_dir="assets", callback=on_language_changed)
+        lang_selector.place(relx=1.0, rely=1.0, anchor="se", x=-18, y=-18)
+        main_frame = tk.Frame(self.root, bg="#f0f0f0")
+        main_frame.pack(pady=10, expand=True, fill="both")
+        """Bouton de retour"""
+        left_frame = tk.Frame(main_frame, bg="#f0f0f0")
+        left_frame.pack(side="left", fill="y", padx=(18, 0), pady=0)
+        img_retour = Image.open(os.path.join("assets", "en-arriere.png")).resize((48, 48))
+        if hasattr(self.root, 'tk'):
+            icon_retour = ImageTk.PhotoImage(img_retour, master=self.root)
+        else:
+            icon_retour = ImageTk.PhotoImage(img_retour)
+        self.icon_retour = icon_retour
+        def retour_config():
+            import config_gui
+            try:
+                current_volume = self.root.volume_var.get()
+            except Exception:
+                current_volume = None
+            for w in self.root.winfo_children():
+                w.destroy()
+            try:
+                config_gui.afficher_interface_choix(self.root, volume=current_volume)
+            except TypeError:
+                config_gui.afficher_interface_choix(self.root)
+        btn_retour = tk.Button(left_frame, image=self.icon_retour, command=retour_config, bg="#f0f0f0", bd=0, relief="flat", cursor="hand2", activebackground="#f0f0f0", highlightthickness=0)
+        btn_retour.image = icon_retour
+        btn_retour.pack(side="top", expand=True, anchor="center", pady=0)
+        # Zone centrale
+        self.tour_label = tk.Label(main_frame, text="", font=("Helvetica", 13, "bold"), bg="#f0f0f0", fg="#003366")
+        self.tour_label.place(relx=0.50, rely=0.08, anchor="center")
+        self.timer_label = tk.Label(main_frame, text="00:00", font=("Helvetica", 13, "bold"), bg="#f0f0f0", fg="#003366")
+        self.timer_label.place(relx=0.50, rely=0.15, anchor="center")
+        self.canvas = tk.Canvas(main_frame, width=400, height=400, bg="#f0f0f0", highlightthickness=0)
+        self.canvas.place(relx=0.5, rely=0.55, anchor="center")
+        self.load_and_pack_button("point-dinterrogation.png", "?", self.root, self.aide_popup, "bottom", pady=10)
+        self.load_and_pack_button("fleche-pivotante-vers-la-gauche.png", "Rejouer", self.root, self.rejouer, "bottom", pady=10)
+        self.update_info_joueur()
+        self.afficher_plateau()
+        self.canvas.bind("<Button-1>", self.on_click)
+        self.root.update_idletasks()
+        self.root.update()
+
+    def redraw_ui_only(self):
+        for widget in self.root.winfo_children():
+            widget.destroy()
+        self.setup_ui()
+        self.update_info_joueur()
+        self.afficher_plateau()
 
     def lock_ui_if_needed(self):
         if not self.reseau:
@@ -105,15 +191,9 @@ class JeuIsolation:
         return self.joueurs[self.tour % 2]
 
     def update_info_joueur(self):
-        # Affiche toujours 'Noir' au premier tour, puis alterne
-        if self.tour % 2 == 0:
-            couleur = 'Noir'
-        else:
-            couleur = 'Blanc'
-        if self.reseau and self.noms_joueurs:
-            self.tour_label.config(text=f"Tour de {self.noms_joueurs[self.tour % 2]} ({couleur})")
-        else:
-            self.tour_label.config(text=f"Tour du Joueur {couleur}")
+        from core.langues import traduire
+        couleur = 'noir' if self.tour % 2 == 0 else 'blanc'
+        self.tour_label.config(text=f"{traduire('tour_de')} ({traduire(couleur)})")
 
     def afficher_plateau(self):
         self.canvas.delete("all")
@@ -142,11 +222,17 @@ class JeuIsolation:
         joueur = self.joueur_actuel()
         symbole = joueur.symbole
         position = (ligne, colonne)
+        # Vérifie que la case est déjà occupée par un pion
+        if position in self.pions['X'] or position in self.pions['O']:
+            from core.langues import traduire
+            messagebox.showinfo(traduire("invalide"), traduire("case_occupee"))
+            return
         # Vérifie que la case est vide et non "en prise"
         if self.plateau.cases[ligne][colonne] in ['X', 'O']:
             return
+        from core.langues import traduire
         if not self.case_non_en_prise(position):
-            messagebox.showinfo("Invalide", "La case est en prise par un pion déjà posé.")
+            messagebox.showinfo(traduire("invalide"), traduire("case_bloquee"))
             return
         self.pions[symbole].add(position)
         # Ne pas modifier la couleur de la case, elle reste d'origine
@@ -162,6 +248,9 @@ class JeuIsolation:
     def apply_network_move(self, position):
         joueur = self.joueur_actuel()
         symbole = joueur.symbole
+        # Vérifie que la case est déjà occupée par un pion
+        if position in self.pions['X'] or position in self.pions['O']:
+            return  # Ignore le coup réseau invalide
         self.pions[symbole].add(position)
         # Ne pas modifier la couleur de la case, elle reste d'origine
         self.tour += 1
@@ -194,27 +283,22 @@ class JeuIsolation:
         return False
 
     def verifier_victoire(self):
-        # Le vainqueur est le dernier joueur à pouvoir poser un pion
-        joueur_actuel = self.joueur_actuel()
-        symbole = joueur_actuel.symbole
-        coups_possibles = False
-        for i in range(8):
-            for j in range(8):
-                if self.plateau.cases[i][j] in ['X', 'O']:
-                    continue
-                if self.case_non_en_prise((i, j)):
-                    coups_possibles = True
-                    break
-            if coups_possibles:
-                break
-        if not coups_possibles:
+        def joueur_peut_jouer(symbole):
+            for i in range(8):
+                for j in range(8):
+                    if self.plateau.cases[i][j] in ['X', 'O']:
+                        continue
+                    if (i, j) in self.pions['X'] or (i, j) in self.pions['O']:
+                        continue
+                    if self.case_non_en_prise((i, j)):
+                        return True
+            return False
+        if not joueur_peut_jouer('X') and not joueur_peut_jouer('O'):
             self.pause_timer()
-            # Le vainqueur est le joueur précédent (dernier à avoir joué)
-            vainqueur_index = (self.tour - 1) % 2
-            joueur = self.joueurs[vainqueur_index]
+            joueur = self.joueurs[(self.tour) % 2]
             couleur = 'Blanc' if joueur.symbole == 'X' else 'Noir'
-            nom = getattr(joueur, 'nom', str(joueur))
-            messagebox.showinfo("Victoire", f"Joueur {nom} ({couleur}) a gagné !")
+            from core.langues import traduire
+            messagebox.showinfo(traduire("victoire"), f"{traduire('joueur')} ({traduire(couleur.lower())}) {traduire('a_gagne')} !")
             self.reprendre_timer()
             self.rejouer()
 
@@ -239,22 +323,20 @@ class JeuIsolation:
             self.update_timer()
 
     def aide_popup(self):
+        from core.langues import traduire
         self.pause_timer()
         aide = tk.Toplevel(self.root)
-        aide.title("Règles du jeu")
+        aide.title(traduire("regles_du_jeu"))
         aide.geometry("400x400")
         aide.configure(bg="#f0f4f8")
-
-        tk.Label(aide, text="Règles de Isolation", font=("Helvetica", 14, "bold"), bg="#f0f4f8", fg="#003366").pack(pady=10)
+        tk.Label(aide, text=traduire("regles_isolation"), font=("Helvetica", 14, "bold"), bg="#f0f4f8", fg="#003366").pack(pady=10)
         text_widget = tk.Text(aide, wrap="word", bg="#f0f4f8", fg="#000000", font=("Helvetica", 10), bd=0)
         text_widget.pack(expand=True, fill="both", padx=10, pady=10)
         text_widget.insert("1.0", get_regles("isolation"))
         text_widget.configure(state="disabled")
-
         def on_close():
             self.reprendre_timer()
             aide.destroy()
-
         aide.protocol("WM_DELETE_WINDOW", on_close)
 
     def retour_menu(self):
@@ -268,9 +350,14 @@ class JeuIsolation:
         self.timer_running = False
         if hasattr(self, "timer_id"):
             self.root.after_cancel(self.timer_id)
-        self.root.destroy()
-        from plateau_builder import lancer_plateau_builder
-        lancer_plateau_builder("isolation", self.mode)
+        # Réinitialise uniquement les pions
+        self.pions = {'X': set(), 'O': set()}
+        self.tour = 0
+        self.timer_seconds = 0
+        self.selection = None if hasattr(self, 'selection') else None
+        self.coups_possibles = set() if hasattr(self, 'coups_possibles') else set()
+        self.redraw_ui_only()
+        self.start_timer()
 
 def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, plateau=None, pions=None, wait_win=None):
     import threading
@@ -321,10 +408,3 @@ def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, 
                 jeu.jouer()
             root.after(0, start_game)
         threading.Thread(target=client_receive_and_start, daemon=True).start()
-
-# Test indépendant
-if __name__ == '__main__':
-    plateau = Plateau()
-    joueurs = [Joueur("Joueur 1", 'O'), Joueur("Joueur 2", 'X')]
-    jeu = JeuIsolation(plateau, joueurs)
-    jeu.jouer()

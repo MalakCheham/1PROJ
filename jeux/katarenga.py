@@ -557,9 +557,3 @@ def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, 
                 from tkinter import messagebox
                 messagebox.showerror("Erreur réseau", f"Erreur lors de la connexion réseau côté client :\n{e}")
         threading.Thread(target=client_receive_and_start, daemon=True).start()
-
-if __name__ == '__main__':
-    plateau = Plateau()
-    joueurs = [Joueur("Joueur 1", 'O'), Joueur("Joueur 2", 'X')]
-    jeu = JeuKatarenga(plateau, joueurs)
-    jeu.jouer()
