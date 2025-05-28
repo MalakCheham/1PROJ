@@ -97,7 +97,7 @@ class JeuKatarenga:
             menu.add_command(label=traduire("a_propos"), command=lambda: messagebox.showinfo(traduire("a_propos"), traduire("a_propos_texte")))
             menu.add_command(label=traduire("credits"), command=lambda: messagebox.showinfo(traduire("credits"), traduire("credits_texte")))
             menu.add_separator()
-            def go_to_login:
+            def go_to_login():
                 import login
                 try:
                     current_volume = self.root.volume_var.get()
