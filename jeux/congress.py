@@ -324,3 +324,64 @@ class JeuCongress:
 
     def generer_coups_possibles(self, depart, couleur, symbole):
         return generer_coups_possibles(depart, couleur, symbole, self.plateau, self.pions, capture=False)
+
+def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, plateau=None, pions=None, wait_win=None):
+    import threading
+    from core.joueur import Joueur
+    from core.network.utils import plateau_to_str, pions_to_str, str_to_plateau, str_to_pions
+    if is_host:
+        sock.sendall(f"nom:{player_name_blanc}".encode())
+        data = sock.recv(4096)
+        player_name_noir = data.decode()[4:]
+        if plateau is None or pions is None:
+            from plateau_builder import creer_plateau
+            plateau, pions = creer_plateau()
+        plateau_str = plateau_to_str(plateau)
+        pions_x_str = pions_to_str(pions['X'])
+        pions_o_str = pions_to_str(pions['O'])
+        sock.sendall((plateau_str + '\nENDPLATEAU\n').encode())
+        sock.sendall((pions_x_str + '\nENDPIONSX\n').encode())
+        sock.sendall((pions_o_str + '\nENDPIONSO\n').encode())
+        joueurs = [Joueur(player_name_blanc, 'X'), Joueur(player_name_noir, 'O')]
+        jeu = JeuCongress(plateau, joueurs, mode="reseau", sock=sock, is_host=is_host, noms_joueurs=[player_name_blanc, player_name_noir], root=root)
+        jeu.pions = pions
+        jeu.afficher_plateau()
+        jeu.jouer()
+    else:
+        def client_receive_and_start():
+            try:
+                data = sock.recv(4096)
+                player_name_blanc_local = data.decode()[4:]
+                sock.sendall(f"nom:{player_name_noir}".encode())
+                def recv_until(sock, end_marker):
+                    data = b''
+                    while not data.decode(errors='ignore').endswith(end_marker):
+                        part = sock.recv(1024)
+                        if not part:
+                            raise ConnectionError("Connexion interrompue lors de la réception des données réseau.")
+                        data += part
+                    return data.decode().replace(end_marker, '').strip()
+                plateau_str = recv_until(sock, '\nENDPLATEAU\n')
+                pions_x_str = recv_until(sock, '\nENDPIONSX\n')
+                pions_o_str = recv_until(sock, '\nENDPIONSO\n')
+                plateau_local = str_to_plateau(plateau_str)
+                pions_local = {
+                    'X': str_to_pions(pions_x_str),
+                    'O': str_to_pions(pions_o_str)
+                }
+                def start_game():
+                    if wait_win is not None:
+                        wait_win.destroy()
+                    joueurs = [Joueur(player_name_blanc_local, 'X'), Joueur(player_name_noir, 'O')]
+                    jeu = JeuCongress(plateau_local, joueurs, mode="reseau", sock=sock, is_host=is_host, noms_joueurs=[player_name_blanc_local, player_name_noir], root=root)
+                    jeu.pions = pions_local
+                    jeu.afficher_plateau()
+                    jeu.jouer()
+                root.after(0, start_game)
+            except Exception as e:
+                import traceback
+                print("[ERREUR réseau client]", e)
+                traceback.print_exc()
+                from tkinter import messagebox
+                messagebox.showerror("Erreur réseau", f"Erreur lors de la connexion réseau côté client :\n{e}")
+        threading.Thread(target=client_receive_and_start, daemon=True).start()
