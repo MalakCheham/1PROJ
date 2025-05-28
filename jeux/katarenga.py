@@ -18,7 +18,7 @@ CAMPS_X = [(0,0), (0,9)]
 CAMPS_O = [(9,0), (9,9)]
 
 class JeuKatarenga:
-    def __init__(self, plateau, joueurs, mode="1v1", root=None, sock=None, is_host=False, noms_joueurs=None):
+    def __init__(self, plateau, joueurs, mode="1v1", root=None, sock=None, is_host=False, noms_joueurs=None, pions=None):
         if root:
             for widget in root.winfo_children():
                 widget.destroy()
@@ -47,10 +47,13 @@ class JeuKatarenga:
         self.noms_joueurs = noms_joueurs or ["Joueur Blanc", "Joueur Noir"]
         self.root = root if root else tk.Tk()
 
-        self.pions = {
-            'X': {(1, j) for j in range(1, 9)},
-            'O': {(8, j) for j in range(1, 9)}
-        }
+        if pions is not None:
+            self.pions = pions
+        else:
+            self.pions = {
+                'X': {(1, j) for j in range(1, 9)},
+                'O': {(8, j) for j in range(1, 9)}
+            }
         
         self.tour = 0
         self.timer_seconds = 0
