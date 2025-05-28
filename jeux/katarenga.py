@@ -522,6 +522,9 @@ def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, 
         plateau_str = plateau_to_str(plateau)
         pions_x_str = pions_to_str({'X': pions['X']})
         pions_o_str = pions_to_str({'O': pions['O']})
+        print('[DEBUG][HOST] plateau_str:', repr(plateau_str + '\nENDPLATEAU\n'))
+        print('[DEBUG][HOST] pions_x_str:', repr(pions_x_str + '\nENDPIONSX\n'))
+        print('[DEBUG][HOST] pions_o_str:', repr(pions_o_str + '\nENDPIONSO\n'))
         sock.sendall((plateau_str + '\nENDPLATEAU\n').encode())
         sock.sendall((pions_x_str + '\nENDPIONSX\n').encode())
         sock.sendall((pions_o_str + '\nENDPIONSO\n').encode())
@@ -540,6 +543,7 @@ def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, 
                     data = b''
                     while not data.decode(errors='ignore').endswith(end_marker):
                         part = sock.recv(1024)
+                        print('[DEBUG][CLIENT] received part:', repr(part))
                         if not part:
                             raise ConnectionError("Connexion interrompue lors de la réception des données réseau.")
                         data += part
