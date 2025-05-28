@@ -511,27 +511,11 @@ def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, 
         if plateau is None:
             from plateau_builder import creer_plateau
             plateau = creer_plateau()
-        
-        plateau = Plateau()
-        plateau.cases = [['#' for _ in range(10)] for _ in range(10)]
-        for i in range(8):
-            for j in range(8):
-                plateau.cases[i+1][j+1] = plateau.cases[i][j]
-        for (i, j) in CAMPS_X + CAMPS_O:
-            plateau.cases[i][j] = 'CAMP'
-        """ Masquer le tour du tableau sauf les camps """
-        for i in [0,9]:
-            for j in range(10):
-                if (i,j) not in CAMPS_X + CAMPS_O:
-                    plateau.cases[i][j] = '#'
-        for j in [0,9]:
-            for i in range(10):
-                if (i,j) not in CAMPS_X + CAMPS_O:
-                    plateau.cases[i][j] = '#'
-        pions = {
-            'X': {(1, j) for j in range(1, 9)},
-            'O': {(8, j) for j in range(1, 9)}
-        }
+        if pions is None:
+            pions = {
+                'X': {(1, j) for j in range(1, 9)},
+                'O': {(8, j) for j in range(1, 9)}
+            }
         plateau_str = plateau_to_str(plateau)
         pions_x_str = pions_to_str({'X': pions['X']})
         pions_o_str = pions_to_str({'O': pions['O']})
