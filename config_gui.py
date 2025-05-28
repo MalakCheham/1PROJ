@@ -40,9 +40,7 @@ def open_host_window(root):
     name = simpledialog.askstring(traduire("heberger"), traduire("entrer_nom_serveur"), parent=root)
     if not name:
         return
-    player_name = simpledialog.askstring(traduire("heberger"), traduire("entrer_nom_joueur"), parent=root)
-    if not player_name:
-        return
+    player_name = dic_variables.get("username") or getattr(root, 'USERNAME', None)
     dic_variables["host_name"] = name
     dic_variables["player_name"] = player_name
     dic_variables["is_host"] = True
@@ -120,10 +118,11 @@ def start_network_game(root, is_host, player_name=None, player_name_noir=None, s
         tk.Label(root, text="Mode réseau non implémenté pour ce jeu.", font=("Helvetica", 15, "bold"), fg="#d32f2f", bg="#e6f2ff").pack(pady=60)
 
 def join_server_ui(server, fenetre, root):
-    """Demande le nom du joueur puis tente de rejoindre le serveur sélectionné"""
+    """Tente de rejoindre le serveur sélectionné avec le nom utilisateur existant"""
     fenetre.destroy()
-    player_name = simpledialog.askstring(traduire("join_server"), traduire("entrer_nom_joueur"), parent=root)
+    player_name = dic_variables.get("username") or getattr(root, 'USERNAME', None)
     if not player_name:
+        messagebox.showerror(traduire("join_server"), traduire("erreur_nom_utilisateur"))
         return
     ip = server['ip']
     port = server.get('port', 5555)
@@ -371,7 +370,7 @@ def afficher_interface_choix(root):
                 current_volume = None
         for w in root.winfo_children():
             w.destroy()
-        menu_gui.show_menu(root, volume=current_volume)
+        menu_gui.show_menu(root, username=dic_variables.get("username") or getattr(root, "USERNAME", None), volume=current_volume)
     img_retour = Image.open(os.path.join("assets", "en-arriere.png")).resize((48, 48))
     icon_retour = ImageTk.PhotoImage(img_retour)
     btn_retour = tk.Button(root, image=icon_retour, command=retour_menu, bg="#f0f0f0", bd=0, relief="flat", cursor="hand2", activebackground="#e0e0e0")
