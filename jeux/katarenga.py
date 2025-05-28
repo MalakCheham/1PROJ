@@ -13,8 +13,8 @@ from tkinter import messagebox
 from core.mouvement import generer_coups_possibles, peut_entrer_camp
 jouer_musique()
 
-CAMPS_X = [(0,0), (0,8)]
-CAMPS_O = [(8,0), (8,8)]
+CAMPS_X = [(0,0), (0,9)]
+CAMPS_O = [(9,0), (9,9)]
 
 class JeuKatarenga:
     def __init__(self, plateau, joueurs, mode="1v1", root=None, sock=None, is_host=False, noms_joueurs=None):
@@ -23,7 +23,7 @@ class JeuKatarenga:
                 widget.destroy()
 
         self.plateau = Plateau()
-        self.plateau.cases = [['#' for _ in range(9)] for _ in range(9)]
+        self.plateau.cases = [['#' for _ in range(10)] for _ in range(10)]
 
         for i in range(8):
             for j in range(8):
@@ -31,6 +31,16 @@ class JeuKatarenga:
 
         for (i, j) in CAMPS_X + CAMPS_O:
             self.plateau.cases[i][j] = 'CAMP'
+
+        """ Masquer le tour du tableau sauf les camps """
+        for i in [0,9]:
+            for j in range(10):
+                if (i,j) not in CAMPS_X + CAMPS_O:
+                    self.plateau.cases[i][j] = '#'
+        for j in [0,9]:
+            for i in range(10):
+                if (i,j) not in CAMPS_X + CAMPS_O:
+                    self.plateau.cases[i][j] = '#'
 
         self.joueurs = joueurs
         self.mode = mode
@@ -41,8 +51,9 @@ class JeuKatarenga:
 
         self.pions = {
             'X': {(1, j) for j in range(1, 9)},
-            'O': {(7, j) for j in range(1, 9)}
+            'O': {(8, j) for j in range(1, 9)}
         }
+        
         self.tour = 0
         self.timer_seconds = 0
         self.timer_running = True
@@ -147,7 +158,7 @@ class JeuKatarenga:
         self.timer_label.pack(pady=(0,2))
 
         self.TAILLE_CASE = 52
-        self.PLATEAU_DIM = 9
+        self.PLATEAU_DIM = 10
         canvas_size = self.TAILLE_CASE * self.PLATEAU_DIM
         self.canvas = tk.Canvas(main_frame, width=canvas_size, height=canvas_size, bg="#f0f4f0", highlightthickness=0)
         self.canvas.place(relx=0.5, rely=0.55, anchor="center")
@@ -300,7 +311,7 @@ class JeuKatarenga:
         camps = CAMPS_X + CAMPS_O
         for i in range(dim):
             for j in range(dim):
-                if (i in [0,8] or j in [0,8]) and (i,j) not in camps:
+                if (i in [0,9] or j in [0,9]) and (i,j) not in camps:
                     continue
                 x1 = offset_x + j * taille
                 y1 = offset_y + i * taille
@@ -441,7 +452,7 @@ class JeuKatarenga:
         self.timer_running = False
         if hasattr(self, "timer_id"):
             self.root.after_cancel(self.timer_id)
-        self.pions = {'X': {(1, j) for j in range(1, 9)}, 'O': {(7, j) for j in range(1, 9)}}
+        self.pions = {'X': {(1, j) for j in range(1, 9)}, 'O': {(8, j) for j in range(1, 9)}}
         self.tour = 0
         self.timer_seconds = 0
         self.selection = None
@@ -453,7 +464,8 @@ class JeuKatarenga:
         self.root.mainloop()
 
     def on_click(self, event):
-        ligne, colonne = event.y // 40, event.x // 40
+        ligne = event.y // self.TAILLE_CASE
+        colonne = event.x // self.TAILLE_CASE
         joueur, symbole = self.joueur_actuel(), self.joueur_actuel().symbole
         position_cliquee = (ligne, colonne)
         if self.selection is None:

@@ -76,7 +76,7 @@ def show_menu(root=None, username=None, volume=None):
     ]
     frames = []
     for i, (mode, color, desc, img_file) in enumerate(modes):
-        frame = tk.Frame(center_frame, bg=color, bd=0, relief="ridge", height=290, width=260)
+        frame = tk.Frame(center_frame, bg=color, bd=0, relief="ridge", height=330, width=260)
         frame.grid(row=0, column=i, padx=24, pady=0, sticky="nsew")
         frames.append(frame)
         label = tk.Label(frame, text=mode, font=("Arial", 16, "bold"), bg=color, fg="#5b7fce", anchor="center")
