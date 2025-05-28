@@ -97,16 +97,6 @@ def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto", network
     regler_volume(root.volume_var.get())
     soundbar.place(relx=0.0, rely=1.0, anchor="sw", x=10, y=-10)
 
-    def on_language_changed(new_lang):
-        try:
-            current_volume = soundbar.volume_var.get()
-        except Exception:
-            current_volume = getattr(root, 'volume_var', tk.IntVar(value=50)).get()
-        import importlib
-        import core.langues
-        importlib.reload(core.langues)
-        afficher_plateau_ui(root, type_jeu, plateau, mode_ia, plateau_mode, network_callback, current_volume, username)
-
     """Show UI sans génération de plateau"""
     def afficher_plateau_ui(root, type_jeu, plateau, mode_ia, plateau_mode, network_callback, volume, username):
         
@@ -161,7 +151,17 @@ def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto", network
         regler_volume(root.volume_var.get())
         soundbar.place(relx=0.0, rely=1.0, anchor="sw", x=10, y=-10)
 
-        lang_selector = LanguageSelector(root, assets_dir="assets")
+        def on_language_changed(selected_language):
+            try:
+                current_volume = soundbar.volume_var.get()
+            except Exception:
+                current_volume = getattr(root, 'volume_var', tk.IntVar(value=50)).get()
+            import importlib
+            import core.langues
+            importlib.reload(core.langues)
+            afficher_plateau_ui(root, type_jeu, plateau, mode_ia, plateau_mode, network_callback, current_volume, username)
+
+        lang_selector = LanguageSelector(root, assets_dir="assets", callback=on_language_changed)
         lang_selector.place(relx=1.0, rely=1.0, anchor="se", x=-18, y=-18)
 
         main_frame = tk.Frame(root, bg="#f0f4f0")
@@ -231,17 +231,5 @@ def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto", network
 
     afficher_plateau_ui(root, type_jeu, plateau, mode_ia, plateau_mode, network_callback, initial_volume, username)
     
-    """Langues"""
-    def on_language_changed(new_lang):
-        try:
-            current_volume = soundbar.volume_var.get()
-        except Exception:
-            current_volume = getattr(root, 'volume_var', tk.IntVar(value=50)).get()
-        import importlib
-        import core.langues
-        importlib.reload(core.langues)
-        afficher_plateau_ui(root, type_jeu, plateau, mode_ia, plateau_mode, network_callback, current_volume, username)
-
-
     if own_root:
         root.mainloop()
