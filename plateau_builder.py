@@ -186,7 +186,7 @@ def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto", network
             for widget in root.winfo_children():
                 widget.destroy()
             if network_callback:
-                network_callback(plateau)
+                network_callback(plateau, None)
             else:
                 joueurs = [Joueur(0, 'X'), Joueur(1, 'O')]
                 if type_jeu in ("katarenga", "kataranga"):
