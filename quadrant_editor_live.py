@@ -188,10 +188,18 @@ class QuadrantEditorLive:
             for row_offset in range(4):
                 for col_offset in range(4):
                     board.cells[quadrant_positions[quadrant_index][0] + row_offset][quadrant_positions[quadrant_index][1] + col_offset] = block[row_offset][col_offset]
-        player_pieces = {
+        
+        if hasattr(self, 'requested_game') and self.requested_game == 'katarenga':
+            player_pieces = {
                 'X': {(1, col) for col in range(1, 9)},
                 'O': {(8, col) for col in range(1, 9)}
-        }
+            }
+        elif hasattr(self, 'requested_game') and self.requested_game == 'congress':
+            player_pieces = {
+                'X': set([(0,1), (0,4), (1,7), (3,0), (4,7), (6,0), (7,3), (7,6)]),
+                'O': set([(0,3), (0,6), (1,0), (3,7), (4,0), (6,7), (7,1), (7,4)])
+            }
+
         players = [Player(0, 'X'), Player(1, 'O')]
         if self.on_network:
             self.on_network(board, player_pieces)
