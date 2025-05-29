@@ -1,13 +1,11 @@
 from core.langues import translate
 
-"""
-    Les règles des jeux
-"""
+"""Game rules"""
 
-def get_regles(jeu: str) -> str:
-    jeu = jeu.lower()
+def get_rules(game: str) -> str:
+    game = game.lower()
 
-    if jeu == "katarenga":
+    if game == "katarenga":
         return (
             f"{translate('objective')}\n"
             f"- {translate('katarenga_objective_1')}\n"
@@ -22,7 +20,7 @@ def get_regles(jeu: str) -> str:
             f"- {translate('captured_pawns_removed')}"
         )
 
-    elif jeu == "congress":
+    elif game == "congress":
         return (
             f"{translate('objective')}\n"
             f"- {translate('congress_objective_1')}\n\n"
@@ -30,10 +28,10 @@ def get_regles(jeu: str) -> str:
             f"- {translate('congress_move')}\n\n"
             f"{translate('no_capture_allowed')}\n"
             f"- {translate('pawns_cannot_overlap')}\n"
-            f"- {translate('first_connected_wins')}"
+            f"- {translate('first_to_connect_wins')}"
         )
 
-    elif jeu == "isolation":
+    elif game == "isolation":
         return (
             f"{translate('objective')}\n"
             f"- {translate('isolation_objective_1')}\n\n"

@@ -6,14 +6,8 @@ from core.network.discovery import ServerBroadcaster, ServerDiscovery
 broadcaster = None
 discovery = None
 
-# === Server Side ===
+"""Network host & join"""
 def host_server(server_name, port=5555, on_client_connect=None, on_stop=None, root=None, tk=None, traduire=None, center_window=None):
-    """
-    Start hosting a server and broadcasting it on the network.
-    Calls on_client_connect() when a client connects.
-    Calls on_stop() if the server is stopped (e.g. window closed).
-    Returns a tuple (attente_win, stop_callback)
-    """
     global broadcaster
     ip = _get_local_ip()
     broadcaster = ServerBroadcaster(server_name, port)
@@ -25,7 +19,7 @@ def host_server(server_name, port=5555, on_client_connect=None, on_stop=None, ro
     attente_win.transient(root)
     attente_win.grab_set()
     attente_win.configure(bg="#e0f7fa")
-    label = tk.Label(attente_win, text=traduire("attente_joueur"), font=("Helvetica", 13, "bold"), bg="#e0f7fa")
+    label = tk.Label(attente_win, text=traduire("waiting_for_player"), font=("Helvetica", 13, "bold"), bg="#e0f7fa")
     label.pack(pady=30)
     def server_thread():
         client_socket, addr = wait_for_first_client(port=port)
@@ -48,16 +42,10 @@ def stop_server():
         broadcaster = None
         print("Serveur arrêté par l'utilisateur.")
 
-# === Client Side ===
 def join_server(ip, port=5555):
     return start_client(ip, port)
 
-# === Discovery ===
 def start_discovery(on_server_found):
-    """
-    Start network discovery. Calls on_server_found(server_dict) for each found server.
-    Returns the discovery object (call .stop() to end).
-    """
     global discovery
     discovery = ServerDiscovery(on_server_found)
     discovery.start()
@@ -69,7 +57,6 @@ def stop_discovery():
         discovery.stop()
         discovery = None
 
-# === Utility ===
 def _get_local_ip():
     import socket
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

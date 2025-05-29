@@ -3,9 +3,7 @@ import tkinter as tk
 from PIL import Image, ImageTk
 import sys
 
-"""
-    Language management
-"""
+"""Language management"""
 
 def get_assets_dir():
     if hasattr(sys, "_MEIPASS"):

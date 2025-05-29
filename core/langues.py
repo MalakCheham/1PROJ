@@ -1,9 +1,7 @@
 from core.parametres import CURRENT_LANGUAGE
 from core.traductions import TRANSLATIONS
 
-""""
-    Translate text
-"""
+""""Translate text"""
 
 def translate(key, **kwargs):
     value = TRANSLATIONS.get(key, {}).get(CURRENT_LANGUAGE, key)

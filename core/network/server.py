@@ -1,6 +1,7 @@
 import socket
 from core.langues import translate
 
+"""server module for handling client connections and messages"""
 def handle_client(client_socket, addr):
     print(translate("client_connected_from").format(addr=addr))
     try:

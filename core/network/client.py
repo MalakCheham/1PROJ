@@ -2,6 +2,8 @@ import socket
 from core.langues import translate
 from core.musique import set_volume, SoundBar
 
+"""network client module for connecting to a game server"""
+
 def start_client(host="127.0.0.1", port=5555):
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:

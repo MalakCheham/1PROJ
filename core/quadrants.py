@@ -1,51 +1,52 @@
 import json
 import os
 
-class Plateau:
-    def __init__(self, lignes=8, colonnes=8):
-        self.lignes = lignes
-        self.colonnes = colonnes
-        self.grille = [[None for _ in range(colonnes)] for _ in range(lignes)]
+"""Managing quadrants"""
+class Board:
+    def __init__(self, num_rows=8, num_columns=8):
+        self.num_rows = num_rows
+        self.num_columns = num_columns
+        self.grid = [[None for _ in range(num_columns)] for _ in range(num_rows)]
 
-    def placer_quadrant(self, quadrant, face="recto", orientation=0, position=(0, 0)):
-        bloc = quadrant[face]
+    def place_quadrant(self, quadrant, face="recto", orientation=0, position=(0, 0)):
+        block = quadrant[face]
         if orientation == 90:
-            bloc = list(zip(*bloc[::-1]))
+            block = list(zip(*block[::-1]))
         elif orientation == 180:
-            bloc = [ligne[::-1] for ligne in bloc[::-1]]
+            block = [row[::-1] for row in block[::-1]]
         elif orientation == 270:
-            bloc = list(zip(*bloc))[::-1]
+            block = list(zip(*block))[::-1]
 
-        start_x, start_y = position
-        for i in range(4):
-            for j in range(4):
-                self.grille[start_x + i][start_y + j] = bloc[i][j]
+        start_row, start_col = position
+        for row_offset in range(4):
+            for col_offset in range(4):
+                self.grid[start_row + row_offset][start_col + col_offset] = block[row_offset][col_offset]
 
-    def placer(self, x, y, valeur):
-        if self.grille[x][y] is None:
-            self.grille[x][y] = valeur
+    def place(self, row_index, col_index, value):
+        if self.grid[row_index][col_index] is None:
+            self.grid[row_index][col_index] = value
             return True
         return False
 
-    def lire(self, x, y):
-        return self.grille[x][y]
+    def get_cell(self, row_index, col_index):
+        return self.grid[row_index][col_index]
 
-    def afficher(self):
-        print("  " + " ".join(str(i) for i in range(self.colonnes)))
-        for i, ligne in enumerate(self.grille):
-            print(f"{i} " + " ".join(str(cell) if cell else "." for cell in ligne))
+    def display(self):
+        print("  " + " ".join(str(col_index) for col_index in range(self.num_columns)))
+        for row_index, row in enumerate(self.grid):
+            print(f"{row_index} " + " ".join(str(cell) if cell else "." for cell in row))
 
 
-def charger_quadrants_personnalises(dossier):
-    if not os.path.exists(dossier):
+def load_custom_quadrants(directory):
+    if not os.path.exists(directory):
         return []
 
     quadrants = []
-    for fichier in os.listdir(dossier):
-        if fichier.endswith(".json"):
-            chemin = os.path.join(dossier, fichier)
-            with open(chemin, "r", encoding="utf-8") as f:
-                data = json.load(f)
+    for filename in os.listdir(directory):
+        if filename.endswith(".json"):
+            path = os.path.join(directory, filename)
+            with open(path, "r", encoding="utf-8") as file:
+                data = json.load(file)
                 if isinstance(data, dict) and "recto" in data:
                     quadrants.append(data)
     return quadrants

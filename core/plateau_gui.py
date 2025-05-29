@@ -1,47 +1,48 @@
 import tkinter as tk
-from core.constantes import TAILLE_PLATEAU, COLOR_MAP
+from core.constantes import BOARD_SIZE, COLOR_MAP
 
-class PlateauGUI:
-    def __init__(self, root, plateau, pions, on_selection):
+"""Display module"""
+class BoardGUI:
+    def __init__(self, root, board, pieces, on_selection):
         self.root = root
-        self.plateau = plateau
-        self.pions = pions
+        self.board = board
+        self.pieces = pieces
         self.on_selection = on_selection
         self.selected = None
 
         self.cell_size = 60
-        canvas_size = TAILLE_PLATEAU * self.cell_size
+        canvas_size = BOARD_SIZE * self.cell_size
 
         self.canvas = tk.Canvas(root, width=canvas_size, height=canvas_size)
         self.canvas.pack()
 
-        self.canvas.bind("<Button-1>", self.clic)
+        self.canvas.bind("<Button-1>", self.on_click)
 
-        self.afficher_plateau()
+        self.display_board()
 
-    def clic(self, event):
-        row = event.y // self.cell_size
-        col = event.x // self.cell_size
-        if 0 <= row < 8 and 0 <= col < 8:
-            self.on_selection((row, col))
+    def on_click(self, event):
+        row_index = event.y // self.cell_size
+        col_index = event.x // self.cell_size
+        if 0 <= row_index < BOARD_SIZE and 0 <= col_index < BOARD_SIZE:
+            self.on_selection((row_index, col_index))
 
-    def afficher_plateau(self):
+    def display_board(self):
         self.canvas.delete("all")
-        for i in range(TAILLE_PLATEAU):
-            for j in range(TAILLE_PLATEAU):
-                x1 = j * self.cell_size
-                y1 = i * self.cell_size
+        for row_index in range(BOARD_SIZE):
+            for col_index in range(BOARD_SIZE):
+                x1 = col_index * self.cell_size
+                y1 = row_index * self.cell_size
                 x2 = x1 + self.cell_size
                 y2 = y1 + self.cell_size
 
-                couleur = self.plateau.lire(i, j)
-                couleur_hex = COLOR_MAP.get(couleur, "#dddddd")
-                self.canvas.create_rectangle(x1, y1, x2, y2, fill=couleur_hex, outline="black")
+                color_code = self.board.lire(row_index, col_index)
+                color_hex = COLOR_MAP.get(color_code, "#dddddd")
+                self.canvas.create_rectangle(x1, y1, x2, y2, fill=color_hex, outline="black")
 
-                pion = self.pions.get((i, j))
-                if pion:
+                piece = self.pieces.get((row_index, col_index))
+                if piece:
                     self.canvas.create_oval(x1+10, y1+10, x2-10, y2-10,
-                                            fill="black" if pion == 'X' else "white")
+                                            fill="black" if piece == 'X' else "white")
 
-    def mise_a_jour(self):
-        self.afficher_plateau()
+    def update(self):
+        self.display_board()

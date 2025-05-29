@@ -6,6 +6,7 @@ BROADCAST_PORT = 5555
 BROADCAST_INTERVAL = 1.0 
 BROADCAST_MESSAGE_PREFIX = "GAME_SERVER:"
 
+"""network discovery"""
 class ServerBroadcaster(threading.Thread):
     def __init__(self, server_name, tcp_port):
         super().__init__(daemon=True)

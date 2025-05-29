@@ -2,12 +2,8 @@ import os
 import pygame
 import tkinter as tk
 
-""""
-    Manage music and volume
-"""
-
+""""Manage music and volume"""
 MUSIC_PLAYING = False
-
 def play_music():
     global MUSIC_PLAYING
     if not pygame.mixer.get_init():

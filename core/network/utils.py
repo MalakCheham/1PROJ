@@ -1,3 +1,5 @@
+
+"""network utils for the game"""
 def plateau_to_str(plateau):
     return '\n'.join([''.join(row) for row in plateau.cases])
 

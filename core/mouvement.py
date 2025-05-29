@@ -1,136 +1,137 @@
+"""Mouvement rules"""
+
 MOVES = {
     "B": [(1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (-1, -1), (1, -1), (-1, 1)],
     "V": [(2, 1), (2, -1), (-2, 1), (-2, -1), (1, 2), (-1, 2), (1, -2), (-1, -2)],
     "J": "diagonal",
     "R": "straight"
 }
+class Movement:
+    def __init__(self, board, pieces):
+        self.board = board
+        self.pieces = pieces
 
-class Mouvement:
-    def __init__(self, plateau, pions):
-        self.plateau = plateau
-        self.pions = pions
+    def get_possible_moves(self, board, pieces, row, col):
+        symbol = "W" if (row, col) in pieces["W"] else "B"
+        cell_type = board[row][col]
+        possible_moves = []
 
-    def get_possible_moves(self, board, pieces, r, c):
-        symbole = "W" if (r, c) in pieces["W"] else "B"
-        case_type = board[r][c]
-        moves = []
+        if cell_type in ["B", "V"]:
+            for delta_row, delta_col in MOVES[cell_type]:
+                new_row, new_col = row + delta_row, col + delta_col
+                if 0 <= new_row < 10 and 0 <= new_col < 10 and (new_row, new_col) not in pieces[symbol]:
+                    possible_moves.append((new_row, new_col))
 
-        if case_type in ["B", "V"]:
-            for dr, dc in MOVES[case_type]:
-                nr, nc = r + dr, c + dc
-                if 0 <= nr < 10 and 0 <= nc < 10 and (nr, nc) not in pieces[symbole]:
-                    moves.append((nr, nc))
-
-        elif case_type == "J":
-            for dr, dc in [(1, 1), (1, -1), (-1, 1), (-1, -1)]:
-                nr, nc = r, c
+        elif cell_type == "J":
+            for delta_row, delta_col in [(1, 1), (1, -1), (-1, 1), (-1, -1)]:
+                new_row, new_col = row, col
                 while True:
-                    nr, nc = nr + dr, nc + dc
-                    if not (0 <= nr < 10 and 0 <= nc < 10):
+                    new_row, new_col = new_row + delta_row, new_col + delta_col
+                    if not (0 <= new_row < 10 and 0 <= new_col < 10):
                         break
-                    if (nr, nc) in pieces[symbole]:
+                    if (new_row, new_col) in pieces[symbol]:
                         break
-                    moves.append((nr, nc))
-                    if board[nr][nc] == "J":
+                    possible_moves.append((new_row, new_col))
+                    if board[new_row][new_col] == "J":
                         break
 
-        elif case_type == "R":
-            for dr, dc in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
-                nr, nc = r, c
+        elif cell_type == "R":
+            for delta_row, delta_col in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
+                new_row, new_col = row, col
                 while True:
-                    nr, nc = nr + dr, nc + dc
-                    if not (0 <= nr < 10 and 0 <= nc < 10):
+                    new_row, new_col = new_row + delta_row, new_col + delta_col
+                    if not (0 <= new_row < 10 and 0 <= new_col < 10):
                         break
-                    if (nr, nc) in pieces[symbole]:
+                    if (new_row, new_col) in pieces[symbol]:
                         break
-                    moves.append((nr, nc))
-                    if board[nr][nc] == "R":
+                    possible_moves.append((new_row, new_col))
+                    if board[new_row][new_col] == "R":
                         break
 
-        return moves
+        return possible_moves
 
-    def est_mouvement_valide(self, pions, symbole, depart, arrivee):
-        r, c = depart
-        return arrivee in self.get_possible_moves(self.plateau.grille, pions, r, c)
+    def is_valid_move(self, pieces, symbol, start, end):
+        start_row, start_col = start
+        return end in self.get_possible_moves(self.board.grille, pieces, start_row, start_col)
 
-def est_mouvement_roi(depart, arrivee):
-    dl, dc = abs(arrivee[0] - depart[0]), abs(arrivee[1] - depart[1])
-    return dl <= 1 and dc <= 1 and (dl != 0 or dc != 0)
 
-def est_mouvement_cavalier(depart, arrivee):
-    dl, dc = abs(arrivee[0] - depart[0]), abs(arrivee[1] - depart[1])
-    return (dl == 2 and dc == 1) or (dl == 1 and dc == 2)
+def is_king_move(start, end):
+    delta_row, delta_col = abs(end[0] - start[0]), abs(end[1] - start[1])
+    return delta_row <= 1 and delta_col <= 1 and (delta_row != 0 or delta_col != 0)
 
-def est_mouvement_fou(depart, arrivee, plateau, pions):
-    if abs(arrivee[0] - depart[0]) != abs(arrivee[1] - depart[1]):
+def is_knight_move(start, end):
+    delta_row, delta_col = abs(end[0] - start[0]), abs(end[1] - start[1])
+    return (delta_row == 2 and delta_col == 1) or (delta_row == 1 and delta_col == 2)
+
+def is_bishop_move(start, end, board, pieces):
+    if abs(end[0] - start[0]) != abs(end[1] - start[1]):
         return False
-    sl = 1 if arrivee[0] > depart[0] else -1
-    sc = 1 if arrivee[1] > depart[1] else -1
-    l, c = depart[0] + sl, depart[1] + sc
-    n = len(plateau.cases)
-    while (l, c) != arrivee:
-        if not (0 <= l < n and 0 <= c < n):
+    step_row = 1 if end[0] > start[0] else -1
+    step_col = 1 if end[1] > start[1] else -1
+    row, col = start[0] + step_row, start[1] + step_col
+    size = len(board.cells)
+    while (row, col) != end:
+        if not (0 <= row < size and 0 <= col < size):
             return False
-        if (l, c) in pions['X'] or (l, c) in pions['O']:
+        if (row, col) in pieces['X'] or (row, col) in pieces['O']:
             return False
-        if plateau.cases[l][c] == 'J':
-            return (l, c) == arrivee
-        l += sl
-        c += sc
+        if board.cells[row][col] == 'J':
+            return (row, col) == end
+        row += step_row
+        col += step_col
     return True
 
-def est_mouvement_tour(depart, arrivee, plateau, pions):
-    if depart[0] != arrivee[0] and depart[1] != arrivee[1]:
+def is_rook_move(start, end, board, pieces):
+    if start[0] != end[0] and start[1] != end[1]:
         return False
-    sl = 0 if depart[0] == arrivee[0] else (1 if arrivee[0] > depart[0] else -1)
-    sc = 0 if depart[1] == arrivee[1] else (1 if arrivee[1] > depart[1] else -1)
-    l, c = depart[0] + sl, depart[1] + sc
-    n = len(plateau.cases)
-    while (l, c) != arrivee:
-        if not (0 <= l < n and 0 <= c < n):
+    step_row = 0 if start[0] == end[0] else (1 if end[0] > start[0] else -1)
+    step_col = 0 if start[1] == end[1] else (1 if end[1] > start[1] else -1)
+    row, col = start[0] + step_row, start[1] + step_col
+    size = len(board.cells)
+    while (row, col) != end:
+        if not (0 <= row < size and 0 <= col < size):
             return False
-        if (l, c) in pions['X'] or (l, c) in pions['O']:
+        if (row, col) in pieces['X'] or (row, col) in pieces['O']:
             return False
-        if plateau.cases[l][c] == 'R':
-            return (l, c) == arrivee
-        l += sl
-        c += sc
+        if board.cells[row][col] == 'R':
+            return (row, col) == end
+        row += step_row
+        col += step_col
     return True
 
-def generer_coups_possibles(depart, couleur, symbole, plateau, pions, capture=True):
-    coups = set()
-    n = len(plateau.cases)
-    for i in range(n):
-        for j in range(n):
-            arrivee = (i, j)
-            piece_arrivee = next((s for s in ['X', 'O'] if arrivee in pions[s]), None)
+def generate_possible_moves(start, color, symbol, board, pieces, capture=True):
+    possible_moves = set()
+    size = len(board.cells)
+    for row in range(size):
+        for col in range(size):
+            end = (row, col)
+            piece_at_end = next((s for s in ['X', 'O'] if end in pieces[s]), None)
             if capture:
-                if piece_arrivee is None or piece_arrivee != symbole:
-                    mouvement_valide = (
-                        (couleur == 'B' and est_mouvement_roi(depart, arrivee)) or
-                        (couleur == 'V' and est_mouvement_cavalier(depart, arrivee)) or
-                        (couleur == 'J' and est_mouvement_fou(depart, arrivee, plateau, pions)) or
-                        (couleur == 'R' and est_mouvement_tour(depart, arrivee, plateau, pions))
+                if piece_at_end is None or piece_at_end != symbol:
+                    valid_move = (
+                        (color == 'B' and is_king_move(start, end)) or
+                        (color == 'V' and is_knight_move(start, end)) or
+                        (color == 'J' and is_bishop_move(start, end, board, pieces)) or
+                        (color == 'R' and is_rook_move(start, end, board, pieces))
                     )
-                    if mouvement_valide:
-                        coups.add(arrivee)
+                    if valid_move:
+                        possible_moves.add(end)
             else:
-                # Pas de capture : on ne peut pas aller sur une case occupée (congress, isolation)
-                if (arrivee in pions['X']) or (arrivee in pions['O']):
+                if (end in pieces['X']) or (end in pieces['O']):
                     continue
-                mouvement_valide = (
-                    (couleur == 'B' and est_mouvement_roi(depart, arrivee)) or
-                    (couleur == 'V' and est_mouvement_cavalier(depart, arrivee)) or
-                    (couleur == 'J' and est_mouvement_fou(depart, arrivee, plateau, pions)) or
-                    (couleur == 'R' and est_mouvement_tour(depart, arrivee, plateau, pions))
+                valid_move = (
+                    (color == 'B' and is_king_move(start, end)) or
+                    (color == 'V' and is_knight_move(start, end)) or
+                    (color == 'J' and is_bishop_move(start, end, board, pieces)) or
+                    (color == 'R' and is_rook_move(start, end, board, pieces))
                 )
-                if mouvement_valide:
-                    coups.add(arrivee)
-    return coups
+                if valid_move:
+                    possible_moves.add(end)
+    return possible_moves
 
-def peut_entrer_camp(symbole, position, depart=None):
-    if symbole == 'X' and position in [(9,0), (9,9)] and (depart is None or depart[0] == 8):
+def can_enter_camp(symbol, position, start=None):
+    if symbol == 'X' and position in [(9,0), (9,9)] and (start is None or start[0] == 8):
         return True
-    if symbole == 'O' and position in [(0,0), (0,9)] and (depart is None or depart[0] == 1):
+    if symbol == 'O' and position in [(0,0), (0,9)] and (start is None or start[0] == 1):
         return True
     return False

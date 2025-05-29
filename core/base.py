@@ -1,15 +1,15 @@
-class JeuBase:
-    def __init__(self, plateau, joueurs):
-        self.plateau = plateau        # Le plateau de jeu, partagé par tous les jeux
-        self.joueurs = joueurs        # Liste des deux joueurs
-        self.tour = 0                 # Numéro du tour actuel
+""""Utility funtions for the game"""
+class GameBase:
+    def __init__(self, board, players):
+        self.board = board
+        self.players = players
+        self.turn = 0
 
-    def joueur_actuel(self):
-        return self.joueurs[self.tour % 2]  # Alterne entre joueur 0 et 1 à chaque tour
+    def current_player(self):
+        return self.players[self.turn % 2]
 
-    def afficher_plateau(self):
-        self.plateau.afficher()      # Méthode commune pour afficher le plateau
+    def display_board(self):
+        self.board.display()
 
-    def jouer(self):
-        raise NotImplementedError("Cette méthode doit être implémentée dans les sous-classes.")
-        # On force les classes enfants à implémenter leur propre logique de jeu
+    def play(self):
+        raise NotImplementedError("This method must be implemented in subclasses.")

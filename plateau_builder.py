@@ -1,235 +1,188 @@
 import tkinter as tk
-import random
 from PIL import Image, ImageTk
 import os
+import random
+from core.langues import translate
 
-from core.plateau import Plateau
-from core.joueur import Joueur
-from jeux.katarenga import JeuKatarenga
-from jeux.congress import JeuCongress
-from jeux.isolation import JeuIsolation
+from core.plateau import Board
+from core.joueur import Player
+from jeux.katarenga import GameKatarenga
+from jeux.congress import GameCongress
+from jeux.isolation import GameIsolation
 
 try:
-    from core.quadrants import charger_quadrants_personnalises
+    from core.quadrants import charger_quadrants_personnalises as load_custom_quadrants
 except ImportError:
-    charger_quadrants_personnalises = None
+    load_custom_quadrants = None
 
-def creer_plateau():
-    couleurs = ['R', 'J', 'B', 'V']
-    plateau = Plateau()
-    plateau.cases = [[random.choice(couleurs) for _ in range(8)] for _ in range(8)]
-    return plateau
+def create_board():
+    color_choices = ['R', 'J', 'B', 'V']
+    board = Board()
+    board.cells = [[random.choice(color_choices) for _ in range(8)] for _ in range(8)]
+    return board
 
-def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto", network_callback=None, root=None):
-    if root is None:
-        root = tk.Tk()
-        own_root = True
-    else:
-        own_root = False
-        for widget in root.winfo_children():
-            widget.destroy()
-    root.title("Aperçu du Plateau")
-    root.configure(bg="#f0f4f8")
+def create_header(root_window, username, on_submenu_click):
+    header_background = "#e0e0e0"
+    header_frame = tk.Frame(root_window, bg=header_background, height=80)
+    header_frame.pack(side="top", fill="x")
+    welcome_label = tk.Label(header_frame, text=f"{translate('welcome')} {username if username else ''}", font=("Arial", 22, "bold"), bg=header_background, fg="#5b7fce")
+    welcome_label.pack(side="left", padx=32, pady=18)
+    icon_image_path = os.path.join("assets", "lyrique.png")
+    icon_image_pil = Image.open(icon_image_path).convert("RGBA").resize((40, 40))
+    icon_photo = ImageTk.PhotoImage(icon_image_pil)
+    submenu_button = tk.Button(header_frame, image=icon_photo, bg=header_background, bd=0, relief="flat", cursor="hand2", activebackground=header_background, highlightthickness=0)
+    submenu_button.image = icon_photo
+    submenu_button.pack(side="right", padx=28, pady=12)
+    submenu_button.bind("<Button-1>", on_submenu_click)
+    return header_frame, submenu_button
 
-    try:
-        icon_img = ImageTk.PhotoImage(file=os.path.join("assets", "logo.png"))
-        root.iconphoto(False, icon_img)
-    except:
-        pass
-
-    """entête"""
-    header_bg = "#e0e0e0"
-    header = tk.Frame(root, bg=header_bg, height=80)
-    header.pack(side="top", fill="x")
-    from core.langues import translate
-    username = getattr(root, 'USERNAME', None)
-    bienvenue = tk.Label(header, text=f"{translate('welcome')} {username if username else ''}", font=("Arial", 22, "bold"), bg=header_bg, fg="#5b7fce")
-    bienvenue.pack(side="left", padx=32, pady=18)
-    img = Image.open(os.path.join("assets", "lyrique.png")).convert("RGBA").resize((40, 40))
-    icon = ImageTk.PhotoImage(img)
-    btn_icon = tk.Button(header, image=icon, bg=header_bg, bd=0, relief="flat", cursor="hand2", activebackground=header_bg, highlightthickness=0)
-    btn_icon.image = icon
-    btn_icon.pack(side="right", padx=28, pady=12)
-
-    """Sous menu"""
+def create_submenu(root_window):
     from tkinter import messagebox
     def show_logout_menu(event):
-        menu = tk.Menu(root, tearoff=0)
+        menu = tk.Menu(root_window, tearoff=0)
         menu.add_command(label=translate("about"), command=lambda: messagebox.showinfo(translate("about"), translate("about_text")))
         menu.add_command(label=translate("credits"), command=lambda: messagebox.showinfo(translate("credits"), translate("credits_texte")))
         menu.add_separator()
         def go_to_login():
             import login
             try:
-                current_volume = root.volume_var.get()
+                current_volume = root_window.volume_var.get()
             except AttributeError:
                 try:
                     from core.musique import SoundBar
                     current_volume = SoundBar.last_volume
                 except Exception:
                     current_volume = None
-            for w in root.winfo_children():
-                w.destroy()
-            login.show_login(root, volume=current_volume)
+            for widget in root_window.winfo_children():
+                widget.destroy()
+            login.show_login(root_window, volume=current_volume)
         menu.add_command(label=translate("logout"), command=go_to_login)
-        menu.add_command(label=translate("close"), command=root.quit)
+        menu.add_command(label=translate("close"), command=root_window.quit)
         menu.tk_popup(event.x_root, event.y_root)
-    btn_icon.bind("<Button-1>", show_logout_menu)
+    return show_logout_menu
 
-    """Gestion son + langues"""
+def setup_soundbar_and_language_selector(root_window, soundbar_callback=None, lang_callback=None):
     from core.musique import set_volume, SoundBar
     from core.parametres import LanguageSelector
-    volume_transmis = getattr(root, 'VOLUME', None)
+    transmitted_volume = getattr(root_window, 'VOLUME', None)
     initial_volume = 50
-    if hasattr(root, 'volume_var'):
+    if hasattr(root_window, 'volume_var'):
         try:
-            initial_volume = root.volume_var.get()
+            initial_volume = root_window.volume_var.get()
         except Exception:
             pass
-    elif volume_transmis is not None:
-        initial_volume = volume_transmis
-    if hasattr(root, 'volume_var'):
-        root.volume_var.set(initial_volume)
-        soundbar = SoundBar(root, volume_var=root.volume_var)
+    elif transmitted_volume is not None:
+        initial_volume = transmitted_volume
+    if hasattr(root_window, 'volume_var'):
+        root_window.volume_var.set(initial_volume)
+        soundbar = SoundBar(root_window, volume_var=root_window.volume_var)
     else:
-        root.volume_var = tk.IntVar(value=initial_volume)
-        soundbar = SoundBar(root, volume_var=root.volume_var)
-    set_volume(root.volume_var.get())
+        root_window.volume_var = tk.IntVar(value=initial_volume)
+        soundbar = SoundBar(root_window, volume_var=root_window.volume_var)
+    set_volume(root_window.volume_var.get())
     soundbar.place(relx=0.0, rely=1.0, anchor="sw", x=10, y=-10)
+    lang_selector = None
+    if lang_callback is not None:
+        lang_selector = LanguageSelector(root_window, assets_dir="assets", callback=lang_callback)
+        lang_selector.place(relx=1.0, rely=1.0, anchor="se", x=-18, y=-18)
+    if soundbar_callback:
+        soundbar_callback(soundbar)
+    return soundbar, lang_selector
 
-    """Show UI sans génération de plateau"""
-    def afficher_plateau_ui(root, type_jeu, plateau, mode_ia, plateau_mode, network_callback, volume, username):
-        
-        for widget in root.winfo_children():
+def launch_board_builder(game_type, is_ai_mode=False, board_mode="auto", network_callback=None, root_window=None):
+    if root_window is None:
+        root_window = tk.Tk()
+        owns_root = True
+    else:
+        owns_root = False
+        for widget in root_window.winfo_children():
             widget.destroy()
-        """En-tête"""
-        header_bg = "#e0e0e0"
-        header = tk.Frame(root, bg=header_bg, height=80)
-        header.pack(side="top", fill="x")
-        from core.langues import translate
-        bienvenue = tk.Label(header, text=f"{translate('welcome')} {username if username else ''}", font=("Arial", 22, "bold"), bg=header_bg, fg="#5b7fce")
-        bienvenue.pack(side="left", padx=32, pady=18)
-        img = Image.open(os.path.join("assets", "lyrique.png")).convert("RGBA").resize((40, 40))
-        icon = ImageTk.PhotoImage(img)
-        btn_icon = tk.Button(header, image=icon, bg=header_bg, bd=0, relief="flat", cursor="hand2", activebackground=header_bg, highlightthickness=0)
-        btn_icon.image = icon
-        btn_icon.pack(side="right", padx=28, pady=12)
-
-        """Sous menu"""
-        from tkinter import messagebox
-        def show_logout_menu(event):
-            menu = tk.Menu(root, tearoff=0)
-            menu.add_command(label=translate("about"), command=lambda: messagebox.showinfo(translate("about"), translate("about_text")))
-            menu.add_command(label=translate("credits"), command=lambda: messagebox.showinfo(translate("credits"), translate("credits_texte")))
-            menu.add_separator()
-            def go_to_login():
-                import login
-                try:
-                    current_volume = root.volume_var.get()
-                except AttributeError:
-                    try:
-                        from core.musique import SoundBar
-                        current_volume = SoundBar.last_volume
-                    except Exception:
-                        current_volume = None
-                for w in root.winfo_children():
-                    w.destroy()
-                login.show_login(root, volume=current_volume)
-            menu.add_command(label=translate("logout"), command=go_to_login)
-            menu.add_command(label=translate("close"), command=root.quit)
-            menu.tk_popup(event.x_root, event.y_root)
-        btn_icon.bind("<Button-1>", show_logout_menu)
-
-        """Barre de son"""
-        from core.musique import SoundBar, set_volume
-        from core.parametres import LanguageSelector
-        if hasattr(root, 'volume_var'):
-            soundbar = SoundBar(root, volume_var=root.volume_var)
-        else:
-            root.volume_var = tk.IntVar(value=50)
-            soundbar = SoundBar(root, volume_var=root.volume_var)
-        set_volume(root.volume_var.get())
-        soundbar.place(relx=0.0, rely=1.0, anchor="sw", x=10, y=-10)
-
+    root_window.title("Board Preview")
+    root_window.configure(bg="#f0f4f8")
+    try:
+        icon_image = ImageTk.PhotoImage(file=os.path.join("assets", "logo.png"))
+        root_window.iconphoto(False, icon_image)
+    except Exception:
+        pass
+    username = getattr(root_window, 'USERNAME', None)
+    show_logout_menu = create_submenu(root_window)
+    create_header(root_window, username, show_logout_menu)
+    setup_soundbar_and_language_selector(root_window)
+    # Board generation
+    if board_mode == "auto" or load_custom_quadrants is None:
+        board = create_board()
+    else:
+        board = Board()
+        quadrants = load_custom_quadrants(os.path.join("assets", "quadrants_custom"))
+        quadrant_positions = [(0, 0), (0, 4), (4, 0), (4, 4)]
+        for quadrant_index, quadrant in enumerate(quadrants[:4]):
+            if 'recto' in quadrant:
+                block = quadrant['recto']
+                for row_offset in range(4):
+                    for col_offset in range(4):
+                        board.cells[quadrant_positions[quadrant_index][0] + row_offset][quadrant_positions[quadrant_index][1] + col_offset] = block[row_offset][col_offset]
+    def show_board_ui(root_window, game_type, board, is_ai_mode, board_mode, network_callback, volume, username):
+        for widget in root_window.winfo_children():
+            widget.destroy()
+        show_logout_menu = create_submenu(root_window)
+        create_header(root_window, username, show_logout_menu)
         def on_language_changed(selected_language):
             try:
-                current_volume = soundbar.volume_var.get()
+                current_volume = root_window.volume_var.get()
             except Exception:
-                current_volume = getattr(root, 'volume_var', tk.IntVar(value=50)).get()
+                current_volume = 50
             import importlib
             import core.langues
             importlib.reload(core.langues)
-            afficher_plateau_ui(root, type_jeu, plateau, mode_ia, plateau_mode, network_callback, current_volume, username)
-
-        lang_selector = LanguageSelector(root, assets_dir="assets", callback=on_language_changed)
-        lang_selector.place(relx=1.0, rely=1.0, anchor="se", x=-18, y=-18)
-
-        main_frame = tk.Frame(root, bg="#f0f4f0")
+            show_board_ui(root_window, game_type, board, is_ai_mode, board_mode, network_callback, current_volume, username)
+        setup_soundbar_and_language_selector(root_window, lang_callback=on_language_changed)
+        main_frame = tk.Frame(root_window, bg="#f0f4f0")
         main_frame.place(relx=0.5, rely=0.5, anchor="center")
-
-        if hasattr(root, 'label_plateau_genere') and root.label_plateau_genere.winfo_exists():
-            root.label_plateau_genere.destroy()
-        root.label_plateau_genere = tk.Label(main_frame, text=translate("generated_board"), font=("Helvetica", 16, "bold"), bg="#f0f4f0")
-        root.label_plateau_genere.pack(pady=10)
-
+        if hasattr(root_window, 'label_board_generated') and root_window.label_board_generated.winfo_exists():
+            root_window.label_board_generated.destroy()
+        root_window.label_board_generated = tk.Label(main_frame, text=translate("generated_board"), font=("Helvetica", 16, "bold"), bg="#f0f4f0")
+        root_window.label_board_generated.pack(pady=10)
         canvas = tk.Canvas(main_frame, width=400, height=400, bg="#f0f4f0", highlightthickness=0)
         canvas.pack()
-
-        taille = 50
-        for i in range(8):
-            for j in range(8):
-                couleur = plateau.cases[i][j] if hasattr(plateau, 'cases') else plateau.lire(i, j)
-                fill = {'R': '#ff9999', 'J': '#ffffb3', 'B': '#99ccff', 'V': '#b3ffb3'}.get(couleur, 'white')
-                canvas.create_rectangle(j*taille, i*taille, (j+1)*taille, i*taille + taille, fill=fill, outline="black")
-
-        def lancer_partie():
-            for widget in root.winfo_children():
+        cell_size = 50
+        for row_index in range(8):
+            for col_index in range(8):
+                color_code = board.cells[row_index][col_index] if hasattr(board, 'cells') else board.get_cell(row_index, col_index)
+                fill = {'R': '#ff9999', 'J': '#ffffb3', 'B': '#99ccff', 'V': '#b3ffb3'}.get(color_code, 'white')
+                canvas.create_rectangle(col_index*cell_size, row_index*cell_size, (col_index+1)*cell_size, row_index*cell_size + cell_size, fill=fill, outline="black")
+        def launch_game():
+            for widget in root_window.winfo_children():
                 widget.destroy()
             if network_callback:
-                network_callback(plateau, None)
+                network_callback(board, None)
             else:
-                joueurs = [Joueur(0, 'X'), Joueur(1, 'O')]
-                if type_jeu == "katarenga":
-                    JeuKatarenga(plateau, joueurs, root=root).jouer()
-                elif type_jeu == "congress":
-                    JeuCongress(plateau, joueurs, root=root).jouer()
-                elif type_jeu == "isolation":
-                    JeuIsolation(plateau, joueurs, root=root).jouer()
-
-        btns_frame = tk.Frame(main_frame, bg="#f0f4f0")
-        btns_frame.pack(pady=15)
-        btn = tk.Button(btns_frame, text=translate("play"), command=lancer_partie, bg="#4CAF50", fg="white", font=("Helvetica", 12, "bold"), width=15, relief="flat")
-        btn.pack(side="left", padx=5)
-
-        """Bouton retour"""
-        def retour_config():
+                players = [Player(0, 'X'), Player(1, 'O')]
+                if game_type == "katarenga":
+                    GameKatarenga(board, players, root=root_window).play()
+                elif game_type == "congress":
+                    GameCongress(board, players, root=root_window).play()
+                elif game_type == "isolation":
+                    GameIsolation(board, players, root=root_window).play()
+        buttons_frame = tk.Frame(main_frame, bg="#f0f4f0")
+        buttons_frame.pack(pady=15)
+        play_button = tk.Button(buttons_frame, text=translate("play"), command=launch_game, bg="#4CAF50", fg="white", font=("Helvetica", 12, "bold"), width=15, relief="flat")
+        play_button.pack(side="left", padx=5)
+        def back_to_config():
             import config_gui
-            for w in root.winfo_children():
-                w.destroy()
-            username = getattr(root, 'USERNAME', None)
-            config_gui.main(root, type_jeu, username=username, volume=volume)
-        img_retour = Image.open(os.path.join("assets", "en-arriere.png")).resize((48, 48))
-        icon_retour = ImageTk.PhotoImage(img_retour)
-        btn_retour = tk.Button(root, image=icon_retour, command=retour_config, bg="#f0f4f8", bd=0, relief="flat", cursor="hand2", activebackground="#e0e0e0")
-        btn_retour.image = icon_retour
-        btn_retour.place(relx=0.0, rely=0.5, anchor="w", x=18)
+            for widget in root_window.winfo_children():
+                widget.destroy()
+            username = getattr(root_window, 'USERNAME', None)
+            config_gui.main(root_window, game_type, username=username, volume=volume)
+        back_icon_image = Image.open(os.path.join("assets", "en-arriere.png")).resize((48, 48))
+        back_icon_photo = ImageTk.PhotoImage(back_icon_image)
+        back_button = tk.Button(root_window, image=back_icon_photo, command=back_to_config, bg="#f0f4f8", bd=0, relief="flat", cursor="hand2", activebackground="#e0e0e0")
+        back_button.image = back_icon_photo
+        back_button.place(relx=0.0, rely=0.5, anchor="w", x=18)
 
-    """Génération du plateau"""
-    if plateau_mode == "auto" or charger_quadrants_personnalises is None:
-        plateau = creer_plateau()
-    else:
-        plateau = Plateau()
-        quadrants = charger_quadrants_personnalises(os.path.join("assets", "quadrants_custom"))
-        positions = [(0, 0), (0, 4), (4, 0), (4, 4)]
-        for i, q in enumerate(quadrants[:4]):
-            if 'recto' in q:
-                bloc = q['recto']
-                for dx in range(4):
-                    for dy in range(4):
-                        plateau.cases[positions[i][0] + dx][positions[i][1] + dy] = bloc[dx][dy]
-    
-
-    afficher_plateau_ui(root, type_jeu, plateau, mode_ia, plateau_mode, network_callback, initial_volume, username)
-    
-    if own_root:
-        root.mainloop()
+    try:
+        initial_volume = root_window.volume_var.get()
+    except Exception:
+        initial_volume = 50
+    show_board_ui(root_window, game_type, board, is_ai_mode, board_mode, network_callback, initial_volume, username)
+    if owns_root:
+        root_window.mainloop()

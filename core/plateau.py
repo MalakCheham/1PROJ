@@ -1,30 +1,31 @@
-from core.constantes import TAILLE_PLATEAU, PIONS_INITIAUX
+from core.constantes import BOARD_SIZE, INITIAL_PIECES
 
-class Plateau:
+class Board:
     def __init__(self):
-        self.cases = [[None for _ in range(TAILLE_PLATEAU)] for _ in range(TAILLE_PLATEAU)]
-        self.pions = [[None for _ in range(TAILLE_PLATEAU)] for _ in range(TAILLE_PLATEAU)]
+        self.cells = [[None for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
+        self.pieces = [[None for _ in range(BOARD_SIZE)] for _ in range(BOARD_SIZE)]
 
-    def charger_couleurs(self, grille_couleurs):
-        """Charge un plateau 8x8 avec les couleurs données (lettres 'R', 'J', 'B', 'V')."""
-        for i in range(TAILLE_PLATEAU):
-            for j in range(TAILLE_PLATEAU):
-                self.cases[i][j] = grille_couleurs[i][j]
+    def load_colors(self, color_grid):
+        """Load an 8x8 board with the given colors (letters 'R', 'J', 'B', 'V')."""
+        for row_index in range(BOARD_SIZE):
+            for col_index in range(BOARD_SIZE):
+                self.cells[row_index][col_index] = color_grid[row_index][col_index]
 
-    def charger_pions_initiaux(self):
-        """Ajoute les pions initiaux selon le dictionnaire PIONS_INITIAUX."""
-        for (ligne, colonne), symbole in PIONS_INITIAUX.items():
-            self.pions[ligne][colonne] = symbole
+    def load_initial_pieces(self):
+        """Add initial pieces according to the INITIAL_PIECES dictionary."""
+        for (row_index, col_index), symbol in INITIAL_PIECES.items():
+            self.pieces[row_index][col_index] = symbol
 
-    def afficher(self):
-        """Affichage texte du plateau avec les couleurs (console uniquement)."""
-        print("  " + " ".join(str(i) for i in range(TAILLE_PLATEAU)))
-        for i in range(TAILLE_PLATEAU):
-            ligne_affichee = []
-            for j in range(TAILLE_PLATEAU):
-                case = self.cases[i][j] or '.'
-                pion = self.pions[i][j]
-                ligne_affichee.append(pion if pion else case)
-            print(f"{i} {' '.join(ligne_affichee)}")
-    def lire(self, x, y):
-        return self.cases[x][y]
+    def display(self):
+        """Text display of the board with colors (console only)."""
+        print("  " + " ".join(str(i) for i in range(BOARD_SIZE)))
+        for row_index in range(BOARD_SIZE):
+            display_row = []
+            for col_index in range(BOARD_SIZE):
+                cell = self.cells[row_index][col_index] or '.'
+                piece = self.pieces[row_index][col_index]
+                display_row.append(piece if piece else cell)
+            print(f"{row_index} {' '.join(display_row)}")
+
+    def get_cell(self, row_index, col_index):
+        return self.cells[row_index][col_index]
