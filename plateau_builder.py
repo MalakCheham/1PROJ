@@ -41,9 +41,9 @@ def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto", network
     header_bg = "#e0e0e0"
     header = tk.Frame(root, bg=header_bg, height=80)
     header.pack(side="top", fill="x")
-    from core.langues import traduire
+    from core.langues import translate
     username = getattr(root, 'USERNAME', None)
-    bienvenue = tk.Label(header, text=f"{traduire('bienvenue')} {username if username else ''}", font=("Arial", 22, "bold"), bg=header_bg, fg="#5b7fce")
+    bienvenue = tk.Label(header, text=f"{translate('welcome')} {username if username else ''}", font=("Arial", 22, "bold"), bg=header_bg, fg="#5b7fce")
     bienvenue.pack(side="left", padx=32, pady=18)
     img = Image.open(os.path.join("assets", "lyrique.png")).convert("RGBA").resize((40, 40))
     icon = ImageTk.PhotoImage(img)
@@ -55,8 +55,8 @@ def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto", network
     from tkinter import messagebox
     def show_logout_menu(event):
         menu = tk.Menu(root, tearoff=0)
-        menu.add_command(label=traduire("a_propos"), command=lambda: messagebox.showinfo(traduire("a_propos"), traduire("a_propos_texte")))
-        menu.add_command(label=traduire("credits"), command=lambda: messagebox.showinfo(traduire("credits"), traduire("credits_texte")))
+        menu.add_command(label=translate("about"), command=lambda: messagebox.showinfo(translate("about"), translate("about_text")))
+        menu.add_command(label=translate("credits"), command=lambda: messagebox.showinfo(translate("credits"), translate("credits_texte")))
         menu.add_separator()
         def go_to_login():
             import login
@@ -71,13 +71,13 @@ def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto", network
             for w in root.winfo_children():
                 w.destroy()
             login.show_login(root, volume=current_volume)
-        menu.add_command(label=traduire("se_deconnecter"), command=go_to_login)
-        menu.add_command(label=traduire("fermer"), command=root.quit)
+        menu.add_command(label=translate("logout"), command=go_to_login)
+        menu.add_command(label=translate("close"), command=root.quit)
         menu.tk_popup(event.x_root, event.y_root)
     btn_icon.bind("<Button-1>", show_logout_menu)
 
     """Gestion son + langues"""
-    from core.musique import SoundBar, regler_volume
+    from core.musique import set_volume, SoundBar
     from core.parametres import LanguageSelector
     volume_transmis = getattr(root, 'VOLUME', None)
     initial_volume = 50
@@ -94,7 +94,7 @@ def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto", network
     else:
         root.volume_var = tk.IntVar(value=initial_volume)
         soundbar = SoundBar(root, volume_var=root.volume_var)
-    regler_volume(root.volume_var.get())
+    set_volume(root.volume_var.get())
     soundbar.place(relx=0.0, rely=1.0, anchor="sw", x=10, y=-10)
 
     """Show UI sans génération de plateau"""
@@ -106,8 +106,8 @@ def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto", network
         header_bg = "#e0e0e0"
         header = tk.Frame(root, bg=header_bg, height=80)
         header.pack(side="top", fill="x")
-        from core.langues import traduire
-        bienvenue = tk.Label(header, text=f"{traduire('bienvenue')} {username if username else ''}", font=("Arial", 22, "bold"), bg=header_bg, fg="#5b7fce")
+        from core.langues import translate
+        bienvenue = tk.Label(header, text=f"{translate('welcome')} {username if username else ''}", font=("Arial", 22, "bold"), bg=header_bg, fg="#5b7fce")
         bienvenue.pack(side="left", padx=32, pady=18)
         img = Image.open(os.path.join("assets", "lyrique.png")).convert("RGBA").resize((40, 40))
         icon = ImageTk.PhotoImage(img)
@@ -119,8 +119,8 @@ def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto", network
         from tkinter import messagebox
         def show_logout_menu(event):
             menu = tk.Menu(root, tearoff=0)
-            menu.add_command(label=traduire("a_propos"), command=lambda: messagebox.showinfo(traduire("a_propos"), traduire("a_propos_texte")))
-            menu.add_command(label=traduire("credits"), command=lambda: messagebox.showinfo(traduire("credits"), traduire("credits_texte")))
+            menu.add_command(label=translate("about"), command=lambda: messagebox.showinfo(translate("about"), translate("about_text")))
+            menu.add_command(label=translate("credits"), command=lambda: messagebox.showinfo(translate("credits"), translate("credits_texte")))
             menu.add_separator()
             def go_to_login():
                 import login
@@ -135,20 +135,20 @@ def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto", network
                 for w in root.winfo_children():
                     w.destroy()
                 login.show_login(root, volume=current_volume)
-            menu.add_command(label=traduire("se_deconnecter"), command=go_to_login)
-            menu.add_command(label=traduire("fermer"), command=root.quit)
+            menu.add_command(label=translate("logout"), command=go_to_login)
+            menu.add_command(label=translate("close"), command=root.quit)
             menu.tk_popup(event.x_root, event.y_root)
         btn_icon.bind("<Button-1>", show_logout_menu)
 
         """Barre de son"""
-        from core.musique import SoundBar, regler_volume
+        from core.musique import SoundBar, set_volume
         from core.parametres import LanguageSelector
         if hasattr(root, 'volume_var'):
             soundbar = SoundBar(root, volume_var=root.volume_var)
         else:
             root.volume_var = tk.IntVar(value=50)
             soundbar = SoundBar(root, volume_var=root.volume_var)
-        regler_volume(root.volume_var.get())
+        set_volume(root.volume_var.get())
         soundbar.place(relx=0.0, rely=1.0, anchor="sw", x=10, y=-10)
 
         def on_language_changed(selected_language):
@@ -169,7 +169,7 @@ def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto", network
 
         if hasattr(root, 'label_plateau_genere') and root.label_plateau_genere.winfo_exists():
             root.label_plateau_genere.destroy()
-        root.label_plateau_genere = tk.Label(main_frame, text=traduire("plateau_genere"), font=("Helvetica", 16, "bold"), bg="#f0f4f0")
+        root.label_plateau_genere = tk.Label(main_frame, text=translate("generated_board"), font=("Helvetica", 16, "bold"), bg="#f0f4f0")
         root.label_plateau_genere.pack(pady=10)
 
         canvas = tk.Canvas(main_frame, width=400, height=400, bg="#f0f4f0", highlightthickness=0)
@@ -198,7 +198,7 @@ def lancer_plateau_builder(type_jeu, mode_ia=False, plateau_mode="auto", network
 
         btns_frame = tk.Frame(main_frame, bg="#f0f4f0")
         btns_frame.pack(pady=15)
-        btn = tk.Button(btns_frame, text=traduire("play"), command=lancer_partie, bg="#4CAF50", fg="white", font=("Helvetica", 12, "bold"), width=15, relief="flat")
+        btn = tk.Button(btns_frame, text=translate("play"), command=lancer_partie, bg="#4CAF50", fg="white", font=("Helvetica", 12, "bold"), width=15, relief="flat")
         btn.pack(side="left", padx=5)
 
         """Bouton retour"""

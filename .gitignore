@@ -6,3 +6,10 @@ __pycache__/
 .venv
 ENV/
 venv/
+
+
+
+*.spec
+build/
+dist/
+_internal/

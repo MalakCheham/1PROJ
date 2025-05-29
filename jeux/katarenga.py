@@ -8,11 +8,11 @@ from PIL import Image, ImageTk
 from core.plateau import Plateau
 from core.joueur import Joueur
 from core.aide import get_regles
-from core.musique import jouer_musique
+from core.musique import play_music
 from tkinter import messagebox
 from core.mouvement import generer_coups_possibles, peut_entrer_camp
 from core.network.utils import plateau_to_str, pions_to_str, str_to_plateau, str_to_pions
-jouer_musique()
+play_music()
 
 CAMPS_X = [(0,0), (0,9)]
 CAMPS_O = [(9,0), (9,9)]
@@ -74,7 +74,7 @@ class JeuKatarenga:
         header_bg = "#e0e0e0"
         header = tk.Frame(self.root, bg=header_bg, height=80)
         header.pack(side="top", fill="x")
-        from core.langues import traduire
+        from core.langues import translate
         username = getattr(self.root, 'USERNAME', None)
 
         bienvenue = tk.Label(header, text="Katarenga", font=("Arial", 22, "bold"), bg=header_bg, fg="#5b7fce")
@@ -93,9 +93,9 @@ class JeuKatarenga:
         def show_logout_menu(event):
             from tkinter import messagebox
             menu = tk.Menu(self.root, tearoff=0)
-            from core.langues import traduire
-            menu.add_command(label=traduire("a_propos"), command=lambda: messagebox.showinfo(traduire("a_propos"), traduire("a_propos_texte")))
-            menu.add_command(label=traduire("credits"), command=lambda: messagebox.showinfo(traduire("credits"), traduire("credits_texte")))
+            from core.langues import translate
+            menu.add_command(label=translate("about"), command=lambda: messagebox.showinfo(translate("about"), translate("about_text")))
+            menu.add_command(label=translate("credits"), command=lambda: messagebox.showinfo(translate("credits"), translate("credits_text")))
             menu.add_separator()
             def go_to_login():
                 import login
@@ -110,12 +110,12 @@ class JeuKatarenga:
                 for w in self.root.winfo_children():
                     w.destroy()
                 login.show_login(self.root, volume=current_volume)
-            menu.add_command(label=traduire("se_deconnecter"), command=go_to_login)
-            menu.add_command(label=traduire("fermer"), command=self.root.quit)
+            menu.add_command(label=translate("logout"), command=go_to_login)
+            menu.add_command(label=translate("close"), command=self.root.quit)
             menu.tk_popup(event.x_root, event.y_root)
         btn_icon.bind("<Button-1>", show_logout_menu)
 
-        from core.musique import SoundBar, regler_volume
+        from core.musique import SoundBar, set_volume
         from core.parametres import LanguageSelector
         volume_transmis = getattr(self.root, 'VOLUME', None)
         initial_volume = 50
@@ -132,7 +132,7 @@ class JeuKatarenga:
         else:
             self.root.volume_var = tk.IntVar(value=initial_volume)
             soundbar = SoundBar(self.root, volume_var=self.root.volume_var)
-        regler_volume(self.root.volume_var.get())
+        set_volume(self.root.volume_var.get())
         soundbar.place(relx=0.0, rely=1.0, anchor="sw", x=10, y=-10)
 
         def on_language_changed(new_lang):
@@ -238,13 +238,13 @@ class JeuKatarenga:
             self.canvas.bind("<Button-1>", self.on_click)
 
     def send_move(self, depart, arrivee):
-        from core.langues import traduire
+        from core.langues import translate
         if self.sock:
             try:
                 msg = f"move:{depart[0]},{depart[1]}->{arrivee[0]},{arrivee[1]}".encode()
                 self.sock.sendall(msg)
             except Exception:
-                messagebox.showerror(traduire("erreur"), traduire("erreur_envoi_coup"))
+                messagebox.showerror(translate("erreur"), translate("erreur_envoi_coup"))
 
     def apply_network_move(self, depart, arrivee):
         joueur = self.joueur_actuel()
@@ -281,19 +281,19 @@ class JeuKatarenga:
         return self.joueurs[self.tour % 2]
 
     def update_info_joueur(self):
-        from core.langues import traduire
+        from core.langues import translate
 
         if self.tour % 2 == 0:
             couleur = 'noir'
         else:
             couleur = 'blanc'
         
-        nom = self.noms_joueurs[self.tour % 2] if self.noms_joueurs else f"Joueur {traduire(couleur)}"
+        nom = self.noms_joueurs[self.tour % 2] if self.noms_joueurs else f"Joueur {translate(couleur)}"
 
-        self.tour_label.config(text=f"{traduire('tour_de')} ({traduire(couleur)})")
+        self.tour_label.config(text=f"{translate('tour_de')} ({translate(couleur)})")
         pions_x_restants = len(self.pions['X'])
         pions_o_restants = len(self.pions['O'])
-        self.pions_restants_label.config(text=f"{traduire('pions_restants')} - {traduire('blanc')}: {pions_x_restants}, {traduire('noir')}: {pions_o_restants}")
+        self.pions_restants_label.config(text=f"{translate('pions_restants')} - {translate('blanc')}: {pions_x_restants}, {translate('noir')}: {pions_o_restants}")
 
     def afficher_plateau(self):
         self.canvas.delete("all")
@@ -352,28 +352,28 @@ class JeuKatarenga:
         return move_filtred
 
     def verifier_victoire(self):
-        from core.langues import traduire
+        from core.langues import translate
         x_in_camps = [p for p in self.pions['X'] if p in CAMPS_O]
         o_in_camps = [p for p in self.pions['O'] if p in CAMPS_X]
         if len(set(x_in_camps)) == 2:
             self.pause_timer()
             nom = getattr(self.joueurs[0], 'nom', str(self.joueurs[0]))
-            messagebox.showinfo(traduire("victoire"), traduire("victoire_2_coins").format(nom=nom))
+            messagebox.showinfo(translate("victoire"), translate("victoire_2_coins").format(nom=nom))
             self.retour_login()
         elif len(set(o_in_camps)) == 2:
             self.pause_timer()
             nom = getattr(self.joueurs[1], 'nom', str(self.joueurs[1]))
-            messagebox.showinfo(traduire("victoire"), traduire("victoire_2_coins").format(nom=nom))
+            messagebox.showinfo(translate("victoire"), translate("victoire_2_coins").format(nom=nom))
             self.retour_login()
         elif len(self.pions['X']) < 2:
             self.pause_timer()
             nom = getattr(self.joueurs[1], 'nom', str(self.joueurs[1]))
-            messagebox.showinfo(traduire("victoire"), traduire("victoire_blanc_plus_pions").format(nom=nom))
+            messagebox.showinfo(translate("victoire"), translate("victoire_blanc_plus_pions").format(nom=nom))
             self.retour_login()
         elif len(self.pions['O']) < 2:
             self.pause_timer()
             nom = getattr(self.joueurs[0], 'nom', str(self.joueurs[0]))
-            messagebox.showinfo(traduire("victoire"), traduire("victoire_noir_plus_pions").format(nom=nom))
+            messagebox.showinfo(translate("victoire"), translate("victoire_noir_plus_pions").format(nom=nom))
             self.retour_login()
 
     def retour_login(self):
@@ -426,14 +426,14 @@ class JeuKatarenga:
         subprocess.Popen([sys.executable, "menu_gui.py"])
 
     def aide_popup(self):
-        from core.langues import traduire
+        from core.langues import translate
         self.pause_timer()
         aide = tk.Toplevel(self.root)
-        aide.title(traduire("regles_du_jeu"))
+        aide.title(translate("regles_du_jeu"))
         aide.geometry("400x400")
         aide.configure(bg="#f0f4f8")
 
-        tk.Label(aide, text=traduire("regles_katarenga"), font=("Helvetica", 14, "bold"), bg="#f0f4f8", fg="#003366").pack(pady=10)
+        tk.Label(aide, text=translate("regles_katarenga"), font=("Helvetica", 14, "bold"), bg="#f0f4f8", fg="#003366").pack(pady=10)
         text_widget = tk.Text(aide, wrap="word", bg="#f0f4f8", fg="#000000", font=("Helvetica", 10), bd=0)
         text_widget.pack(expand=True, fill="both", padx=10, pady=10)
         text_widget.insert("1.0", get_regles("katarenga"))

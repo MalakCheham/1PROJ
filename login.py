@@ -1,18 +1,18 @@
 import tkinter as tk
 from PIL import Image, ImageTk
 import os
+import sys
 import importlib
 
-import core.parametres as parametres
+import core.parametres as parameters
 import core.langues as langues
-from core.musique import regler_volume
+from core.musique import set_volume, SoundBar
 from core.parametres import LanguageSelector
 
-ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")
-
+ASSETS_DIR = parameters.get_assets_dir()
 class LoginScreen(tk.Frame):
     def __init__(self, master=None, volume=None):
-        from core.langues import traduire
+        from core.langues import translate
 
         root = master or tk.Tk()
         super().__init__(root, bg="#f0f0f0")
@@ -36,7 +36,7 @@ class LoginScreen(tk.Frame):
 
     def build_ui(self):
         import core.parametres
-        from core.langues import traduire
+        from core.langues import translate
         import core.traductions
 
         importlib.reload(core.parametres)
@@ -58,8 +58,11 @@ class LoginScreen(tk.Frame):
         label.image = logo_img
         label.pack()
 
-        tk.Label(center_frame, text=traduire("bienvenue_portail"), font=("Arial", 18, "bold"), bg="#f0f0f0", fg="#004d99").pack(pady=10)
-        tk.Label(center_frame, text=traduire("entrez_nom_utilisateur"), font=("Arial", 13), bg="#f0f0f0").pack(pady=10)
+        tk.Label(center_frame, text=translate("welcome_to_portal"), 
+                 font=("Arial", 18, "bold"), bg="#f0f0f0", 
+                 fg="#004d99").pack(pady=10)
+        tk.Label(center_frame, text=translate("enter_username"), 
+                 font=("Arial", 13), bg="#f0f0f0").pack(pady=10)
 
         self.username_var = tk.StringVar()
         entry = tk.Entry(center_frame, textvariable=self.username_var,
@@ -70,12 +73,12 @@ class LoginScreen(tk.Frame):
         entry.pack(ipady=6, ipadx=2)
         entry.focus_set()
 
-        button = tk.Button(center_frame, text=traduire("entrez_portail"),
-                        font=("Arial", 13, "bold"), bg="#219150", fg="white",
-                        activebackground="#19713c", activeforeground="white",
-                        width=20, height=2, bd=0, relief="flat",  # 'flat' pour compatibilité Mac
-                        highlightthickness=1, highlightbackground="#19713c",
-                        cursor="hand2", command=self.enter_portal)
+        button = tk.Button(center_frame, text=translate("enter_portal"),
+                           font=("Arial", 13, "bold"), bg="#219150", fg="white",
+                           activebackground="#19713c", activeforeground="white",
+                           width=20, height=2, bd=0, relief="flat",
+                           highlightthickness=1, highlightbackground="#19713c",
+                           cursor="hand2", command=self.enter_portal)
         button.pack(pady=30, ipadx=2, ipady=2)
         button.bind("<Enter>", lambda e: button.configure(bg="#19713c"))
         button.bind("<Leave>", lambda e: button.configure(bg="#219150"))
@@ -83,7 +86,7 @@ class LoginScreen(tk.Frame):
         self.build_sound_controls()
         self.build_language_selector()
 
-        self.master.title(traduire("titre"))
+        self.master.title(translate("title"))
 
     def enter_portal(self):
         import menu_gui
@@ -102,7 +105,7 @@ class LoginScreen(tk.Frame):
 
     """Barre de son"""
     def build_sound_controls(self):
-        from core.musique import SoundBar, regler_volume
+        from core.musique import SoundBar, set_volume
         if hasattr(self.master, 'volume_var'):
             self.master.volume_var.set(self._init_volume if self._init_volume is not None else self.master.volume_var.get())
             self.volume_var = self.master.volume_var
@@ -112,7 +115,7 @@ class LoginScreen(tk.Frame):
             self.volume_var = tk.IntVar(value=initial)
             self.master.volume_var = self.volume_var
             frame = SoundBar(self, volume_var=self.volume_var)
-        regler_volume(self.volume_var.get())
+        set_volume(self.volume_var.get())
         frame.pack(side="left", anchor="sw", padx=10, pady=10)
 
     def build_language_selector(self):
@@ -120,7 +123,9 @@ class LoginScreen(tk.Frame):
         selector.pack(side="right", anchor="se", padx=18, pady=18)
 
     def on_language_changed(self, new_lang):
-        self.build_ui()
+        from core.parametres import set_language
+        set_language(new_lang)
+        show_login(self.master, volume=self.volume_var.get() if hasattr(self, 'volume_var') else None)
 
 def show_login(root=None, volume=None):
     if root:

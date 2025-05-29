@@ -1,14 +1,15 @@
 import socket
-from core.langues import traduire
+from core.langues import translate
+from core.musique import set_volume, SoundBar
 
 def start_client(host="127.0.0.1", port=5555):
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         client.connect((host, port))
-        print(traduire("connected_to_server"))
+        print(translate("connected_to_server"))
         return client
     except Exception as e:
-        print(traduire("connection_failed"), e)
+        print(translate("connection_failed"), e)
         return None
 
 def send_move(client, move):
@@ -24,3 +25,9 @@ def receive_move(client):
     except Exception as e:
         print(f"Error receiving move: {e}")
         return None
+
+def update_volume(root):
+    set_volume(root.volume_var.get())
+
+def create_soundbar(root):
+    soundbar = SoundBar(root, volume_var=root.volume_var)

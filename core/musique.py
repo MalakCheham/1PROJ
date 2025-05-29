@@ -2,43 +2,47 @@ import os
 import pygame
 import tkinter as tk
 
-MUSIQUE_LANCEE = False
+""""
+    Manage music and volume
+"""
 
-def jouer_musique():
-    global MUSIQUE_LANCEE
+MUSIC_PLAYING = False
+
+def play_music():
+    global MUSIC_PLAYING
     if not pygame.mixer.get_init():
         pygame.mixer.init()
-    if not MUSIQUE_LANCEE:
-        chemin_musique = os.path.join("assets", "musique.mp3")
-        pygame.mixer.music.load(chemin_musique)
+    if not MUSIC_PLAYING:
+        music_path = os.path.join("assets", "musique.mp3")
+        pygame.mixer.music.load(music_path)
         pygame.mixer.music.set_volume(0.5)
         pygame.mixer.music.play(-1)
-        MUSIQUE_LANCEE = True
+        MUSIC_PLAYING = True
 
-def regler_volume(val):
+def set_volume(val):
     volume = float(val) / 100
     pygame.mixer.music.set_volume(volume)
 
-def pause():
+def pause_music():
     pygame.mixer.music.pause()
 
-def reprendre():
+def resume_music():
     pygame.mixer.music.unpause()
 
 class SoundBar(tk.Frame):
     def __init__(self, master, volume_var=None, **kwargs):
-        super().__init__(master, bg="#f0f0f0", **kwargs)  # couleur plus standard
+        super().__init__(master, bg="#f0f0f0", **kwargs)
         self.master = master
         from PIL import Image, ImageTk
         import os
-        # Correction : utilise le bon master pour les images
+        
         if hasattr(master, 'tk'):
             vol_icon = ImageTk.PhotoImage(Image.open(os.path.join("assets", "cone-de-haut-parleur.png")).resize((24, 24)), master=master)
             vol_icon_mute = ImageTk.PhotoImage(Image.open(os.path.join("assets", "volume-reduit.png")).resize((24, 24)), master=master)
         else:
             vol_icon = ImageTk.PhotoImage(Image.open(os.path.join("assets", "cone-de-haut-parleur.png")).resize((24, 24)))
             vol_icon_mute = ImageTk.PhotoImage(Image.open(os.path.join("assets", "volume-reduit.png")).resize((24, 24)))
-        # Correction inversion : 'vol' = volume-reduit (volume faible), 'mute' = cone-de-haut-parleur (muet)
+
         self.vol_icon = vol_icon_mute
         self.vol_icon_mute = vol_icon
         self.icons = {'vol': vol_icon_mute, 'mute': vol_icon}
@@ -54,16 +58,16 @@ class SoundBar(tk.Frame):
         self.on_volume_change(self.volume_var.get())
 
     def on_volume_change(self, val):
-        from core.musique import regler_volume, jouer_musique
-        v = int(val)
-        icon = self.icons['mute'] if v == 0 else self.icons['vol']
+        from core.musique import set_volume, play_music
+        volume_value = int(val)
+        icon = self.icons['mute'] if volume_value == 0 else self.icons['vol']
         self.sound_icon.config(image=icon)
         self.sound_icon.image = icon
         try:
-            jouer_musique()  # S'assure que le mixer est initialisé
+            play_music()
         except Exception:
             pass
-        regler_volume(v)
+        set_volume(volume_value)
 
     def toggle_mute(self, _=None):
         if self.volume_var.get() == 0:

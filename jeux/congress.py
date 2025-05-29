@@ -11,8 +11,7 @@ from core.aide import get_regles
 from core.mouvement import generer_coups_possibles
 from tkinter import messagebox
 from PIL import Image, ImageTk
-from core.musique import jouer_musique
-jouer_musique()
+from core.musique import play_music
 
 class JeuCongress:
     def __init__(self, plateau, joueurs, mode="1v1", sock=None, is_host=False, noms_joueurs=None, root=None):
@@ -45,9 +44,10 @@ class JeuCongress:
             threading.Thread(target=self.network_listener, daemon=True).start()
         else:
             self.canvas.bind("<Button-1>", self.on_click)
+        play_music()
 
     def setup_ui(self):
-        from core.langues import traduire
+        from core.langues import translate
         header_bg = "#e0e0e0"
         header = tk.Frame(self.root, bg=header_bg, height=80)
         header.pack(side="top", fill="x")
@@ -63,8 +63,8 @@ class JeuCongress:
         btn_icon.pack(side="right", padx=28, pady=12)
         def show_logout_menu(event):
             menu = tk.Menu(self.root, tearoff=0)
-            menu.add_command(label=traduire("a_propos"), command=lambda: messagebox.showinfo(traduire("a_propos"), traduire("a_propos_texte")))
-            menu.add_command(label=traduire("credits"), command=lambda: messagebox.showinfo(traduire("credits"), traduire("credits_texte")))
+            menu.add_command(label=translate("about"), command=lambda: messagebox.showinfo(translate("about"), translate("about_text")))
+            menu.add_command(label=translate("credits"), command=lambda: messagebox.showinfo(translate("credits"), translate("credits_text")))
             menu.add_separator()
             def go_to_login():
                 import login
@@ -79,12 +79,12 @@ class JeuCongress:
                 for w in self.root.winfo_children():
                     w.destroy()
                 login.show_login(self.root, volume=current_volume)
-            menu.add_command(label=traduire("se_deconnecter"), command=go_to_login)
-            menu.add_command(label=traduire("fermer"), command=self.root.quit)
+            menu.add_command(label=translate("logout"), command=go_to_login)
+            menu.add_command(label=translate("close"), command=self.root.quit)
             menu.tk_popup(event.x_root, event.y_root)
         btn_icon.bind("<Button-1>", show_logout_menu)
         # Barre de son
-        from core.musique import SoundBar, regler_volume
+        from core.musique import SoundBar, set_volume
         from core.parametres import LanguageSelector
         initial_volume = 50
         if hasattr(self.root, 'volume_var'):
@@ -95,7 +95,7 @@ class JeuCongress:
         else:
             self.root.volume_var = tk.IntVar(value=initial_volume)
         soundbar = SoundBar(self.root, volume_var=self.root.volume_var)
-        regler_volume(self.root.volume_var.get())
+        set_volume(self.root.volume_var.get())
         soundbar.place(relx=0.0, rely=1.0, anchor="sw", x=10, y=-10)
 
         def on_language_changed(new_lang):
@@ -229,16 +229,16 @@ class JeuCongress:
         return self.joueurs[self.tour % 2]
 
     def update_info_joueur(self):
-        from core.langues import traduire
+        from core.langues import translate
         if self.mode == "ia":
             if self.tour % 2 == 0:
-                self.tour_label.config(text=f"{traduire('tour_de')} ({traduire('noir')})")
+                self.tour_label.config(text=f"{translate('tour_de')} ({translate('noir')})")
             else:
-                self.tour_label.config(text=f"{traduire('tour_de')} ({traduire('blanc')})")
+                self.tour_label.config(text=f"{translate('tour_de')} ({translate('blanc')})")
         else:
             couleur = 'noir' if self.tour % 2 == 0 else 'blanc'
-            nom = self.noms_joueurs[self.tour % 2] if self.noms_joueurs else f"Joueur {traduire(couleur)}"
-            self.tour_label.config(text=f"{traduire('tour_de')} ({traduire(couleur)})")
+            nom = self.noms_joueurs[self.tour % 2] if self.noms_joueurs else f"Joueur {translate(couleur)}"
+            self.tour_label.config(text=f"{translate('tour_de')} ({translate(couleur)})")
 
     def afficher_plateau(self):
         self.canvas.delete("all")
@@ -325,8 +325,8 @@ class JeuCongress:
         if len(visited) == len(positions):
             self.pause_timer()
             couleur = 'Blanc' if joueur.symbole == 'X' else 'Noir'
-            from core.langues import traduire
-            messagebox.showinfo(traduire("victoire"), f"{traduire('joueur')} ({traduire(couleur.lower())}) {traduire('a_gagne')} !")
+            from core.langues import translate
+            messagebox.showinfo(translate("victoire"), f"{translate('joueur')} ({translate(couleur.lower())}) {translate('a_gagne')} !")
             self.reprendre_timer()
             self.rejouer()
 
@@ -351,14 +351,14 @@ class JeuCongress:
             self.update_timer()
 
     def aide_popup(self):
-        from core.langues import traduire
+        from core.langues import translate
         self.pause_timer()
         aide = tk.Toplevel(self.root)
-        aide.title(traduire("regles_du_jeu"))
+        aide.title(translate("game_rules"))
         aide.geometry("400x400")
         aide.configure(bg="#f0f4f8")
 
-        tk.Label(aide, text=traduire("regles_congress"), font=("Helvetica", 14, "bold"), bg="#f0f4f8", fg="#003366").pack(pady=10)
+        tk.Label(aide, text=translate("congress_rules"), font=("Helvetica", 14, "bold"), bg="#f0f4f8", fg="#003366").pack(pady=10)
         text_widget = tk.Text(aide, wrap="word", bg="#f0f4f8", fg="#000000", font=("Helvetica", 10), bd=0)
         text_widget.pack(expand=True, fill="both", padx=10, pady=10)
         text_widget.insert("1.0", get_regles("congress"))

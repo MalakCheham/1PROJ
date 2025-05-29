@@ -1,11 +1,15 @@
-from core.parametres import LANGUE_ACTUELLE
-from core.traductions import TRADUCTIONS
+from core.parametres import CURRENT_LANGUAGE
+from core.traductions import TRANSLATIONS
 
-def traduire(clef, **kwargs):
-    valeur = TRADUCTIONS.get(clef, {}).get(LANGUE_ACTUELLE, clef)
+""""
+    Translate text
+"""
+
+def translate(key, **kwargs):
+    value = TRANSLATIONS.get(key, {}).get(CURRENT_LANGUAGE, key)
     if kwargs:
         try:
-            return valeur.format(**kwargs)
+            return value.format(**kwargs)
         except Exception:
-            return valeur
-    return valeur
+            return value
+    return value

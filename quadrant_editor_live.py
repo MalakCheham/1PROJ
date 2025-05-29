@@ -8,7 +8,7 @@ COULEURS_HEX = {
 
 class QuadrantEditorLive:
     def __init__(self, root, retour_callback, network_callback=None, jeu_demande=None):
-        from core.langues import traduire
+        from core.langues import translate
         self.root = root
         self.retour_callback = retour_callback
         self.network_callback = network_callback
@@ -25,9 +25,9 @@ class QuadrantEditorLive:
         header_bg = "#e0e0e0"
         header = tk.Frame(root, bg=header_bg, height=80)
         header.pack(side="top", fill="x")
-        from core.langues import traduire
+        from core.langues import translate
         username = getattr(root, 'USERNAME', None)
-        titre = tk.Label(header, text=traduire("creer_quadrant_4x4"), font=("Arial", 22, "bold"), bg=header_bg, fg="#5b7fce")
+        titre = tk.Label(header, text=translate("create_quadrant_4x4"), font=("Arial", 22, "bold"), bg=header_bg, fg="#5b7fce")
         titre.pack(side="left", padx=32, pady=18)
         from PIL import Image, ImageTk
         import os
@@ -45,8 +45,8 @@ class QuadrantEditorLive:
         from tkinter import messagebox
         def show_logout_menu(event):
             menu = tk.Menu(root, tearoff=0)
-            menu.add_command(label=traduire("a_propos"), command=lambda: messagebox.showinfo(traduire("a_propos"), traduire("a_propos_texte")))
-            menu.add_command(label=traduire("credits"), command=lambda: messagebox.showinfo(traduire("credits"), traduire("credits_texte")))
+            menu.add_command(label=translate("about"), command=lambda: messagebox.showinfo(translate("about"), translate("about_text")))
+            menu.add_command(label=translate("credits"), command=lambda: messagebox.showinfo(translate("credits"), translate("credits_text")))
             menu.add_separator()
             def go_to_login():
                 import login
@@ -61,13 +61,13 @@ class QuadrantEditorLive:
                 for w in root.winfo_children():
                     w.destroy()
                 login.show_login(root, volume=current_volume)
-            menu.add_command(label=traduire("se_deconnecter"), command=go_to_login)
-            menu.add_command(label=traduire("fermer"), command=root.quit)
+            menu.add_command(label=translate("logout"), command=go_to_login)
+            menu.add_command(label=translate("close"), command=root.quit)
             menu.tk_popup(event.x_root, event.y_root)
         btn_icon.bind("<Button-1>", show_logout_menu)
 
         """barre de son et gestion langue"""
-        from core.musique import SoundBar, regler_volume
+        from core.musique import set_volume, SoundBar
         from core.parametres import LanguageSelector
         volume_transmis = getattr(root, 'VOLUME', None)
         initial_volume = 50
@@ -81,7 +81,7 @@ class QuadrantEditorLive:
         else:
             root.volume_var = tk.IntVar(value=initial_volume)
             soundbar = SoundBar(root, volume_var=root.volume_var)
-        regler_volume(root.volume_var.get())
+        set_volume(root.volume_var.get())
         soundbar.place(relx=0.0, rely=1.0, anchor="sw", x=10, y=-10)
         def on_language_changed(new_lang):
             import importlib
@@ -120,15 +120,15 @@ class QuadrantEditorLive:
         self.controls = tk.Frame(main_frame, bg="#f0f4f8")
         self.controls.pack(pady=10)
 
-        btn_save = tk.Button(self.controls, text=traduire("sauvegarder_quadrant"), command=self.valider_quadrant, font=("Helvetica", 10), bg="#4CAF50", fg="white", padx=10, pady=5)
-        btn_new = tk.Button(self.controls, text=traduire("nouveau_quadrant"), command=self.reset, font=("Helvetica", 10), padx=10, pady=5)
+        btn_save = tk.Button(self.controls, text=translate("save_quadrant"), command=self.valider_quadrant, font=("Helvetica", 10), bg="#4CAF50", fg="white", padx=10, pady=5)
+        btn_new = tk.Button(self.controls, text=translate("new_quadrant"), command=self.reset, font=("Helvetica", 10), padx=10, pady=5)
         btn_save.pack(side="left", padx=8)
         btn_new.pack(side="left", padx=8)
 
-        self.info = tk.Label(main_frame, text=traduire("quadrant_num", num=1), font=("Helvetica", 12), bg="#f0f4f8")
+        self.info = tk.Label(main_frame, text=translate("quadrant_num", num=1), font=("Helvetica", 12), bg="#f0f4f8")
         self.info.pack(pady=5)
 
-        self.play_button = tk.Button(main_frame, text=traduire("jouer_avec_quadrants"), command=self.construire_plateau, font=("Helvetica", 12, "bold"), bg="#0066cc", fg="white")
+        self.play_button = tk.Button(main_frame, text=translate("play_with_these_quadrants"), command=self.construire_plateau, font=("Helvetica", 12, "bold"), bg="#0066cc", fg="white")
         self.play_button.pack(pady=10)
         self.play_button.config(state="disabled")
 
@@ -165,27 +165,27 @@ class QuadrantEditorLive:
             self.grille[i][j] = self.current_color
 
     def valider_quadrant(self):
-        from core.langues import traduire
+        from core.langues import translate
         if any(None in row for row in self.grille):
-            messagebox.showwarning(traduire("incomplet"), traduire("toutes_cases_colorees"))
+            messagebox.showwarning(translate("incomplete"), translate("all_squares_colored"))
             return
         self.quadrants.append({"recto": [row[:] for row in self.grille]})
         if len(self.quadrants) == 4:
-            messagebox.showinfo("OK", traduire("quatre_quadrants_prets"))
+            messagebox.showinfo("OK", translate("four_quadrants_ready"))
             self.play_button.config(state="normal")
         else:
             self.reset()
             if hasattr(self, 'info'):
-                self.info.config(text=traduire("quadrant_num", num=len(self.quadrants)+1))
+                self.info.config(text=translate("quadrant_num", num=len(self.quadrants)+1))
 
     def reset(self):
         self.grille = [[None for _ in range(4)] for _ in range(4)]
         for i in range(4):
             for j in range(4):
                 self.boutons[i][j].config(bg="SystemButtonFace")
-        from core.langues import traduire
+        from core.langues import translate
         if hasattr(self, 'info'):
-            self.info.config(text=traduire("quadrant_num", num=len(self.quadrants)+1))
+            self.info.config(text=translate("quadrant_num", num=len(self.quadrants)+1))
 
     def construire_plateau(self):
         if len(self.quadrants) != 4:

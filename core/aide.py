@@ -1,44 +1,45 @@
+from core.langues import translate
+
 def get_regles(jeu: str) -> str:
-    from core.langues import traduire
     jeu = jeu.lower()
 
     if jeu == "katarenga":
         return (
-            f"{traduire('objectif')}\n"
-            f"- {traduire('objectif_katarenga_1')}\n"
-            f"- {traduire('objectif_katarenga_2')}\n\n"
-            f"{traduire('deplacement_selon_couleur')}\n"
-            f"- {traduire('bleu_roi')}\n"
-            f"- {traduire('vert_cavalier')}\n"
-            f"- {traduire('jaune_fou')}\n"
-            f"- {traduire('rouge_tour')}\n\n"
-            f"{traduire('captures')}\n"
-            f"- {traduire('captures_2e_tour')}\n"
-            f"- {traduire('pions_captures_retires')}"
+            f"{translate('objective')}\n"
+            f"- {translate('katarenga_objective_1')}\n"
+            f"- {translate('katarenga_objective_2')}\n\n"
+            f"{translate('move_according_to_color')}\n"
+            f"- {translate('blue_king')}\n"
+            f"- {translate('green_knight')}\n"
+            f"- {translate('yellow_bishop')}\n"
+            f"- {translate('red_rook')}\n\n"
+            f"{translate('captures')}\n"
+            f"- {translate('captures_from_2nd_turn')}\n"
+            f"- {translate('captured_pawns_removed')}"
         )
 
     elif jeu == "congress":
         return (
-            f"{traduire('objectif')}\n"
-            f"- {traduire('objectif_congress_1')}\n\n"
-            f"{traduire('deplacement')}\n"
-            f"- {traduire('deplacement_congress')}\n\n"
-            f"{traduire('pas_capture_autorisee')}\n"
-            f"- {traduire('pions_pas_superposer')}\n"
-            f"- {traduire('premier_connexe_gagne')}"
+            f"{translate('objective')}\n"
+            f"- {translate('congress_objective_1')}\n\n"
+            f"{translate('move')}\n"
+            f"- {translate('congress_move')}\n\n"
+            f"{translate('no_capture_allowed')}\n"
+            f"- {translate('pawns_cannot_overlap')}\n"
+            f"- {translate('first_connected_wins')}"
         )
 
     elif jeu == "isolation":
         return (
-            f"{traduire('objectif')}\n"
-            f"- {traduire('objectif_isolation_1')}\n\n"
-            f"{traduire('deroulement')}\n"
-            f"- {traduire('deroulement_isolation_1')}\n"
-            f"- {traduire('deroulement_isolation_2')}\n\n"
-            f"{traduire('en_prise')}\n"
-            f"- {traduire('en_prise_def')}\n"
-            f"- {traduire('pas_capture_pas_deplacement')}"
+            f"{translate('objective')}\n"
+            f"- {translate('isolation_objective_1')}\n\n"
+            f"{translate('how_to_play')}\n"
+            f"- {translate('isolation_how_to_play_1')}\n"
+            f"- {translate('isolation_how_to_play_2')}\n\n"
+            f"{translate('threatened')}\n"
+            f"- {translate('threatened_definition')}\n"
+            f"- {translate('no_capture_no_movement')}"
         )
 
     else:
-        return traduire('aucune_regle')
+        return translate('no_rules_available')

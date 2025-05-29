@@ -1,9 +1,12 @@
 import tkinter as tk
 from PIL import Image, ImageTk
 import os
+import sys
 from functools import partial
+from core.langues import translate
+from core.parametres import get_assets_dir
 
-ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")
+ASSETS_DIR = get_assets_dir()
 USERNAME = None
 
 def set_username(username):
@@ -23,8 +26,7 @@ def show_menu(root=None, username=None, volume=None):
     header = tk.Frame(root, bg=header_bg, height=80)
     header.pack(side="top", fill="x")
 
-    from core.langues import traduire
-    bienvenue = tk.Label(header, text=f"{traduire('bienvenue')} {USERNAME}", font=("Arial", 22, "bold"), bg=header_bg, fg="#5b7fce")
+    bienvenue = tk.Label(header, text=f"{translate('welcome')} {USERNAME}", font=("Arial", 22, "bold"), bg=header_bg, fg="#5b7fce")
     bienvenue.pack(side="left", padx=32, pady=18)
 
     """Icone sous menu"""
@@ -52,11 +54,11 @@ def show_menu(root=None, username=None, volume=None):
     """Sous menu"""
     def show_logout_menu(event):
         menu = tk.Menu(root, tearoff=0)
-        menu.add_command(label=traduire("a_propos"), command=lambda: messagebox.showinfo(traduire("a_propos"), traduire("a_propos_texte")))
-        menu.add_command(label=traduire("credits"), command=lambda: messagebox.showinfo(traduire("credits"), traduire("credits_texte")))
+        menu.add_command(label=translate("about"), command=lambda: messagebox.showinfo(translate("about"), translate("about_text")))
+        menu.add_command(label=translate("credits"), command=lambda: messagebox.showinfo(translate("credits"), translate("credits_text")))
         menu.add_separator()
-        menu.add_command(label=traduire("se_deconnecter"), command=lambda: import_login_and_show(root))
-        menu.add_command(label=traduire("fermer"), command=root.quit)
+        menu.add_command(label=translate("logout"), command=lambda: import_login_and_show(root))
+        menu.add_command(label=translate("close"), command=root.quit)
         menu.tk_popup(event.x_root, event.y_root)
     btn_icon.bind("<Button-1>", show_logout_menu)
 
@@ -70,9 +72,9 @@ def show_menu(root=None, username=None, volume=None):
 
     """Choix des modes de jeu"""
     modes = [
-        ("Katarenga", "#e0e0e0", traduire("desc_katarenga"), "katarenga.png"),
-        ("Congress", "#e0e0e0", traduire("desc_congress"), "congress.png"),
-        ("Isolation", "#e0e0e0", traduire("desc_isolation"), "isolation.png")
+        ("Katarenga", "#e0e0e0", translate("katarenga_description"), "katarenga.png"),
+        ("Congress", "#e0e0e0", translate("congress_description"), "congress.png"),
+        ("Isolation", "#e0e0e0", translate("isolation_description"), "isolation.png")
     ]
     frames = []
     for i, (mode, color, desc, img_file) in enumerate(modes):
@@ -102,7 +104,7 @@ def show_menu(root=None, username=None, volume=None):
                 w.destroy()
             config_main(root, jeu_demande, username=USERNAME, volume=volume)
         
-        play_btn = tk.Button(frame, text=traduire("jouer"), font=("Arial", 11, "bold"), bg="#219150", fg="white",
+        play_btn = tk.Button(frame, text=translate("play"), font=("Arial", 11, "bold"), bg="#219150", fg="white",
                              relief="flat", cursor="hand2", bd=0,
                              highlightthickness=1, highlightbackground="#19713c",
                              activebackground="#19713c", activeforeground="white",
@@ -115,7 +117,7 @@ def show_menu(root=None, username=None, volume=None):
         center_frame.grid_columnconfigure(i, weight=1)
 
     """Barre de son"""
-    from core.musique import SoundBar, regler_volume
+    from core.musique import set_volume, SoundBar
     from core.parametres import LanguageSelector
     if hasattr(root, 'volume_var'):
         root.volume_var.set(volume if volume is not None else root.volume_var.get())
@@ -123,7 +125,7 @@ def show_menu(root=None, username=None, volume=None):
     else:
         root.volume_var = tk.IntVar(value=volume if volume is not None else 50)
         soundbar = SoundBar(root, volume_var=root.volume_var)
-    regler_volume(root.volume_var.get())
+    set_volume(root.volume_var.get())
     soundbar.place(relx=0.0, rely=1.0, anchor="sw", x=10, y=-10)
 
     """Langues"""
@@ -139,14 +141,14 @@ def show_menu(root=None, username=None, volume=None):
     lang_selector = LanguageSelector(root, assets_dir=ASSETS_DIR, callback=on_language_changed)
     lang_selector.place(relx=1.0, rely=1.0, anchor="se", x=-18, y=-18)
 
-    root.title(traduire("titre"))
+    root.title(translate("title"))
     if not getattr(root, 'initialized', False):
         root.initialized = True
         root.mainloop()
 
 def logout(root):
     import login
-    from core.musique import regler_volume
+    from core.musique import SoundBar, set_volume
     try:
         current_volume = root.volume_var.get()
     except AttributeError:

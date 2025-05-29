@@ -1,19 +1,19 @@
 import socket
-from core.langues import traduire
+from core.langues import translate
 
 def handle_client(client_socket, addr):
-    print(traduire("client_connected_from").format(addr=addr))
+    print(translate("client_connected_from").format(addr=addr))
     try:
         while True:
             data = client_socket.recv(1024)
             if not data:
                 break
-            print(traduire("received_from").format(addr=addr, msg=data.decode()))
+            print(translate("received_from").format(addr=addr, msg=data.decode()))
     except Exception as e:
         print(f"Error handling client: {e}")
     finally:
         client_socket.close()
-        print(traduire("client_disconnected").format(addr=addr))
+        print(translate("client_disconnected").format(addr=addr))
 
 def wait_for_first_client(server_ready=None, host="0.0.0.0", port=5555):
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
