@@ -464,36 +464,35 @@ class GameKatarenga:
                     self.possible_moves = self.generate_possible_moves_custom(self.selected_piece, start_color, symbol)
                     self.display_board()
 
-def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, plateau=None, pions=None, wait_win=None):
+def launch_network_game(root, is_host, player_name_white, player_name_black, sock, board=None, pieces=None, wait_win=None):
     import threading
     if is_host:
-        sock.sendall(f"nom:{player_name_blanc}".encode())
+        sock.sendall(f"nom:{player_name_white}".encode())
         data = sock.recv(4096)
-        player_name_noir = data.decode()[4:]
-        if plateau is None:
+        player_name_black = data.decode()[4:]
+        if board is None:
             from plateau_builder import creer_plateau
-            plateau = creer_plateau()
-        if pions is None:
-            pions = {
+            board = creer_plateau()
+        if pieces is None:
+            pieces = {
                 'X': {(1, j) for j in range(1, 9)},
                 'O': {(8, j) for j in range(1, 9)}
             }
-        plateau_str = plateau_to_str(plateau)
-        pions_str = pions_to_str(pions)
-        
-        sock.sendall((plateau_str + '\nENDPLATEAU\n').encode())
-        sock.sendall((pions_str + '\nENDPIONS\n').encode())
-        players = [Player(player_name_blanc, 'X'), Player(player_name_noir, 'O')]
-        jeu = GameKatarenga(plateau, players, mode="network", sock=sock, is_host=is_host, noms_joueurs=[player_name_blanc, player_name_noir], root=root)
-        jeu.pieces = pions
+        board_str = plateau_to_str(board)
+        pieces_str = pions_to_str(pieces)
+        sock.sendall((board_str + '\nENDPLATEAU\n').encode())
+        sock.sendall((pieces_str + '\nENDPIONS\n').encode())
+        players = [Player(player_name_white, 'X'), Player(player_name_black, 'O')]
+        jeu = GameKatarenga(board, players, mode="network", sock=sock, is_host=is_host, player_names=[player_name_white, player_name_black], root=root)
+        jeu.pieces = pieces
         jeu.display_board()
-        jeu.jouer()
+        jeu.play()
     else:
         def client_receive_and_start():
             try:
                 data = sock.recv(4096)
-                player_name_blanc_local = data.decode()[4:]
-                sock.sendall(f"nom:{player_name_noir}".encode())
+                player_name_white_local = data.decode()[4:]
+                sock.sendall(f"nom:{player_name_black}".encode())
                 def recv_until(sock, end_marker, leftover=b''):
                     data = leftover
                     while end_marker.encode() not in data:
@@ -503,18 +502,18 @@ def lancer_jeu_reseau(root, is_host, player_name_blanc, player_name_noir, sock, 
                         data += part
                     idx = data.index(end_marker.encode()) + len(end_marker)
                     return data[:idx - len(end_marker)].decode().strip(), data[idx:]
-                plateau_str, leftover = recv_until(sock, '\nENDPLATEAU\n')
-                pions_str, leftover = recv_until(sock, '\nENDPIONS\n', leftover)
-                plateau_local = str_to_plateau(plateau_str)
-                pions_local = str_to_pions(pions_str.strip())
+                board_str, leftover = recv_until(sock, '\nENDPLATEAU\n')
+                pieces_str, leftover = recv_until(sock, '\nENDPIONS\n', leftover)
+                board_local = str_to_plateau(board_str)
+                pieces_local = str_to_pions(pieces_str.strip())
                 def start_game():
                     if wait_win is not None:
                         wait_win.destroy()
-                    players = [Player(player_name_blanc_local, 'X'), Player(player_name_noir, 'O')]
-                    jeu = GameKatarenga(plateau_local, players, pions=pions_local, mode="network", sock=sock, is_host=is_host, noms_joueurs=[player_name_blanc_local, player_name_noir], root=root)
+                    players = [Player(player_name_white_local, 'X'), Player(player_name_black, 'O')]
+                    jeu = GameKatarenga(board_local, players, pieces=pieces_local, mode="network", sock=sock, is_host=is_host, player_names=[player_name_white_local, player_name_black], root=root)
                     jeu.display_board()
                     jeu.update_player_info()
-                    jeu.jouer()
+                    jeu.play()
                 root.after(0, start_game)
             except Exception as e:
                 from tkinter import messagebox
