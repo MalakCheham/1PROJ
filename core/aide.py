@@ -1,5 +1,9 @@
 from core.langues import translate
 
+"""
+    Les règles des jeux
+"""
+
 def get_regles(jeu: str) -> str:
     jeu = jeu.lower()
 
