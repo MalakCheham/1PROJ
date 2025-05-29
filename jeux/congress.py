@@ -411,16 +411,16 @@ def plateau_to_str(plateau):
 def pions_to_str(pions):
     return '|'.join([f"{symb}:{';'.join([f'{i},{j}' for (i,j) in positions])}" for symb, positions in pions.items()])
 
-def str_to_plateau(s):
+def str_to_plateau(board_str):
     from core.plateau import Board
-    lines = s.strip().split('\n')
+    lines = board_str.strip().split('\n')
     board = Board()
     board.cells = [list(line) for line in lines]
     return board
 
-def str_to_pions(s):
+def str_to_pions(pieces_str):
     pions = {'X': set(), 'O': set()}
-    for part in s.split('|'):
+    for part in pieces_str.split('|'):
         if not part: continue
         symb, positions = part.split(':')
         if positions:
