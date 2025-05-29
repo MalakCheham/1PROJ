@@ -1,7 +1,6 @@
-
 """network utils for the game"""
 def plateau_to_str(plateau):
-    return '\n'.join([''.join(row) for row in plateau.cases])
+    return '\n'.join([''.join(row) for row in plateau.cells])
 
 def pions_to_str(pions):
     return '|'.join([f"{symb}:{';'.join([f'{i},{j}' for (i,j) in positions])}" for symb, positions in pions.items()])

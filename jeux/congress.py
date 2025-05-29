@@ -406,17 +406,17 @@ class GameCongress:
         return generate_possible_moves(start, color, symbol, self.board, self.pieces, capture=False)
 
 def plateau_to_str(plateau):
-    return '\n'.join([''.join(row) for row in plateau.cases])
+    return '\n'.join([''.join(row) for row in plateau.cells])
 
 def pions_to_str(pions):
     return '|'.join([f"{symb}:{';'.join([f'{i},{j}' for (i,j) in positions])}" for symb, positions in pions.items()])
 
 def str_to_plateau(s):
-    from core.plateau import Plateau
+    from core.plateau import Board
     lines = s.strip().split('\n')
-    plateau = Plateau()
-    plateau.cases = [list(line) for line in lines]
-    return plateau
+    board = Board()
+    board.cells = [list(line) for line in lines]
+    return board
 
 def str_to_pions(s):
     pions = {'X': set(), 'O': set()}
