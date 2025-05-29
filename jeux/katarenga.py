@@ -197,7 +197,7 @@ class GameKatarenga:
                 break
 
     def lock_ui_if_needed(self):
-        if not self.sock:
+        if not self.sock or not hasattr(self, 'canvas') or not self.canvas.winfo_exists():
             return
         my_symbol = 'X' if self.is_host else 'O'
         if (self.turn % 2 == 0 and my_symbol != 'X') or (self.turn % 2 == 1 and my_symbol != 'O'):
@@ -256,10 +256,10 @@ class GameKatarenga:
         else:
             color = 'white'
         name = self.player_names[self.turn % 2] if self.player_names else f"Player {translate(color)}"
-        self.turn_label.config(text=f"{translate('tour_de')} ({translate(color)})")
+        self.turn_label.config(text=f"{translate('turn_of')} ({translate(color)})")
         remaining_x = len(self.pieces['X'])
         remaining_o = len(self.pieces['O'])
-        self.remaining_pieces_label.config(text=f"{translate('pions_restants')} - {translate('blanc')}: {remaining_x}, {translate('noir')}: {remaining_o}")
+        self.remaining_pieces_label.config(text=f"{translate('remaining_pawns')} - {translate('blanc')}: {remaining_x}, {translate('noir')}: {remaining_o}")
 
     def display_board(self):
         self.canvas.delete("all")

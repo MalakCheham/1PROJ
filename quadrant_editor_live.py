@@ -189,8 +189,8 @@ class QuadrantEditorLive:
                 for col_offset in range(4):
                     board.cells[quadrant_positions[quadrant_index][0] + row_offset][quadrant_positions[quadrant_index][1] + col_offset] = block[row_offset][col_offset]
         player_pieces = {
-            'X': {(0, column_index) for column_index in range(8)},
-            'O': {(7, column_index) for column_index in range(8)}
+                'X': {(1, col) for col in range(1, 9)},
+                'O': {(8, col) for col in range(1, 9)}
         }
         players = [Player(0, 'X'), Player(1, 'O')]
         if self.on_network:
