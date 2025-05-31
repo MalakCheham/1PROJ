@@ -1,8 +1,8 @@
+import threading
+import tkinter as tk
 import os
 import subprocess
 import sys
-import threading
-import tkinter as tk
 from PIL import Image, ImageTk
 from core.plateau import Board
 from core.joueur import Player

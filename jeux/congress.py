@@ -1,10 +1,6 @@
 import tkinter as tk
-import subprocess
-import sys
-import os
 import threading
-import random
-
+import os
 from core.plateau import Board
 from core.joueur import Player
 from core.aide import get_rules

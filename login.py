@@ -1,8 +1,6 @@
 import tkinter as tk
 from PIL import Image, ImageTk
 import os
-import sys
-import importlib
 
 import core.parametres as parameters
 import core.langues as languages
@@ -39,10 +37,6 @@ class LoginScreen(tk.Frame):
         import core.parametres
         from core.langues import translate
         import core.traductions
-
-        importlib.reload(core.parametres)
-        importlib.reload(core.langues)
-        importlib.reload(core.traductions)
 
         for widget in self.winfo_children():
             widget.destroy()

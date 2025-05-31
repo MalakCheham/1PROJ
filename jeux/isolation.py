@@ -3,7 +3,6 @@ import threading
 import os
 import subprocess
 import sys
-
 from core.mouvement import generate_possible_moves
 from core.joueur import Player
 from core.aide import get_rules
