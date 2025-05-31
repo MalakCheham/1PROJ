@@ -105,7 +105,7 @@ def show_menu(root_window=None, username=None, volume=None):
             requested_game = selected_mode.lower()
             for widget in root_window.winfo_children():
                 widget.destroy()
-            config_main(root_window, requested_game, username=CURRENT_USERNAME, volume=volume)
+            config_main(root_window, requested_game, username=CURRENT_USERNAME, volume=root_window.volume_var.get())
         
         play_button = tk.Button(mode_frame, text=translate("play"), font=("Arial", 11, "bold"), bg="#219150", fg="white",
                              relief="flat", cursor="hand2", bd=0,
