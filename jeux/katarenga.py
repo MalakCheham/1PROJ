@@ -441,7 +441,7 @@ class GameKatarenga:
                 if piece_arrivee and self.turn > 0:
                     self.pieces[piece_arrivee].discard(arrivee)
                 elif piece_arrivee:
-                    messagebox.showinfo("Invalid", "Captures are not allowed on the first turn.")
+                    messagebox.showinfo(translate("invalid"), translate("captures_not_allowed_first_turn"))
                     return
                 self.pieces[symbol].discard(depart)
                 self.pieces[symbol].add(arrivee)

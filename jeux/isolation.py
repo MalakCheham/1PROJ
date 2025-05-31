@@ -197,7 +197,7 @@ class GameIsolation:
 
     def update_info_joueur(self):
         from core.langues import translate
-        color = translate('white') if self.tour % 2 == 0 else translate('black')
+        color = translate('white') if self.get_current_player().symbol == 'O' else translate('black')
         self.turn_label.config(text=f"{translate('turn_of')} ({translate(color)})")
 
     def get_blocked_cells(self):

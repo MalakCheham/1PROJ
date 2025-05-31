@@ -137,4 +137,6 @@ TRANSLATIONS = {
     "won": {"fr": "a gagné", "en": "won"},
     "error": {"fr": "Erreur", "en": "Error"},
     "username_required": {"fr": "Le nom d'utilisateur est obligatoire.", "en": "Username is required."},
+    "invalid": {"fr": "Invalide", "en": "Invalid"},
+    "captures_not_allowed_first_turn": {"fr": "Les captures ne sont pas autorisées au premier tour.", "en": "Captures are not allowed on the first turn."},
 }
