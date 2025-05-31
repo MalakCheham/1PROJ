@@ -12,6 +12,7 @@ from core.mouvement import generate_possible_moves
 from tkinter import messagebox
 from PIL import Image, ImageTk
 from core.musique import play_music
+from core.network.utils import plateau_to_str, pions_to_str, str_to_plateau, str_to_pions
 
 class GameCongress:
     def __init__(self, board, players, mode="1v1", sock=None, is_host=False, player_names=None, root=None):
@@ -403,28 +404,6 @@ class GameCongress:
 
     def generate_possible_moves(self, start, color, symbol):
         return generate_possible_moves(start, color, symbol, self.board, self.pieces, capture=False)
-
-def plateau_to_str(plateau):
-    return '\n'.join([''.join(row) for row in plateau.cells])
-
-def pions_to_str(pions):
-    return '|'.join([f"{symb}:{';'.join([f'{i},{j}' for (i,j) in positions])}" for symb, positions in pions.items()])
-
-def str_to_plateau(board_str):
-    from core.plateau import Board
-    lines = board_str.strip().split('\n')
-    board = Board()
-    board.cells = [list(line) for line in lines]
-    return board
-
-def str_to_pions(pieces_str):
-    pions = {'X': set(), 'O': set()}
-    for part in pieces_str.split('|'):
-        if not part: continue
-        symb, positions = part.split(':')
-        if positions:
-            pions[symb] = set(tuple(map(int, pos.split(','))) for pos in positions.split(';') if pos)
-    return pions
 
 def launch_network_game(root, is_host, player_name_white, player_name_black, sock, board=None, pieces=None, wait_win=None):
     import threading
