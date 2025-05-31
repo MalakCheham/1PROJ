@@ -108,7 +108,7 @@ def launch_board_builder(game_type, is_ai_mode=False, board_mode="auto", network
     show_logout_menu = create_submenu(root_window)
     create_header(root_window, username, show_logout_menu)
     setup_soundbar_and_language_selector(root_window)
-    # Board generation
+
     if board_mode == "auto" or load_custom_quadrants is None:
         board = create_board()
     else:

@@ -39,7 +39,7 @@ class QuadrantEditorLive:
         title_label.pack(side="left", padx=32, pady=18)
         icon_image = Image.open(os.path.join("assets", "lyrique.png")).convert("RGBA").resize((40, 40))
         icon_photo = ImageTk.PhotoImage(icon_image, master=self.root_window)
-        self.header_icon = icon_photo  # Prevent garbage collection
+        self.header_icon = icon_photo
         icon_button = tk.Button(header_frame, image=self.header_icon, bg=header_background, bd=0, relief="flat", cursor="hand2", activebackground=header_background, highlightthickness=0)
         icon_button.image = self.header_icon
         icon_button.pack(side="right", padx=28, pady=12)
