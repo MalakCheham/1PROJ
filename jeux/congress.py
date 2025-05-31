@@ -194,32 +194,7 @@ class GameCongress:
             self.sock.sendall(msg)
 
     def play(self):
-        if self.mode == "ia" and self.turn % 2 == 1:
-            self.root.after(500, self.play_ai_move)
         self.root.mainloop()
-
-    def play_ai_move(self):
-        symbol = self.players[self.turn % 2].symbol
-        possible_pawns = []
-        for pawn in self.pieces[symbol]:
-            color = self.board.cells[pawn[0]][pawn[1]]
-            moves = self.generate_possible_moves(pawn, color, symbol)
-            if moves:
-                possible_pawns.append((pawn, list(moves)))
-        if not possible_pawns:
-            return
-        pawn, moves = random.choice(possible_pawns)
-        destination = random.choice(moves)
-        self.pieces[symbol].remove(pawn)
-        self.pieces[symbol].add(destination)
-        self.selection = None
-        self.possible_moves = set()
-        self.turn += 1
-        self.update_player_info()
-        self.display_board()
-        self.check_victory()
-        if self.mode == "ia" and self.turn % 2 == 1:
-            self.root.after(500, self.play_ai_move)
 
     def load_and_pack_button(self, image_path, text, parent, command, side="top", padx=5, pady=5):
         try:
