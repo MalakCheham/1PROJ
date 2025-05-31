@@ -333,7 +333,6 @@ class GameCongress:
     def update_timer(self):
         if not self.timer_running or not self.root.winfo_exists():
             return
-
         try:
             if self.timer_label.winfo_exists():
                 minutes, seconds = divmod(self.timer_seconds, 60)

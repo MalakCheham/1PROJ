@@ -10,6 +10,3 @@ class GameBase:
 
     def display_board(self):
         self.board.display()
-
-    def play(self):
-        raise NotImplementedError("This method must be implemented in subclasses.")

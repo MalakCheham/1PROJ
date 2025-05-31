@@ -367,14 +367,13 @@ class GameKatarenga:
         if not self.timer_running or not self.root.winfo_exists():
             return
         try:
-            minutes, seconds = divmod(self.timer_seconds, 60)
             if self.timer_label.winfo_exists():
+                minutes, seconds = divmod(self.timer_seconds, 60)
                 self.timer_label.config(text=f"{minutes:02d}:{seconds:02d}")
-            self.timer_seconds += 1
-            self.timer_id = self.root.after(1000, self.update_timer)
         except tk.TclError:
-            self.timer_running = False
             return
+        self.timer_seconds += 1
+        self.timer_id = self.root.after(1000, self.update_timer)
 
     def pause_timer(self):
         self.timer_running = False
