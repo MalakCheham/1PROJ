@@ -325,7 +325,8 @@ class GameCongress:
                 continue
             if self.get_connected_count(positions) == len(positions):
                 self.pause_timer()
-                messagebox.showinfo(translate("victory"), f"{translate('player')} {translate(color_name)} {translate('won')}")
+                winner_color = 'black' if symbol == 'X' else 'white'
+                messagebox.showinfo(translate("victory"), f"{translate('player')} {translate(winner_color)} {translate('won')}")
                 self.restart_game()
                 return
 
