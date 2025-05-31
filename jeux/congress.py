@@ -301,31 +301,33 @@ class GameCongress:
         if self.network:
             self.lock_ui_if_needed()
 
-    def check_victory(self):
-        player = self.get_current_player()
-        symbol = player.symbol
-        positions = self.pieces[symbol]
+    def get_connected_count(self, positions):
         if not positions:
-            return
-        from collections import deque
+            return 0
+        to_visit = [next(iter(positions))]
         visited = set()
-        queue = deque([next(iter(positions))])
-        while queue:
-            pos = queue.popleft()
+        while to_visit:
+            pos = to_visit.pop()
             if pos in visited:
                 continue
             visited.add(pos)
             for dx, dy in [(-1,0),(1,0),(0,-1),(0,1)]:
                 neighbor = (pos[0]+dx, pos[1]+dy)
                 if neighbor in positions and neighbor not in visited:
-                    queue.append(neighbor)
-        if len(visited) == len(positions):
-            self.pause_timer()
-            color = 'White' if player.symbol == 'X' else 'Black'
-            from core.langues import translate
-            messagebox.showinfo(translate("victory"), f"{translate('player')} {translate(color.lower())} {translate('won')}")
-            self.pause_timer()
-            self.restart_game()
+                    to_visit.append(neighbor)
+        return len(visited)
+
+    def check_victory(self):
+        from core.langues import translate
+        for symbol, color_name in [('X', 'white'), ('O', 'black')]:
+            positions = self.pieces[symbol]
+            if not positions:
+                continue
+            if self.get_connected_count(positions) == len(positions):
+                self.pause_timer()
+                messagebox.showinfo(translate("victory"), f"{translate('player')} {translate(color_name)} {translate('won')}")
+                self.restart_game()
+                return
 
     def start_timer(self):
         self.timer_running = True
