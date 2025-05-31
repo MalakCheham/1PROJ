@@ -411,9 +411,10 @@ def launch_network_game(root, is_host, player_name_white, player_name_black, soc
         sock.sendall(f"name:{player_name_white}".encode())
         data = sock.recv(4096)
         player_name_black = data.decode()[4:]
-        if board is None or pieces is None:
+        if board is None:
             from plateau_builder import create_board
             board = create_board()
+        if pieces is None:
             pieces = {'X': set(), 'O': set()}
             pieces['X'].update([(0,1), (0,4), (1,7), (3,0), (4,7), (6,0), (7,3), (7,6)])
             pieces['O'].update([(0,3), (0,6), (1,0), (3,7), (4,0), (6,7), (7,1), (7,4)])
