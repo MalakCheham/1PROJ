@@ -12,7 +12,7 @@ COLOR_HEX_CODES = {
 }
 
 class QuadrantEditorLive:
-    def __init__(self, root_window, on_back, on_network=None, requested_game=None):
+    def __init__(self, root_window, on_back, on_network=None, requested_game=None, mode=None):
         self.root_window = root_window
         self.on_back = on_back
         self.on_network = on_network
@@ -20,6 +20,7 @@ class QuadrantEditorLive:
         self.quadrant_list = []
         self.grid_colors = [[None for _ in range(4)] for _ in range(4)]
         self.requested_game = requested_game if requested_game is not None else getattr(root_window, 'jeu_demande', None)
+        self.mode = mode if mode is not None else getattr(root_window, 'mode', None) or "1v1"
 
         for widget in root_window.winfo_children():
             widget.destroy()
@@ -199,17 +200,19 @@ class QuadrantEditorLive:
             player_pieces = None
 
         players = [Player(0, 'X'), Player(1, 'O')]
+        
+        mode = self.mode
         if self.on_network:
             self.on_network(board, player_pieces)
         else:
             for widget in self.root_window.winfo_children():
                 widget.destroy()
             if hasattr(self, 'requested_game') and self.requested_game == 'congress':
-                GameCongress(board, players, root=self.root_window).play()
+                GameCongress(board, players, mode=mode, root=self.root_window).play()
             elif hasattr(self, 'requested_game') and self.requested_game == 'isolation':
-                GameIsolation(board, players, root=self.root_window).play()
+                GameIsolation(board, players, mode=mode, root=self.root_window).play()
             else:
-                GameKatarenga(board, players, root=self.root_window).play()
+                GameKatarenga(board, players, mode=mode, root=self.root_window).play()
 
     def reload_ui(self):
         for widget in self.root_window.winfo_children():

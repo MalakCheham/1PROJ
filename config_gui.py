@@ -206,7 +206,7 @@ def play(root):
         elif variables_dict["board_mode"] == "perso":
             for widget in root.winfo_children():
                 widget.destroy()
-            QuadrantEditorLive(root, requested_game=variables_dict["requested_game"], on_back=lambda: back_to_config(root))
+            QuadrantEditorLive(root, requested_game=variables_dict["requested_game"], on_back=lambda: back_to_config(root), mode=variables_dict["mode"])
 
 def open_mode_choice_window(root):
     """Ouvre la fenêtre pour choisir entre solo et réseau"""

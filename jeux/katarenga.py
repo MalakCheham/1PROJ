@@ -262,6 +262,8 @@ class GameKatarenga:
         self.remaining_pieces_label.config(text=f"{translate('remaining_pawns')} - {translate('blanc')}: {remaining_x}, {translate('noir')}: {remaining_o}")
 
     def display_board(self):
+        if not hasattr(self, 'canvas') or not self.canvas.winfo_exists():
+            return
         self.canvas.delete("all")
         size = self.TILE_SIZE
         dim = self.BOARD_DIM
