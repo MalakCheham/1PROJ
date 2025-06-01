@@ -41,7 +41,7 @@ def create_submenu(root_window):
     def show_logout_menu(event):
         menu = tk.Menu(root_window, tearoff=0)
         menu.add_command(label=translate("about"), command=lambda: messagebox.showinfo(translate("about"), translate("about_text")))
-        menu.add_command(label=translate("credits"), command=lambda: messagebox.showinfo(translate("credits"), translate("credits_texte")))
+        menu.add_command(label=translate("credits"), command=lambda: messagebox.showinfo(translate("credits"), translate("credits_text")))
         menu.add_separator()
         def go_to_login():
             import login

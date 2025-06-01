@@ -36,7 +36,7 @@ class QuadrantEditorLive:
         header_frame = tk.Frame(self.root_window, bg=header_background, height=80)
         header_frame.pack(side="top", fill="x")
         username = getattr(self.root_window, 'USERNAME', None)
-        title_label = tk.Label(header_frame, text=translate("create_quadrant_4x4"), font=("Arial", 22, "bold"), bg=header_background, fg="#5b7fce")
+        title_label = tk.Label(header_frame, text=translate("create_4x4_quadrant"), font=("Arial", 22, "bold"), bg=header_background, fg="#5b7fce")
         title_label.pack(side="left", padx=32, pady=18)
         icon_image = Image.open(os.path.join("assets", "lyrique.png")).convert("RGBA").resize((40, 40))
         icon_photo = ImageTk.PhotoImage(icon_image, master=self.root_window)
