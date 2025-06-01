@@ -325,23 +325,23 @@ class GameKatarenga:
         o_in_camps = [p for p in self.pieces['O'] if p in CAMP_POSITIONS_X]
         if len(set(x_in_camps)) == 2:
             self.pause_timer()
-            name = getattr(self.players[0], 'name', str(self.players[0]))
-            messagebox.showinfo(translate("victory"), translate("victory_2_pawns_in_corners").format(name=name))
+            name = translate('black')
+            messagebox.showinfo(translate("victory"), f"{translate('player')} ({name}) : {translate('victory_2_pawns_in_corners')}")
             self.return_to_login()
         elif len(set(o_in_camps)) == 2:
             self.pause_timer()
-            name = getattr(self.players[1], 'name', str(self.players[1]))
-            messagebox.showinfo(translate("victory"), translate("victory_2_pawns_in_corners").format(name=name))
+            name = translate('white')
+            messagebox.showinfo(translate("victory"), f"{translate('player')} ({name}) : {translate('victory_2_pawns_in_corners')}")
             self.return_to_login()
         elif len(self.pieces['X']) < 2:
             self.pause_timer()
-            name = getattr(self.players[1], 'name', str(self.players[1]))
-            messagebox.showinfo(translate("victory"), translate("victory_black_not_enough_pawns").format(name=name))
+            name = translate('white')
+            messagebox.showinfo(translate("victory"), f"{translate('player')} ({name}) : {translate('victory_black_not_enough_pawns')}")
             self.return_to_login()
         elif len(self.pieces['O']) < 2:
             self.pause_timer()
-            name = getattr(self.players[0], 'name', str(self.players[0]))
-            messagebox.showinfo(translate("victory"), translate("victory_white_not_enough_pawns").format(name=name))
+            name = translate('black')
+            messagebox.showinfo(translate("victory"), f"{translate('player')} ({name}) : {translate('victory_white_not_enough_pawns')}")
             self.return_to_login()
 
     def return_to_login(self):
