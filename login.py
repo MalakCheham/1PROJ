@@ -1,6 +1,8 @@
-import tkinter as tk
+import customtkinter as ctk
 from PIL import Image, ImageTk
 import os
+
+from customtkinter import CTkImage
 
 import core.parametres as parameters
 import core.langues as languages
@@ -10,15 +12,15 @@ from core.parametres import LanguageSelector
 """Login screen"""
 
 ASSETS_DIR = parameters.get_assets_dir()
-class LoginScreen(tk.Frame):
+class LoginScreen(ctk.CTkFrame):
     def __init__(self, master=None, initial_volume=None):
         from core.langues import translate
 
-        root_window = master or tk.Tk()
-        super().__init__(root_window, bg="#f0f0f0")
+        root_window = master or ctk.CTk()
+        super().__init__(root_window, fg_color="#f0f0f0")
         self.master = root_window
         self.master.geometry("900x800")
-        self.master.configure(bg="#f0f0f0")
+        self.master.configure(fg_color="#f0f0f0")
         self.load_icon()
         self.pack(expand=True, fill="both")
         self.initial_volume = initial_volume 
@@ -41,43 +43,36 @@ class LoginScreen(tk.Frame):
         for widget in self.winfo_children():
             widget.destroy()
 
-        center_frame = tk.Frame(self, bg="#f0f0f0")
+        center_frame = ctk.CTkFrame(self, fg_color="#f0f0f0")
         center_frame.place(relx=0.5, rely=0.5, anchor="center")
 
-        logo_frame = tk.Frame(center_frame, bg="#f0f0f0")
+        logo_frame = ctk.CTkFrame(center_frame, fg_color="#f0f0f0")
         logo_frame.pack(pady=(30, 10))
         
         logo_image = Image.open(os.path.join(ASSETS_DIR, "logo.png")).resize((180, 180))
-        logo_photo = ImageTk.PhotoImage(logo_image)
-        logo_label = tk.Label(logo_frame, image=logo_photo, bg="#f0f0f0")
-        logo_label.image = logo_photo
+        logo_ctk_image = CTkImage(light_image=logo_image, dark_image=logo_image, size=(180, 180))
+        logo_label = ctk.CTkLabel(logo_frame, image=logo_ctk_image, text="", fg_color="#f0f0f0")
+        logo_label.image = logo_ctk_image
         logo_label.pack()
 
-        tk.Label(center_frame, text=translate("welcome_to_portal"), 
-                 font=("Arial", 18, "bold"), bg="#f0f0f0", 
-                 fg="#004d99").pack(pady=10)
-        tk.Label(center_frame, text=translate("enter_username"), 
-                 font=("Arial", 13), bg="#f0f0f0").pack(pady=10)
+        ctk.CTkLabel(center_frame, text=translate("welcome_to_portal"), 
+                 font=("Arial", 18, "bold"), text_color="#004d99", fg_color="#f0f0f0").pack(pady=10)
+        ctk.CTkLabel(center_frame, text=translate("enter_username"), 
+                 font=("Arial", 13), text_color="#222222").pack(pady=10)
 
-        self.username_var = tk.StringVar()
-        username_entry = tk.Entry(center_frame, textvariable=self.username_var,
-                         font=("Arial", 13), width=18, bg="#fff",
-                         bd=2, relief="groove", justify="center",
-                         highlightthickness=2, highlightbackground="#b3d9ff",
-                         highlightcolor="#4CAF50")
+        self.username_var = ctk.StringVar()
+        username_entry = ctk.CTkEntry(center_frame, textvariable=self.username_var,
+                         font=("Arial", 13), width=180, fg_color="#d1d1d1", text_color="#3B3B3B",
+                         border_width=2, corner_radius=8, justify="center")
         username_entry.pack(ipady=6, ipadx=2)
         username_entry.focus_set()
         username_entry.bind("<Return>", lambda event: self.enter_portal())
 
-        enter_button = tk.Button(center_frame, text=translate("enter_portal"),
-                           font=("Arial", 13, "bold"), bg="#219150", fg="white",
-                           activebackground="#19713c", activeforeground="white",
-                           width=20, height=2, bd=0, relief="flat",
-                           highlightthickness=1, highlightbackground="#19713c",
-                           cursor="hand2", command=self.enter_portal)
+        enter_button = ctk.CTkButton(center_frame, text=translate("enter_portal"),
+                           font=("Arial", 13, "bold"), fg_color="#219150", text_color="white",
+                           hover_color="#19713c", width=180, height=40, corner_radius=8,
+                           command=self.enter_portal)
         enter_button.pack(pady=30, ipadx=2, ipady=2)
-        enter_button.bind("<Enter>", lambda event: enter_button.configure(bg="#19713c"))
-        enter_button.bind("<Leave>", lambda event: enter_button.configure(bg="#219150"))
 
         self.build_sound_controls()
         self.build_language_selector()
@@ -115,7 +110,7 @@ class LoginScreen(tk.Frame):
             soundbar_frame = SoundBar(self, volume_var=self.volume_var)
         else:
             initial = self.initial_volume if self.initial_volume is not None else 50
-            self.volume_var = tk.IntVar(value=initial)
+            self.volume_var = ctk.IntVar(value=initial)
             self.master.volume_var = self.volume_var
             soundbar_frame = SoundBar(self, volume_var=self.volume_var)
         set_volume(self.volume_var.get())

@@ -3,6 +3,8 @@ from PIL import Image, ImageTk
 import os
 import random
 from core.langues import translate
+import customtkinter as ctk
+from customtkinter import CTkImage
 
 from core.plateau import Board
 from core.joueur import Player
@@ -41,7 +43,7 @@ def create_submenu(root_window):
     def show_logout_menu(event):
         menu = tk.Menu(root_window, tearoff=0)
         menu.add_command(label=translate("about"), command=lambda: messagebox.showinfo(translate("about"), translate("about_text")))
-        menu.add_command(label=translate("credits"), command=lambda: messagebox.showinfo(translate("credits"), translate("credits_texte")))
+        menu.add_command(label=translate("credits"), command=lambda: messagebox.showinfo(translate("credits"), translate("credits_text")))
         menu.add_separator()
         def go_to_login():
             import login
@@ -136,11 +138,11 @@ def launch_board_builder(game_type, is_ai_mode=False, board_mode="auto", network
             importlib.reload(core.langues)
             show_board_ui(root_window, game_type, board, is_ai_mode, board_mode, network_callback, current_volume, username)
         setup_soundbar_and_language_selector(root_window, lang_callback=on_language_changed)
-        main_frame = tk.Frame(root_window, bg="#f0f4f0")
+        main_frame = ctk.CTkFrame(root_window, fg_color="#f0f4f0")
         main_frame.place(relx=0.5, rely=0.5, anchor="center")
         if hasattr(root_window, 'label_board_generated') and root_window.label_board_generated.winfo_exists():
             root_window.label_board_generated.destroy()
-        root_window.label_board_generated = tk.Label(main_frame, text=translate("generated_board"), font=("Helvetica", 16, "bold"), bg="#f0f4f0")
+        root_window.label_board_generated = ctk.CTkLabel(main_frame, text=translate("generated_board"), font=("Helvetica", 16, "bold"), fg_color="#f0f4f0", text_color="#222")
         root_window.label_board_generated.pack(pady=10)
         canvas = tk.Canvas(main_frame, width=400, height=400, bg="#f0f4f0", highlightthickness=0)
         canvas.pack()
@@ -164,9 +166,9 @@ def launch_board_builder(game_type, is_ai_mode=False, board_mode="auto", network
                     GameCongress(board, players, mode=mode, root=root_window).play()
                 elif game_type == "isolation":
                     GameIsolation(board, players, mode=mode, root=root_window).play()
-        buttons_frame = tk.Frame(main_frame, bg="#f0f4f0")
+        buttons_frame = ctk.CTkFrame(main_frame, fg_color="#f0f4f0")
         buttons_frame.pack(pady=15)
-        play_button = tk.Button(buttons_frame, text=translate("play"), command=launch_game, bg="#4CAF50", fg="white", font=("Helvetica", 12, "bold"), width=15, relief="flat")
+        play_button = ctk.CTkButton(buttons_frame, text=translate("play"), command=launch_game, fg_color="#4CAF50", text_color="white", font=("Helvetica", 12, "bold"), width=150, corner_radius=8)
         play_button.pack(side="left", padx=5)
         def back_to_config():
             import config_gui
@@ -175,9 +177,9 @@ def launch_board_builder(game_type, is_ai_mode=False, board_mode="auto", network
             username = getattr(root_window, 'USERNAME', None)
             config_gui.main(root_window, game_type, username=username, volume=volume)
         back_icon_image = Image.open(os.path.join("assets", "en-arriere.png")).resize((48, 48))
-        back_icon_photo = ImageTk.PhotoImage(back_icon_image)
-        back_button = tk.Button(root_window, image=back_icon_photo, command=back_to_config, bg="#f0f4f8", bd=0, relief="flat", cursor="hand2", activebackground="#e0e0e0")
-        back_button.image = back_icon_photo
+        back_icon_ctk = CTkImage(light_image=back_icon_image, dark_image=back_icon_image, size=(48, 48))
+        back_button = ctk.CTkButton(root_window, image=back_icon_ctk, command=back_to_config, fg_color="#f0f4f8", width=48, height=48, text="", corner_radius=8, hover_color="#e0e0e0")
+        back_button.image = back_icon_ctk
         back_button.place(relx=0.0, rely=0.5, anchor="w", x=18)
 
     try:

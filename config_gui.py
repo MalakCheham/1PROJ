@@ -3,6 +3,8 @@ import sys
 import subprocess
 import socket
 import os
+import customtkinter as ctk
+from customtkinter import CTkImage
 
 from plateau_builder import launch_board_builder
 from quadrant_editor_live import QuadrantEditorLive
@@ -50,34 +52,34 @@ def open_host_window(root_window):
 
 def open_network_window(root_window):
     """Open the window to choose between hosting or joining a network game"""
-    network_window = tk.Toplevel(root_window)
+    network_window = ctk.CTkToplevel(root_window)
     network_window.title(translate("choose_game_mode"))
     center_window(network_window, 300, 180, root_window)
     network_window.transient(root_window)
     network_window.grab_set()
-    network_window.configure(bg="#e0f7fa")
-    tk.Label(network_window, text=translate("host_or_join"), font=("Helvetica", 13, "bold"), bg="#e0f7fa").pack(pady=15)
-    host_button = tk.Button(network_window, text=translate("host"), font=("Helvetica", 12), width=15, command=lambda: [network_window.destroy(), open_host_window(root_window)])
+    network_window.configure(fg_color="#e0f7fa")
+    ctk.CTkLabel(network_window, text=translate("host_or_join"), font=("Helvetica", 13, "bold"), fg_color="#e0f7fa", text_color="#222").pack(pady=15)
+    host_button = ctk.CTkButton(network_window, text=translate("host"), font=("Helvetica", 12), width=150, text_color="#222", fg_color="#b2ebf2", command=lambda: [network_window.destroy(), open_host_window(root_window)])
     host_button.pack(pady=5)
-    join_button = tk.Button(network_window, text=translate("join_server"), font=("Helvetica", 12), width=15, command=lambda: [network_window.destroy(), open_join_window(root_window)])
+    join_button = ctk.CTkButton(network_window, text=translate("join_server"), font=("Helvetica", 12), width=150, text_color="#222", fg_color="#b2ebf2", command=lambda: [network_window.destroy(), open_join_window(root_window)])
     join_button.pack(pady=5)
 
 def open_join_window(root_window):
     """Open the window to join an existing network game"""
-    join_window = tk.Toplevel(root_window)
+    join_window = ctk.CTkToplevel(root_window)
     join_window.title(translate("join_server"))
     center_window(join_window, 350, 350, root_window)
     join_window.transient(root_window)
     join_window.grab_set()
-    join_window.configure(bg="#e0f7fa")
-    tk.Label(join_window, text=translate("available_servers"), font=("Helvetica", 13, "bold"), bg="#e0f7fa").pack(pady=10)
-    server_list_frame = tk.Frame(join_window, bg="#e0f7fa")
+    join_window.configure(fg_color="#e0f7fa")
+    ctk.CTkLabel(join_window, text=translate("available_servers"), font=("Helvetica", 13, "bold"), fg_color="#e0f7fa", text_color="#222").pack(pady=10)
+    server_list_frame = ctk.CTkFrame(join_window, fg_color="#e0f7fa")
     server_list_frame.pack(pady=5, fill="both", expand=True)
     found_servers = []
     server_buttons = []
     def add_server(server_info):
         found_servers.append(server_info)
-        button = tk.Button(server_list_frame, text=f"{server_info['nom']} ({server_info['ip']}:{server_info['port']})", font=("Helvetica", 12), width=30, anchor="w", command=lambda s=server_info: join_server_ui(s, join_window, root_window))
+        button = ctk.CTkButton(server_list_frame, text=f"{server_info['nom']} ({server_info['ip']}:{server_info['port']})", font=("Helvetica", 12), width=300, anchor="w", text_color="#222", fg_color="#b2ebf2", command=lambda s=server_info: join_server_ui(s, join_window, root_window))
         button.pack(pady=3)
         server_buttons.append(button)
     discovery = start_discovery(add_server)
@@ -92,7 +94,7 @@ def open_join_window(root_window):
         found_servers.clear()
         if hasattr(discovery, 'found'):
             discovery.found.clear()
-    tk.Button(join_window, text=translate("refresh"), command=refresh, bg="#b2ebf2").pack(pady=5)
+    ctk.CTkButton(join_window, text=translate("refresh"), command=refresh, fg_color="#b2ebf2", text_color="#222").pack(pady=5)
 
 def start_network_game(root, is_host, player_name=None, player_name_black=None, sock=None, board=None, pieces=None):
     """Lance la partie réseau avec les bons paramètres"""
@@ -141,32 +143,32 @@ def update_go_button_state(root):
     if not btn:
         return
     if variables_dict["mode"] == "ia":
-        btn.config(state="normal", bg="#4CAF50")
+        btn.configure(state="normal", fg_color="#4CAF50")
     elif variables_dict["mode"] == "1v1":
         if variables_dict["network_mode"] == "local":
-            btn.config(state="normal", bg="#4CAF50")
+            btn.configure(state="normal", fg_color="#4CAF50")
         elif variables_dict["network_mode"] == "network":
-            btn.config(state="normal", bg="#4CAF50")
+            btn.configure(state="normal", fg_color="#4CAF50")
         else:
-            btn.config(state="disabled", bg="#888888")
+            btn.configure(state="disabled", fg_color="#888888")
     else:
-        btn.config(state="disabled", bg="#888888")
+        btn.configure(state="disabled", fg_color="#888888")
     mode_label = variables_dict.get("mode_label")
     if not mode_label:
-        mode_label = tk.Label(root, font=("Helvetica", 11, "italic"), bg="#e6f2ff", fg="#004d40")
+        mode_label = ctk.CTkLabel(root, font=("Helvetica", 11, "italic"), fg_color="#e6f2ff", text_color="#004d40")
         mode_label.pack()
         variables_dict["mode_label"] = mode_label
     if variables_dict["network_mode"] == "local":
-        mode_label.config(text=translate("solo_mode"))
+        mode_label.configure(text=translate("solo_mode"))
     elif variables_dict["network_mode"] == "network":
         if variables_dict.get("is_host"):
-            mode_label.config(text=translate("network_mode_host"))
+            mode_label.configure(text=translate("network_mode_host"))
         elif variables_dict.get("is_client"):
-            mode_label.config(text=translate("network_mode_client"))
+            mode_label.configure(text=translate("network_mode_client"))
         else:
-            mode_label.config(text=translate("network_mode"))
+            mode_label.configure(text=translate("network_mode"))
     else:
-        mode_label.config(text="Mode : ?")
+        mode_label.configure(text="Mode : ?")
 
 def play(root):
     """Lance la partie selon les choix de l'utilisateur"""
@@ -210,12 +212,13 @@ def play(root):
 
 def open_mode_choice_window(root):
     """Ouvre la fenêtre pour choisir entre solo et réseau"""
-    fenetre = tk.Toplevel(root)
+    fenetre = ctk.CTkToplevel(root)
     fenetre.title(translate("choose_game_mode"))
     center_window(fenetre, 300, 180, root)
     fenetre.transient(root)
     fenetre.grab_set()
-    fenetre.configure(bg="#e0f7fa")
+    fenetre.configure(fg_color="#e0f7fa")
+    ctk.CTkLabel(fenetre, text=translate("choose_game_mode"), font=("Helvetica", 13, "bold"), fg_color="#e0f7fa", text_color="#222").pack(pady=15)
     def set_local():
         variables_dict["network_mode"] = "local"
         variables_dict["is_host"] = False
@@ -231,10 +234,9 @@ def open_mode_choice_window(root):
         update_go_button_state(root)
         fenetre.destroy()
         open_network_window(root)
-    tk.Label(fenetre, text=translate("choose_game_mode"), font=("Helvetica", 13, "bold"), bg="#e0f7fa").pack(pady=15)
-    btn_solo = tk.Button(fenetre, text=translate("solo_mode"), font=("Helvetica", 12), width=15, command=set_local)
+    btn_solo = ctk.CTkButton(fenetre, text=translate("solo_mode"), font=("Helvetica", 12), width=150, text_color="#222", fg_color="#b2ebf2", command=set_local)
     btn_solo.pack(pady=5)
-    btn_reseau = tk.Button(fenetre, text=translate("network_mode"), font=("Helvetica", 12), width=15, command=set_reseau)
+    btn_reseau = ctk.CTkButton(fenetre, text=translate("network_mode"), font=("Helvetica", 12), width=150, text_color="#222", fg_color="#b2ebf2", command=set_reseau)
     btn_reseau.pack(pady=5)
 
 def afficher_interface_choix(root):
@@ -242,21 +244,22 @@ def afficher_interface_choix(root):
     for widget in root.winfo_children():
         widget.destroy()
     header_bg = "#e0e0e0"
-    header = tk.Frame(root, bg=header_bg, height=80)
+    header = ctk.CTkFrame(root, fg_color=header_bg, height=80)
     header.pack(side="top", fill="x")
     from core.langues import translate
     username = variables_dict.get('username') or getattr(root, 'USERNAME', None)
-    bienvenue = tk.Label(header, text=f"{translate('welcome')} {username if username else ''}", font=("Arial", 22, "bold"), bg=header_bg, fg="#5b7fce")
+    bienvenue = ctk.CTkLabel(header, text=f"{translate('welcome')} {username if username else ''}", font=("Arial", 22, "bold"), fg_color=header_bg, text_color="#5b7fce")
     bienvenue.pack(side="left", padx=32, pady=18)
     img = Image.open(os.path.join("assets", "lyrique.png")).convert("RGBA").resize((40, 40))
-    icon = ImageTk.PhotoImage(img)
-    btn_icon = tk.Button(header, image=icon, bg=header_bg, bd=0, relief="flat", cursor="hand2", activebackground=header_bg, highlightthickness=0)
+    icon = CTkImage(light_image=img, dark_image=img, size=(40, 40))
+    btn_icon = ctk.CTkButton(header, image=icon, fg_color=header_bg, width=40, height=40, text="", corner_radius=8, hover_color=header_bg)
     btn_icon.image = icon
     btn_icon.pack(side="right", padx=28, pady=12)
 
     """Submenu"""
-    from tkinter import messagebox
+    from core.langues import translate
     def show_logout_menu(event):
+        import tkinter as tk
         menu = tk.Menu(root, tearoff=0)
         menu.add_command(label=translate("about"), command=lambda: messagebox.showinfo(translate("about"), translate("about_text")))
         menu.add_command(label=translate("credits"), command=lambda: messagebox.showinfo(translate("credits"), translate("credits_text")))
@@ -319,40 +322,40 @@ def afficher_interface_choix(root):
     lang_selector = LanguageSelector(root, assets_dir="assets", callback=on_language_changed)
     lang_selector.place(relx=1.0, rely=1.0, anchor="se", x=-18, y=-18)
 
-    main_frame = tk.Frame(root, bg="#f0f0f0")
+    main_frame = ctk.CTkFrame(root, fg_color="#f0f0f0")
     main_frame.place(relx=0.5, rely=0.5, anchor="center")
 
-    tk.Label(main_frame, text=translate(variables_dict["requested_game"]).upper(), font=("Helvetica", 16, "bold"), fg="#004d40", bg="#f0f0f0").pack(pady=10)
+    ctk.CTkLabel(main_frame, text=translate(variables_dict["requested_game"]).upper(), font=("Helvetica", 16, "bold"), text_color="#004d40", fg_color="#f0f0f0").pack(pady=10)
 
-    variables_dict["mode_var"] = tk.StringVar(value=variables_dict["mode"])
-    variables_dict["board_mode_var"] = tk.StringVar(value=variables_dict["board_mode"])
+    variables_dict["mode_var"] = ctk.StringVar(value=variables_dict["mode"])
+    variables_dict["board_mode_var"] = ctk.StringVar(value=variables_dict["board_mode"])
 
-    frame_mode = tk.Frame(main_frame, bg="#f0f0f0")
+    frame_mode = ctk.CTkFrame(main_frame, fg_color="#f0f0f0")
     frame_mode.pack(pady=10)
 
-    frame1 = tk.Frame(frame_mode, bg="#f0f0f0")
+    frame1 = ctk.CTkFrame(frame_mode, fg_color="#f0f0f0")
     frame1.pack(pady=10)
 
-    tk.Radiobutton(frame1, text=translate("mode_1v1"), variable=variables_dict["mode_var"], value="1v1", font=("Helvetica", 12), bg="#f0f0f0", command=lambda: on_mode_change(root)).pack(side="left", padx=10)
-    tk.Radiobutton(frame1, text=translate("mode_ai"), variable=variables_dict["mode_var"], value="ia", font=("Helvetica", 12), bg="#f0f0f0", command=lambda: on_mode_change(root)).pack(side="left", padx=10)
+    ctk.CTkRadioButton(frame1, text=translate("mode_1v1"), variable=variables_dict["mode_var"], value="1v1", font=("Helvetica", 12), fg_color="#219150", text_color="#222", command=lambda: on_mode_change(root)).pack(anchor="w", pady=2)
+    ctk.CTkRadioButton(frame1, text=translate("mode_ai"), variable=variables_dict["mode_var"], value="ia", font=("Helvetica", 12), fg_color="#219150", text_color="#222", command=lambda: on_mode_change(root)).pack(anchor="w", pady=2)
 
-    frame_board = tk.Frame(main_frame, bg="#f0f0f0")
+    frame_board = ctk.CTkFrame(main_frame, fg_color="#f0f0f0")
     frame_board.pack(pady=10)
 
-    tk.Label(frame_board, text=translate("board"), bg="#f0f0f0", font=("Helvetica", 13)).pack()
-    tk.Radiobutton(frame_board, text=translate("auto_board"), variable=variables_dict["board_mode_var"], value="auto", bg="#f0f0f0", font=("Helvetica", 12), command=lambda: on_board_mode_change(root)).pack(anchor="w", padx=20)
-    tk.Radiobutton(frame_board, text=translate("custom_quadrants"), variable=variables_dict["board_mode_var"], value="perso", bg="#f0f0f0", font=("Helvetica", 12), command=lambda: on_board_mode_change(root)).pack(anchor="w", padx=20)
+    ctk.CTkLabel(frame_board, text=translate("board"), fg_color="#f0f0f0", font=("Helvetica", 13), text_color="#222").pack()
+    ctk.CTkRadioButton(frame_board, text=translate("auto_board"), variable=variables_dict["board_mode_var"], value="auto", fg_color="#219150", font=("Helvetica", 12), text_color="#222", command=lambda: on_board_mode_change(root)).pack(anchor="w", padx=20)
+    ctk.CTkRadioButton(frame_board, text=translate("custom_quadrants"), variable=variables_dict["board_mode_var"], value="perso", fg_color="#219150", font=("Helvetica", 12), text_color="#222", command=lambda: on_board_mode_change(root)).pack(anchor="w", padx=20)
 
-    btns_frame = tk.Frame(main_frame, bg="#f0f0f0")
+    btns_frame = ctk.CTkFrame(main_frame, fg_color="#f0f0f0")
     btns_frame.pack(pady=20)
-    variables_dict["play_btn"] = tk.Button(btns_frame, text=translate("play"), command=lambda: play(root), font=("Helvetica", 12, "bold"), bg="#4CAF50", fg="white", width=15, relief="flat", state="disabled")
+    variables_dict["play_btn"] = ctk.CTkButton(btns_frame, text=translate("play"), command=lambda: play(root), font=("Helvetica", 12, "bold"), fg_color="#4CAF50", text_color="white", width=150, corner_radius=8, state="disabled")
     variables_dict["play_btn"].pack(side="left", padx=5)
-    btn_mode_select = tk.Button(btns_frame, text=translate("game_mode"), font=("Helvetica", 12, "bold"), bg="#4CAF50", fg="white", width=15, relief="flat", command=lambda: open_mode_choice_window(root))
+    btn_mode_select = ctk.CTkButton(btns_frame, text=translate("game_mode"), font=("Helvetica", 12, "bold"), fg_color="#4CAF50", text_color="white", width=150, corner_radius=8, command=lambda: open_mode_choice_window(root))
     btn_mode_select.pack(side="left", padx=5)
 
     if variables_dict.get("mode_label"):
         variables_dict["mode_label"].destroy()
-    variables_dict["mode_label"] = tk.Label(main_frame, font=("Helvetica", 11, "italic"), bg="#f0f0f0", fg="#004d40")
+    variables_dict["mode_label"] = ctk.CTkLabel(main_frame, font=("Helvetica", 11, "italic"), fg_color="#f0f0f0", text_color="#004d40")
     variables_dict["mode_label"].pack(pady=(0, 10))
     update_go_button_state(root)
 
@@ -371,8 +374,8 @@ def afficher_interface_choix(root):
             w.destroy()
         menu_gui.show_menu(root, username=variables_dict.get("username") or getattr(root, "USERNAME", None), volume=current_volume)
     img_retour = Image.open(os.path.join("assets", "en-arriere.png")).resize((48, 48))
-    icon_retour = ImageTk.PhotoImage(img_retour)
-    btn_retour = tk.Button(root, image=icon_retour, command=return_to_menu, bg="#f0f0f0", bd=0, relief="flat", cursor="hand2", activebackground="#e0e0e0")
+    icon_retour = CTkImage(light_image=img_retour, dark_image=img_retour, size=(48, 48))
+    btn_retour = ctk.CTkButton(root, image=icon_retour, command=return_to_menu, fg_color="#f0f0f0", width=48, height=48, text="", corner_radius=8, hover_color="#e0e0e0")
     btn_retour.image = icon_retour
     btn_retour.place(relx=0.0, rely=0.5, anchor="w", x=18)
 
