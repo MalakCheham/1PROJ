@@ -228,6 +228,28 @@ class GameCongress:
             for (row_index, col_index) in self.pieces[symbol]:
                 self.canvas.create_oval(col_index*size+10, row_index*size+10, (col_index+1)*size-10, (row_index+1)*size-10, fill=color)
 
+    def ai_play_random_congress(self):
+        import random
+        symbol = 'O'
+        all_moves = []
+        for piece in list(self.pieces[symbol]):
+            color = self.board.cells[piece[0]][piece[1]]
+            moves = self.generate_possible_moves(piece, color, symbol)
+            for move in moves:
+                all_moves.append((piece, move))
+        if all_moves:
+            from_pos, to_pos = random.choice(all_moves)
+            self.pieces[symbol].remove(from_pos)
+            self.pieces[symbol].add(to_pos)
+            self.selection = None
+            self.possible_moves = set()
+            self.turn += 1
+            self.update_player_info()
+            self.display_board()
+            self.check_victory()
+            if self.mode == "ia" and self.turn % 2 == 1:
+                self.root.after(500, self.ai_play_random_congress)
+
     def on_click(self, event):
         if self.mode == "ia" and self.turn % 2 == 1:
             return
@@ -254,6 +276,8 @@ class GameCongress:
                 if self.network:
                     self.send_move(from_pos, position)
                     self.lock_ui_if_needed()
+                if self.mode == "ia" and self.turn % 2 == 1:
+                    self.root.after(500, self.ai_play_random_congress)
             else:
                 self.selection = None
                 self.possible_moves = set()

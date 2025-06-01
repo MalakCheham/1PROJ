@@ -157,12 +157,13 @@ def launch_board_builder(game_type, is_ai_mode=False, board_mode="auto", network
                 network_callback(board, None)
             else:
                 players = [Player(0, 'X'), Player(1, 'O')]
+                mode = "ia" if is_ai_mode else "1v1"
                 if game_type == "katarenga":
-                    GameKatarenga(board, players, root=root_window).play()
+                    GameKatarenga(board, players, mode=mode, root=root_window).play()
                 elif game_type == "congress":
-                    GameCongress(board, players, root=root_window).play()
+                    GameCongress(board, players, mode=mode, root=root_window).play()
                 elif game_type == "isolation":
-                    GameIsolation(board, players, root=root_window).play()
+                    GameIsolation(board, players, mode=mode, root=root_window).play()
         buttons_frame = tk.Frame(main_frame, bg="#f0f4f0")
         buttons_frame.pack(pady=15)
         play_button = tk.Button(buttons_frame, text=translate("play"), command=launch_game, bg="#4CAF50", fg="white", font=("Helvetica", 12, "bold"), width=15, relief="flat")

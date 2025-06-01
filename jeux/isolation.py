@@ -225,7 +225,32 @@ class GameIsolation:
                 color = "black" if symbol == "X" else "white"
                 self.canvas.create_oval(y*size+10, x*size+10, (y+1)*size-10, (x+1)*size-10, fill=color)
 
+    def ai_play_random_isolation(self):
+        import random
+        symbol = 'O'
+        all_moves = []
+        for i in range(8):
+            for j in range(8):
+                pos = (i, j)
+                if pos in self.pieces['X'] or pos in self.pieces['O']:
+                    continue
+                if self.board.cells[i][j] in ['X', 'O']:
+                    continue
+                if self.is_square_safe(pos):
+                    all_moves.append(pos)
+        if all_moves:
+            move = random.choice(all_moves)
+            self.pieces[symbol].add(move)
+            self.tour += 1
+            self.display_board()
+            self.update_info_joueur()
+            self.check_victory()
+            if self.mode == "ia" and self.tour % 2 == 1:
+                self.root.after(500, self.ai_play_random_isolation)
+
     def on_click(self, event):
+        if self.mode == "ia" and self.tour % 2 == 1:
+            return
         ligne, colonne = event.y // 50, event.x // 50
         if not (0 <= ligne < 8 and 0 <= colonne < 8):
             return
@@ -249,6 +274,8 @@ class GameIsolation:
         self.display_board()
         self.update_info_joueur()
         self.check_victory()
+        if self.mode == "ia" and self.tour % 2 == 1:
+            self.root.after(500, self.ai_play_random_isolation)
         if self.reseau:
             self.send_move(position)
             self.lock_ui_if_needed()

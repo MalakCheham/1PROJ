@@ -419,6 +419,31 @@ class GameKatarenga:
         self.redraw_ui_only()
         self.start_timer()
 
+    def ai_play_random_katarenga(self):
+        import random
+        symbol = 'O'
+        all_moves = []
+        for piece in list(self.pieces[symbol]):
+            color = self.board.cells[piece[0]][piece[1]]
+            moves = self.generate_possible_moves_custom(piece, color, symbol)
+            for move in moves:
+                all_moves.append((piece, move))
+        if all_moves:
+            from_pos, to_pos = random.choice(all_moves)
+            captured = next((s for s in ['X', 'O'] if to_pos in self.pieces[s]), None)
+            if captured and captured != symbol:
+                self.pieces[captured].discard(to_pos)
+            self.pieces[symbol].discard(from_pos)
+            self.pieces[symbol].add(to_pos)
+            self.turn += 1
+            self.selected_piece = None
+            self.possible_moves = set()
+            self.display_board()
+            self.update_player_info()
+            self.verifier_victoire()
+            if self.mode == "ia" and self.turn % 2 == 1:
+                self.root.after(500, self.ai_play_random_katarenga)
+
     def play(self):
         self.root.mainloop()
 
@@ -454,6 +479,8 @@ class GameKatarenga:
                 if self.sock:
                     self.send_move(depart, arrivee)
                 self.lock_ui_if_needed()
+                if self.mode == "ia" and self.turn % 2 == 1:
+                    self.root.after(500, self.ai_play_random_katarenga)
             else:
                 self.selected_piece = None
                 self.possible_moves = set()
